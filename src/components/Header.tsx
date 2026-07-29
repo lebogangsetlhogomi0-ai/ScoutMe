@@ -1,41 +1,48 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 import { useToast } from "./Toast";
-import { Bell, Trophy, ShieldAlert, Award, User } from "lucide-react";
+import { Bell, Trophy, ShieldAlert, Award, User, BarChart2, Settings, LogOut, ChevronRight } from "lucide-react";
 
 interface HeaderProps {
   onNotificationClick?: () => void;
   onProfileClick?: () => void;
+  onClubIntelClick?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onProfileClick }) => {
+export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick }) => {
   const { currentUser, isDemoMode } = useApp();
   const { showToast } = useToast();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+
+  const isScoutOrClub = currentUser?.role === "scout" || currentUser?.role === "club";
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
+        setShowProfileMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const getRoleColor = (role?: string) => {
     switch (role) {
-      case "player":
-        return "text-[#00e56b] border-[#1a3825] bg-[#0f2318]/50";
-      case "scout":
-        return "text-[#f5c518] border-[#38331a] bg-[#231e0f]/50";
-      case "club":
-        return "text-[#4da6ff] border-[#1a2e38] bg-[#0f1d23]/50";
-      default:
-        return "text-[#e8f5ee] border-[#1a3825] bg-transparent";
+      case "player": return "text-[#00e56b] border-[#1a3825] bg-[#0f2318]/50";
+      case "scout":  return "text-[#f5c518] border-[#38331a] bg-[#231e0f]/50";
+      case "club":   return "text-[#4da6ff] border-[#1a2e38] bg-[#0f1d23]/50";
+      default:       return "text-[#e8f5ee] border-[#1a3825] bg-transparent";
     }
   };
 
   const getRoleIcon = (role?: string) => {
     switch (role) {
-      case "player":
-        return <Trophy className="w-3.5 h-3.5 mr-1" />;
-      case "scout":
-        return <Award className="w-3.5 h-3.5 mr-1" />;
-      case "club":
-        return <ShieldAlert className="w-3.5 h-3.5 mr-1" />;
-      default:
-        return null;
+      case "player": return <Trophy className="w-3.5 h-3.5 mr-1" />;
+      case "scout":  return <Award className="w-3.5 h-3.5 mr-1" />;
+      case "club":   return <ShieldAlert className="w-3.5 h-3.5 mr-1" />;
+      default:       return null;
     }
   };
 
@@ -47,7 +54,7 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick }) => {
 
   return (
     <header className="sticky top-0 z-40 flex items-center justify-between px-4 py-3 bg-[#050e08]/90 backdrop-blur-md border-b border-[#1a3825]">
-      {/* Brand logo image */}
+      {/* Brand logo */}
       <div className="flex items-center space-x-2 border-l border-transparent">
         <img
           src="/scoutme_logo.png"
@@ -56,7 +63,7 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick }) => {
           referrerPolicy="no-referrer"
         />
         {isDemoMode && (
-          <div 
+          <div
             onClick={() => showToast("Running in Demo Mode — any email/password works ✦", "info")}
             className="text-[10px] bg-[#f5c518] text-black font-extrabold px-2 py-0.5 rounded-full font-sans cursor-pointer uppercase tracking-wider shadow-sm select-none hover:scale-105 active:scale-95 transition-all whitespace-nowrap animate-pulse"
             title="Firebase not connected. Running with demo data."
@@ -74,20 +81,82 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick }) => {
           </div>
         )}
 
-        {/* Profile icon in header — club only (nav tab removed to save space) */}
-        {currentUser?.role === "club" && onProfileClick && (
-          <button
-            onClick={onProfileClick}
-            className="p-1.5 rounded-full text-[#5a8a6a] hover:text-[#4da6ff] hover:bg-[#0f1d23]/85 transition-all duration-300 focus:outline-none"
-            title="Club Profile"
-          >
-            <User className="w-5 h-5" />
-          </button>
+        {/* Profile menu — all roles */}
+        {currentUser && (
+          <div className="relative" ref={profileMenuRef}>
+            <button
+              onClick={() => setShowProfileMenu(!showProfileMenu)}
+              className="p-1.5 rounded-full text-[#5a8a6a] hover:text-[#00e56b] hover:bg-[#0a1a0f]/85 transition-all duration-300 focus:outline-none"
+              title="Profile menu"
+            >
+              <User className="w-5 h-5" />
+            </button>
+
+            {showProfileMenu && (
+              <div className="absolute right-0 mt-2 w-56 bg-[#0a1a0f] border border-[#1a3825] rounded-xl shadow-2xl z-50 overflow-hidden divide-y divide-[#1a3825]/60 animate-in fade-in slide-in-from-top-3 duration-200">
+                {/* User info header */}
+                <div className="px-4 py-3 bg-[#0f2318]">
+                  <p className="text-xs font-bold text-[#e8f5ee] truncate">{currentUser.name || "My Account"}</p>
+                  <p className="text-[10px] text-[#5a8a6a] uppercase tracking-wider mt-0.5">{currentUser.role}</p>
+                </div>
+
+                {/* View Profile */}
+                <button
+                  onClick={() => { setShowProfileMenu(false); onProfileClick?.(); }}
+                  className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#0f2318]/60 transition-colors duration-150 group"
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <User className="w-4 h-4 text-[#5a8a6a] group-hover:text-[#e8f5ee]" />
+                    <span className="text-xs text-[#e8f5ee]/90 font-sans">View profile</span>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-[#5a8a6a]/60" />
+                </button>
+
+                {/* Club Intel — scout & club only */}
+                {isScoutOrClub && (
+                  <button
+                    onClick={() => { setShowProfileMenu(false); onClubIntelClick?.(); }}
+                    className="w-full flex items-center justify-between px-4 py-3 bg-[#00e56b]/5 hover:bg-[#00e56b]/10 transition-colors duration-150 group border-l-2 border-[#00e56b]/60"
+                  >
+                    <div className="flex items-center space-x-2.5">
+                      <BarChart2 className="w-4 h-4 text-[#00e56b]" />
+                      <div className="flex flex-col items-start">
+                        <span className="text-xs text-[#00e56b] font-semibold font-sans">Club Intel</span>
+                        <span className="text-[9px] text-[#5a8a6a] font-mono">Strategic insights</span>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-[#00e56b]/60" />
+                  </button>
+                )}
+
+                {/* Settings */}
+                <button
+                  onClick={() => { setShowProfileMenu(false); showToast("Settings coming soon ✦", "info"); }}
+                  className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#0f2318]/60 transition-colors duration-150 group"
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <Settings className="w-4 h-4 text-[#5a8a6a] group-hover:text-[#e8f5ee]" />
+                    <span className="text-xs text-[#e8f5ee]/90 font-sans">Settings</span>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-[#5a8a6a]/60" />
+                </button>
+
+                {/* Sign out */}
+                <button
+                  onClick={() => { setShowProfileMenu(false); showToast("Signed out ✦", "info"); }}
+                  className="w-full flex items-center space-x-2.5 px-4 py-3 hover:bg-[#1a0f0f]/60 transition-colors duration-150 group"
+                >
+                  <LogOut className="w-4 h-4 text-[#ff4444]/70 group-hover:text-[#ff4444]" />
+                  <span className="text-xs text-[#ff4444]/70 group-hover:text-[#ff4444] font-sans">Sign out</span>
+                </button>
+              </div>
+            )}
+          </div>
         )}
 
-        {/* Notifications Icon with popover */}
+        {/* Notifications */}
         <div className="relative">
-          <button 
+          <button
             id="notification_bell"
             onClick={() => setShowNotifications(!showNotifications)}
             className="p-1.5 rounded-full text-[#5a8a6a] hover:text-[#00e56b] hover:bg-[#0a1a0f]/85 transition-all duration-300 relative focus:outline-none"
@@ -111,7 +180,7 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick }) => {
                 ))}
               </div>
               <div className="p-2 text-center bg-[#050e08]">
-                <button 
+                <button
                   onClick={() => setShowNotifications(false)}
                   className="text-[10px] font-bold text-[#00e56b] hover:underline uppercase tracking-wider"
                 >
