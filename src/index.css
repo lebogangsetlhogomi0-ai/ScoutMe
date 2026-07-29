@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg-primary: #050e08;
+  --color-bg-card: #0a1a0f;
+  --color-bg-card2: #0f2318;
+  --color-border-color: #1a3825;
+  --color-accent-green: #00e56b;
+  --color-accent-green-dim: #00994a;
+  --color-accent-gold: #f5c518;
+  --color-accent-red: #ff4444;
+  --color-accent-blue: #4da6ff;
+  --color-text-primary: #e8f5ee;
+  --color-text-dim: #5a8a6a;
+  --color-text-muted: #1a3020;
+
+  --font-bebas: "Bebas Neue", sans-serif;
+  --font-sans: "Inter", sans-serif;
+}
+
+:root {
+  --bg-primary: #050e08;
+  --bg-card: #0a1a0f;
+  --bg-card2: #0f2318;
+  --border-color: #1a3825;
+  --accent-green: #00e56b;
+  --accent-green-dim: #00994a;
+  --accent-gold: #f5c518;
+  --accent-red: #ff4444;
+  --accent-blue: #4da6ff;
+  --text-primary: #e8f5ee;
+  --text-dim: #5a8a6a;
+  --text-muted: #1a3020;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6, .bebas-heading {
+  font-family: 'Bebas Neue', sans-serif;
+  letter-spacing: 0.05em;
+}
+
+/* Hide webkit scrollbar */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Base custom input styles */
+input, select, textarea {
+  outline: none;
+  transition: all 0.2s ease-in-out;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent-green);
+  box-shadow: 0 0 0 1px rgba(0, 229, 107, 0.25);
+}
+
+/* Skeleton loader shimmer animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, #0a1a0f 25%, #1a3020 50%, #0a1a0f 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+
+/* Custom slideDown animations */
+@keyframes slideDown {
+  0% {
+    transform: translateY(-30px) scale(0.95);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-slideDown {
+  animation: slideDown 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+

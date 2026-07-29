@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ScoutMe - Grassroots Football Discovery Platform</title>
+    <!-- PWA Manifest & App Configuration -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#16a34a" />
+    
+    <!-- iOS / Safary Mobile Web App Support -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="ScoutMe" />
+    <link rel="apple-touch-icon" href="/icon-512.png" />
+
+    <!-- Google Fonts: Bebas Neue and Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Register Service Worker for PWA stability -->
+    <script>
+      try {
+        // Completely bypass service worker registration in iframe preview sandboxes and development URLs to prevent security exceptions
+        var hostname = window.location.hostname || '';
+        var isDevOrIframe = 
+          hostname.indexOf('ais-dev') !== -1 || 
+          hostname.indexOf('ais-pre') !== -1 || 
+          hostname === 'localhost' || 
+          hostname === '127.0.0.1' ||
+          window.self !== window.top;
+
+        if (isDevOrIframe) {
+          console.log('ScoutMe: Bypassing Service Worker registration in development/sandbox context.');
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+              for (var i = 0; i < registrations.length; i++) {
+                registrations[i].unregister().then(function(success) {
+                  if (success) {
+                    console.log('ScoutMe: Unregistered stale service worker successfully.');
+                  }
+                });
+              }
+            }).catch(function(err) {
+              console.warn('ScoutMe: Failed to query service worker registrations:', err);
+            });
+          }
+        } else if ('serviceWorker' in navigator) {
+          window.addEventListener('load', () => {
+            try {
+              navigator.serviceWorker.register('/sw.js')
+                .then((registration) => {
+                  console.log('ScoutMe Service Worker registered successfully: ', registration.scope);
+                })
+                .catch((err) => {
+                  console.warn('ScoutMe Service Worker registration failed: ', err);
+                });
+            } catch (innerErr) {
+              console.warn('Inner Service Worker registration exception caught:', innerErr);
+            }
+          });
+        }
+      } catch (outerErr) {
+        console.warn('Outer Service Worker detection exception caught:', outerErr);
+      }
+    </script>
+  </body>
+</html>
+
