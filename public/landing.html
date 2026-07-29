@@ -3,145 +3,198 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ScoutMe — Talent is Everywhere. Opportunity is Not.</title>
-<meta name="description" content="ScoutMe is a free AI-powered football scouting platform for South African grassroots players. From the streets of eKasi to the screens of the world.">
+<title>ScoutMe — Talent Is Everywhere. Opportunity Isn't.</title>
+<meta name="description" content="ScoutMe is a free AI-powered football scouting platform for South African grassroots players. Upload your highlights. Get discovered.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
+  /* ── TOKENS ─────────────────────────────────────────── */
   :root {
-    --bg: #050e08;
-    --card: #0a1a0f;
-    --card-2: #0f2318;
-    --border: #1a3825;
-    --green: #00e56b;
-    --gold: #f5c518;
-    --blue: #4da6ff;
-    --text: #e8f5ee;
-    --dim: #5a8a6a;
-    --font-head: 'Bebas Neue', sans-serif;
-    --font-body: 'Inter', sans-serif;
+    --bg:      #050e08;
+    --bg2:     #0a1a0f;
+    --bg3:     #0f2318;
+    --border:  #1a3825;
+    --green:   #00e56b;
+    --gold:    #f5c518;
+    --blue:    #4da6ff;
+    --text:    #e8f5ee;
+    --dim:     #5a8a6a;
+    --head:    'Bebas Neue', sans-serif;
+    --body:    'Inter', sans-serif;
   }
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
+  /* ── RESET ──────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html { scroll-behavior: smooth; }
-
   body {
     background: var(--bg);
     color: var(--text);
-    font-family: var(--font-body);
-    overflow-x: hidden;
+    font-family: var(--body);
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
   }
+  img { display: block; max-width: 100%; }
+  a { text-decoration: none; color: inherit; }
 
-  img { max-width: 100%; display: block; }
-
-  a { text-decoration: none; }
-
-  .container {
-    max-width: 1200px;
-    margin: 0 auto;
+  /* ── NAV ─────────────────────────────────────────────── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 40px;
+    background: rgba(5,14,8,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
   }
+  .nav-logo img { height: 36px; width: auto; }
+  .nav-cta {
+    font-family: var(--head);
+    font-size: 17px;
+    letter-spacing: 1px;
+    background: var(--green);
+    color: var(--bg);
+    padding: 10px 28px;
+    border-radius: 4px;
+    transition: filter .2s;
+  }
+  .nav-cta:hover { filter: brightness(1.1); }
 
-  /* ============ SECTION 1 — HERO ============ */
+  /* ── HERO ────────────────────────────────────────────── */
   .hero {
     min-height: 100vh;
-    background: var(--bg);
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding: 40px 20px;
+    padding: 120px 24px 80px;
     position: relative;
     overflow: hidden;
   }
 
-  .hero-content {
-    position: relative;
-    z-index: 2;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    max-width: 900px;
-  }
-
-  .hero-logo {
-    width: 180px;
-    height: auto;
-    position: relative;
-    z-index: 3;
-    margin-bottom: 8px;
-  }
-
-  .radar-pulse {
+  /* Field circle decoration */
+  .hero::before {
+    content: '';
     position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 180px;
-    height: 180px;
+    top: 50%; left: 50%;
+    width: 700px; height: 700px;
     border-radius: 50%;
-    background: var(--green);
-    opacity: 0.06;
-    transform: translate(-50%, -50%) scale(0.5);
-    animation: radarExpand 3s ease-out infinite;
-    z-index: 1;
+    border: 1px solid rgba(0,229,107,0.07);
+    transform: translate(-50%, -50%);
     pointer-events: none;
   }
-  .radar-pulse.delay-1 { animation-delay: 1s; }
-  .radar-pulse.delay-2 { animation-delay: 2s; }
-
-  @keyframes radarExpand {
-    0%   { transform: translate(-50%, -50%) scale(0.4); opacity: 0.06; }
-    70%  { opacity: 0.03; }
-    100% { transform: translate(-50%, -50%) scale(4.2); opacity: 0; }
+  .hero::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 1100px; height: 1100px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,229,107,0.04);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
   }
 
-  .hero-headline {
-    font-family: var(--font-head);
-    font-size: 80px;
-    line-height: 0.9;
-    color: #ffffff;
-    letter-spacing: 0.5px;
-    margin-top: 20px;
+  /* Radar rings */
+  .ring {
+    position: absolute;
+    top: 50%; left: 50%;
+    border-radius: 50%;
+    border: 1.5px solid var(--green);
+    opacity: 0;
+    animation: radar 4s ease-out infinite;
+    pointer-events: none;
+  }
+  .ring:nth-child(1) { width: 220px; height: 220px; margin: -110px 0 0 -110px; animation-delay: 0s; }
+  .ring:nth-child(2) { width: 220px; height: 220px; margin: -110px 0 0 -110px; animation-delay: 1.3s; }
+  .ring:nth-child(3) { width: 220px; height: 220px; margin: -110px 0 0 -110px; animation-delay: 2.6s; }
+
+  @keyframes radar {
+    0%   { transform: scale(1); opacity: 0.5; }
+    100% { transform: scale(5); opacity: 0; }
   }
 
-  .hero-subheadline {
-    font-family: var(--font-head);
-    font-size: 72px;
-    line-height: 0.9;
+  /* Soccer ball canvas wrapper */
+  .ball-wrap {
+    position: relative;
+    width: 140px;
+    height: 140px;
+    margin-bottom: 32px;
+    flex-shrink: 0;
+  }
+
+  canvas#ball {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    display: block;
+    animation: spin 18s linear infinite;
+    filter: drop-shadow(0 0 32px rgba(0,229,107,0.25));
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    canvas#ball { animation: none; }
+    .ring { animation: none; opacity: 0; }
+  }
+
+  .hero-label {
+    font-family: var(--body);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 5px;
+    text-transform: uppercase;
     color: var(--green);
-    letter-spacing: 0.5px;
+    margin-bottom: 16px;
   }
 
-  .hero-tagline {
-    font-family: var(--font-body);
-    font-size: 20px;
+  h1.hero-h1 {
+    font-family: var(--head);
+    font-size: clamp(56px, 9vw, 96px);
+    line-height: 0.88;
+    color: #fff;
+    text-wrap: balance;
+    letter-spacing: 0.5px;
+  }
+  h1.hero-h1 em {
+    font-style: normal;
+    color: var(--green);
+  }
+
+  .hero-sub {
+    font-family: var(--body);
+    font-size: clamp(15px, 2vw, 19px);
     color: var(--dim);
-    margin-top: 24px;
-    max-width: 600px;
+    margin-top: 28px;
+    max-width: 560px;
+    line-height: 1.65;
   }
 
   .hero-buttons {
     display: flex;
-    flex-direction: row;
-    gap: 20px;
-    margin-top: 40px;
+    gap: 16px;
+    margin-top: 44px;
     flex-wrap: wrap;
     justify-content: center;
   }
 
   .btn {
-    font-family: var(--font-head);
+    font-family: var(--head);
     font-size: 18px;
     letter-spacing: 1px;
-    padding: 16px 40px;
-    border-radius: 6px;
+    padding: 15px 40px;
+    border-radius: 5px;
+    transition: transform .2s, filter .2s, background .2s;
     cursor: pointer;
-    transition: transform 0.2s ease, filter 0.2s ease, background 0.2s ease;
     display: inline-block;
   }
-
   .btn:hover { transform: translateY(-2px); }
 
   .btn-primary {
@@ -151,246 +204,453 @@
   }
   .btn-primary:hover { filter: brightness(1.08); }
 
-  .btn-secondary {
+  .btn-ghost {
     background: transparent;
     color: var(--green);
-    border: 2px solid var(--green);
+    border: 2px solid rgba(0,229,107,0.4);
   }
-  .btn-secondary:hover { background: rgba(0, 229, 107, 0.08); }
+  .btn-ghost:hover { border-color: var(--green); background: rgba(0,229,107,0.06); }
 
-  /* ============ SHARED SECTION STYLES ============ */
-  section { padding: 100px 40px; }
+  .hero-proof {
+    margin-top: 60px;
+    display: flex;
+    gap: 40px;
+    flex-wrap: wrap;
+    justify-content: center;
+    border-top: 1px solid var(--border);
+    padding-top: 40px;
+    width: 100%;
+    max-width: 700px;
+  }
+
+  .proof-item {
+    text-align: center;
+  }
+  .proof-num {
+    font-family: var(--head);
+    font-size: 44px;
+    color: var(--green);
+    line-height: 1;
+  }
+  .proof-label {
+    font-size: 11px;
+    color: var(--dim);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-top: 4px;
+  }
+
+  /* ── PROBLEM STRIP ────────────────────────────────────── */
+  .problem {
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 90px 40px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Field line texture — horizontal centre line */
+  .problem::before {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0; left: 50%;
+    width: 1px;
+    background: rgba(0,229,107,0.05);
+    pointer-events: none;
+  }
 
   .section-label {
-    font-family: var(--font-body);
-    font-size: 12px;
+    font-family: var(--body);
+    font-size: 11px;
+    font-weight: 700;
     letter-spacing: 4px;
     color: var(--green);
-    text-align: center;
     text-transform: uppercase;
-    font-weight: 700;
+    text-align: center;
+    margin-bottom: 14px;
   }
 
   .section-heading {
-    font-family: var(--font-head);
-    font-size: 56px;
-    color: #ffffff;
+    font-family: var(--head);
+    font-size: clamp(38px, 5vw, 60px);
+    color: #fff;
     text-align: center;
-    margin-bottom: 60px;
-    margin-top: 14px;
-    line-height: 1.05;
+    line-height: 1;
+    margin-bottom: 56px;
+    text-wrap: balance;
   }
-
-  /* ============ SECTION 2 — THE PROBLEM ============ */
-  .problem-section { background: var(--card); }
 
   .stat-grid {
     display: grid;
-    grid-template-columns: 1fr;
-    gap: 24px;
-    max-width: 1100px;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px;
+    max-width: 1000px;
     margin: 0 auto;
-  }
-
-  @media (min-width: 860px) {
-    .stat-grid { grid-template-columns: repeat(3, 1fr); }
   }
 
   .stat-card {
-    background: var(--card-2);
+    background: var(--bg3);
     border: 1px solid var(--border);
-    padding: 32px;
-    border-radius: 12px;
+    border-radius: 10px;
+    padding: 36px 28px;
     text-align: center;
   }
 
-  .stat-number {
-    font-family: var(--font-head);
-    font-size: 80px;
+  .stat-num {
+    font-family: var(--head);
+    font-size: clamp(56px, 7vw, 80px);
     line-height: 1;
   }
-
   .stat-desc {
-    font-family: var(--font-body);
-    font-size: 16px;
+    font-size: 14px;
     color: var(--dim);
     margin-top: 12px;
-    line-height: 1.5;
+    line-height: 1.55;
   }
 
-  /* ============ SECTION 3 — THREE ROLES ============ */
-  .roles-section { background: var(--bg); }
+  /* ── PITCH GRAPHIC DIVIDER ──────────────────────────── */
+  .pitch-divider {
+    height: 2px;
+    background: linear-gradient(90deg, transparent 0%, var(--border) 20%, var(--border) 80%, transparent 100%);
+    margin: 0;
+    position: relative;
+  }
+  .pitch-divider::before {
+    content: '◆';
+    position: absolute;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--green);
+    font-size: 10px;
+    background: var(--bg);
+    padding: 0 10px;
+  }
+
+  /* ── ROLES ────────────────────────────────────────────── */
+  .roles {
+    padding: 90px 40px;
+    background: var(--bg);
+    position: relative;
+  }
 
   .roles-grid {
     display: grid;
-    grid-template-columns: 1fr;
-    gap: 24px;
-    max-width: 1100px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    max-width: 1000px;
     margin: 0 auto;
-  }
-
-  @media (min-width: 860px) {
-    .roles-grid { grid-template-columns: repeat(3, 1fr); }
   }
 
   .role-card {
-    background: var(--card);
+    background: var(--bg2);
     border: 1px solid var(--border);
-    border-top: 4px solid var(--green);
-    padding: 32px;
     border-radius: 12px;
+    padding: 36px 28px;
+    position: relative;
+    overflow: hidden;
+    transition: transform .25s, border-color .25s;
+  }
+  .role-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(0,229,107,0.3);
+  }
+  .role-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--green);
+    border-radius: 12px 12px 0 0;
+  }
+  .role-card.scout::before { background: var(--gold); }
+  .role-card.fan::before   { background: var(--blue); }
+
+  .role-ball {
+    width: 52px;
+    height: 52px;
+    margin-bottom: 18px;
   }
 
-  .role-card.scout { border-top-color: var(--gold); }
-  .role-card.fan { border-top-color: var(--blue); }
-
-  .role-icon { font-size: 40px; margin-bottom: 12px; }
-
   .role-title {
-    font-family: var(--font-head);
-    font-size: 36px;
-    color: #ffffff;
+    font-family: var(--head);
+    font-size: 34px;
+    color: #fff;
     letter-spacing: 1px;
   }
 
+  .role-tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 3px;
+    margin-top: 6px;
+    background: rgba(0,229,107,0.12);
+    color: var(--green);
+  }
+  .role-card.scout .role-tag { background: rgba(245,197,24,0.12); color: var(--gold); }
+  .role-card.fan   .role-tag { background: rgba(77,166,255,0.12); color: var(--blue); }
+
   .role-desc {
-    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--dim);
+    margin-top: 16px;
+    line-height: 1.65;
+  }
+
+  .role-features {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .role-feature {
+    font-size: 13px;
+    color: var(--text);
+    opacity: 0.75;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .role-feature::before {
+    content: '✓';
+    font-size: 11px;
+    color: var(--green);
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .role-card.scout .role-feature::before { color: var(--gold); }
+  .role-card.fan   .role-feature::before { color: var(--blue); }
+
+  /* ── VALIDATION ─────────────────────────────────────── */
+  .validation {
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 90px 40px;
+  }
+
+  .val-card {
+    max-width: 800px;
+    margin: 0 auto;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-left: 5px solid var(--gold);
+    border-radius: 12px;
+    padding: 48px 44px;
+    position: relative;
+  }
+
+  .val-eyebrow {
+    font-family: var(--body);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 14px;
+  }
+
+  .val-heading {
+    font-family: var(--head);
+    font-size: clamp(34px, 4vw, 52px);
+    color: #fff;
+    line-height: 1;
+    text-wrap: balance;
+  }
+
+  .val-body {
     font-size: 15px;
     color: var(--dim);
-    margin-top: 12px;
+    line-height: 1.75;
+    margin-top: 20px;
+    max-width: 640px;
+  }
+
+  .val-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--gold);
+    color: var(--bg);
+    font-family: var(--body);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 8px 16px;
+    border-radius: 4px;
+    margin-top: 28px;
+    text-transform: uppercase;
+  }
+
+  /* ── HOW IT WORKS ─────────────────────────────────────── */
+  .how {
+    padding: 90px 40px;
+    background: var(--bg);
+  }
+
+  .steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
+  .step {
+    display: flex;
+    gap: 28px;
+    align-items: flex-start;
+    position: relative;
+  }
+
+  .step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 19px;
+    top: 48px;
+    bottom: -20px;
+    width: 2px;
+    background: var(--border);
+  }
+
+  .step + .step { margin-top: 40px; }
+
+  .step-num {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--bg2);
+    border: 2px solid var(--green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--head);
+    font-size: 20px;
+    color: var(--green);
+    flex-shrink: 0;
+  }
+
+  .step-title {
+    font-family: var(--head);
+    font-size: 26px;
+    color: #fff;
+    margin-top: 6px;
+    letter-spacing: 0.5px;
+  }
+
+  .step-desc {
+    font-size: 14px;
+    color: var(--dim);
+    margin-top: 6px;
     line-height: 1.6;
   }
 
-  /* ============ SECTION 4 — CHELSEA VALIDATION ============ */
-  .validation-section {
-    background: var(--card);
-    padding: 80px 40px;
-  }
-
-  .validation-card {
-    background: var(--card-2);
-    border-left: 6px solid var(--gold);
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 40px;
-    border-radius: 12px;
-  }
-
-  .validation-label {
-    font-family: var(--font-body);
-    font-size: 11px;
-    letter-spacing: 3px;
-    color: var(--gold);
-    text-transform: uppercase;
-    font-weight: 700;
-  }
-
-  .validation-heading {
-    font-family: var(--font-head);
-    font-size: 52px;
-    color: #ffffff;
-    margin-top: 10px;
-    line-height: 1.05;
-  }
-
-  .validation-body {
-    font-family: var(--font-body);
-    font-size: 16px;
-    color: var(--dim);
-    line-height: 1.7;
-    margin-top: 20px;
-  }
-
-  .validation-badge {
-    display: inline-block;
-    background: var(--gold);
-    color: var(--bg);
-    padding: 8px 16px;
-    border-radius: 4px;
-    font-family: var(--font-body);
-    font-size: 12px;
-    font-weight: 700;
-    margin-top: 24px;
-  }
-
-  /* ============ SECTION 5 — FINAL CTA ============ */
-  .cta-section {
+  /* ── CTA ─────────────────────────────────────────────── */
+  .cta {
     background: var(--green);
     padding: 100px 40px;
     text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Subtle field circle on green */
+  .cta::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    border: 2px solid rgba(5,14,8,0.1);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
   }
 
   .cta-heading {
-    font-family: var(--font-head);
-    font-size: 64px;
+    font-family: var(--head);
+    font-size: clamp(42px, 7vw, 72px);
     color: var(--bg);
-    line-height: 0.9;
+    line-height: 0.92;
+    text-wrap: balance;
+    position: relative;
+    z-index: 1;
+  }
+
+  .cta-sub {
+    font-size: 17px;
+    color: rgba(5,14,8,0.65);
+    margin-top: 20px;
+    position: relative;
+    z-index: 1;
   }
 
   .cta-btn {
-    font-family: var(--font-head);
+    font-family: var(--head);
     font-size: 20px;
     letter-spacing: 1px;
     background: var(--bg);
     color: var(--green);
-    padding: 20px 60px;
-    border-radius: 4px;
+    padding: 20px 64px;
+    border-radius: 5px;
     display: inline-block;
     margin-top: 48px;
-    transition: transform 0.2s ease;
+    transition: transform .2s, filter .2s;
+    position: relative;
+    z-index: 1;
   }
-  .cta-btn:hover { transform: translateY(-2px) scale(1.02); }
+  .cta-btn:hover { transform: translateY(-3px) scale(1.02); filter: brightness(1.05); }
 
-  /* ============ SECTION 6 — FOOTER ============ */
-  .footer {
+  /* ── FOOTER ──────────────────────────────────────────── */
+  footer {
     background: var(--bg);
     border-top: 1px solid var(--border);
-    padding: 40px;
+    padding: 44px 40px;
     text-align: center;
   }
 
   .footer-logo {
-    font-family: var(--font-body);
-    font-weight: 700;
-    font-size: 20px;
-    color: #ffffff;
+    font-family: var(--body);
+    font-weight: 800;
+    font-size: 18px;
+    color: #fff;
+    letter-spacing: 1px;
   }
   .footer-logo span { color: var(--green); }
 
   .footer-copy {
-    font-family: var(--font-body);
     font-size: 13px;
     color: var(--dim);
-    margin-top: 16px;
+    margin-top: 14px;
   }
 
   .footer-links {
-    font-family: var(--font-body);
     font-size: 12px;
     color: var(--border);
-    margin-top: 12px;
+    margin-top: 10px;
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    flex-wrap: wrap;
   }
+  .footer-links a:hover { color: var(--dim); }
 
-  /* ============ RESPONSIVE ============ */
+  /* ── RESPONSIVE ──────────────────────────────────────── */
   @media (max-width: 640px) {
-    .hero-headline { font-size: 52px; }
-    .hero-subheadline { font-size: 46px; }
-    .hero-tagline { font-size: 16px; }
-    .section-heading { font-size: 38px; }
-    .stat-number { font-size: 60px; }
-    .validation-heading { font-size: 38px; }
-    .cta-heading { font-size: 40px; }
-    section { padding: 70px 20px; }
-    .btn { padding: 14px 28px; font-size: 16px; }
-    .cta-btn { padding: 18px 40px; }
+    nav { padding: 14px 20px; }
+    .hero { padding: 100px 20px 60px; }
+    .hero-proof { gap: 24px; }
+    section, .problem, .roles, .validation, .how, .cta { padding-left: 20px; padding-right: 20px; }
+    .val-card { padding: 32px 24px; }
+    footer { padding: 36px 20px; }
+    .btn { padding: 13px 28px; }
+    .step:not(:last-child)::after { display: none; }
   }
 
-  @media (max-width: 360px) {
-    .hero-headline { font-size: 42px; }
-    .hero-subheadline { font-size: 38px; }
-    .section-heading { font-size: 32px; }
-    .stat-number { font-size: 50px; }
-    .cta-heading { font-size: 34px; }
+  @media (max-width: 400px) {
     .hero-buttons { flex-direction: column; width: 100%; }
     .btn { width: 100%; text-align: center; }
   }
@@ -398,89 +658,331 @@
 </head>
 <body>
 
-  <!-- SECTION 1 — HERO -->
-  <section class="hero">
-    <div class="radar-pulse"></div>
-    <div class="radar-pulse delay-1"></div>
-    <div class="radar-pulse delay-2"></div>
-    <div class="hero-content">
-      <img class="hero-logo" src="/scoutme_logo.png" alt="ScoutMe Logo" width="180">
-      <h1 class="hero-headline">TALENT IS EVERYWHERE.</h1>
-      <h2 class="hero-subheadline">OPPORTUNITY IS NOT.</h2>
-      <p class="hero-tagline">From the streets of eKasi — to the screens of the world.</p>
-      <div class="hero-buttons">
-        <a href="/" class="btn btn-primary">GET STARTED FREE</a>
-        <a href="/" class="btn btn-secondary">SIGN IN</a>
+<!-- NAV -->
+<nav>
+  <a href="/landing" class="nav-logo">
+    <img src="/scoutme_logo.png" alt="ScoutMe" width="120">
+  </a>
+  <a href="/" class="nav-cta">GET STARTED FREE</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="ring"></div>
+  <div class="ring"></div>
+  <div class="ring"></div>
+
+  <div class="ball-wrap">
+    <canvas id="ball" width="280" height="280"></canvas>
+  </div>
+
+  <p class="hero-label">AI Football Scouting · South Africa</p>
+
+  <h1 class="hero-h1">
+    TALENT IS EVERYWHERE.<br>
+    <em>OPPORTUNITY ISN'T.</em>
+  </h1>
+
+  <p class="hero-sub">
+    ScoutMe is the first free AI-powered scouting platform built for African grassroots football.
+    Upload your highlights. Get found by scouts and clubs worldwide.
+  </p>
+
+  <div class="hero-buttons">
+    <a href="/" class="btn btn-primary">JOIN FREE — I'M A PLAYER</a>
+    <a href="/" class="btn btn-ghost">SCOUT OR CLUB →</a>
+  </div>
+
+  <div class="hero-proof">
+    <div class="proof-item">
+      <div class="proof-num">270M</div>
+      <div class="proof-label">Grassroots players worldwide</div>
+    </div>
+    <div class="proof-item">
+      <div class="proof-num">R0</div>
+      <div class="proof-label">Cost to join as a player</div>
+    </div>
+    <div class="proof-item">
+      <div class="proof-num">AI</div>
+      <div class="proof-label">Powered scouting reports</div>
+    </div>
+  </div>
+</section>
+
+<div class="pitch-divider"></div>
+
+<!-- PROBLEM -->
+<section class="problem">
+  <div class="section-label">The Problem</div>
+  <h2 class="section-heading">THE GAP NOBODY FIXED</h2>
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="stat-num" style="color:var(--green)">270M</div>
+      <p class="stat-desc">grassroots players worldwide with no professional pathway or visibility tools</p>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" style="color:var(--gold)">R6,000</div>
+      <p class="stat-desc">what Wyscout charges per year — no SA payment methods, no rand pricing, no African football</p>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" style="color:var(--green)">0</div>
+      <p class="stat-desc">free AI scouting platforms built for African football before ScoutMe.</p>
+    </div>
+  </div>
+</section>
+
+<div class="pitch-divider"></div>
+
+<!-- ROLES -->
+<section class="roles">
+  <div class="section-label">Who It's For</div>
+  <h2 class="section-heading">ONE PLATFORM. THREE EXPERIENCES.</h2>
+  <div class="roles-grid">
+
+    <div class="role-card player">
+      <!-- Soccer ball SVG — player card -->
+      <svg class="role-ball" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="26" cy="26" r="24" fill="#0a1a0f" stroke="#00e56b" stroke-width="1.5"/>
+        <circle cx="26" cy="26" r="24" fill="none" stroke="#1a3825" stroke-width="0.5"/>
+        <!-- pentagon patches simplified -->
+        <polygon points="26,8 31,14 29,21 23,21 21,14" fill="#00e56b" opacity="0.85"/>
+        <polygon points="10,18 17,15 21,21 18,28 11,27" fill="#00e56b" opacity="0.6"/>
+        <polygon points="42,18 35,15 31,21 34,28 41,27" fill="#00e56b" opacity="0.6"/>
+        <polygon points="14,36 18,29 24,31 24,38 18,42" fill="#00e56b" opacity="0.5"/>
+        <polygon points="38,36 34,29 28,31 28,38 34,42" fill="#00e56b" opacity="0.5"/>
+        <circle cx="26" cy="26" r="24" fill="none" stroke="#00e56b" stroke-width="1.5"/>
+      </svg>
+      <div class="role-title">PLAYER</div>
+      <div class="role-tag">FREE FOREVER</div>
+      <p class="role-desc">Upload your highlights. Build your profile. Get discovered by professional scouts and clubs.</p>
+      <div class="role-features">
+        <span class="role-feature">Video highlight uploads</span>
+        <span class="role-feature">AI-generated player profile</span>
+        <span class="role-feature">Community votes & badges</span>
+        <span class="role-feature">Scout view notifications</span>
       </div>
     </div>
-  </section>
 
-  <!-- SECTION 2 — THE PROBLEM -->
-  <section class="problem-section">
-    <div class="section-label">THE PROBLEM</div>
-    <h2 class="section-heading">THE GAP NOBODY FIXED</h2>
-    <div class="stat-grid">
-      <div class="stat-card">
-        <div class="stat-number" style="color: var(--green);">270M</div>
-        <p class="stat-desc">grassroots players worldwide with no professional pathway</p>
-      </div>
-      <div class="stat-card">
-        <div class="stat-number" style="color: var(--gold);">R6,000</div>
-        <p class="stat-desc">what Wyscout charges per year — no SA payment methods, no rand pricing</p>
-      </div>
-      <div class="stat-card">
-        <div class="stat-number" style="color: var(--green);">0</div>
-        <p class="stat-desc">free AI scouting platforms built for African football. Until now.</p>
+    <div class="role-card scout">
+      <svg class="role-ball" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="26" cy="26" r="24" fill="#0a1a0f" stroke="#f5c518" stroke-width="1.5"/>
+        <polygon points="26,8 31,14 29,21 23,21 21,14" fill="#f5c518" opacity="0.85"/>
+        <polygon points="10,18 17,15 21,21 18,28 11,27" fill="#f5c518" opacity="0.6"/>
+        <polygon points="42,18 35,15 31,21 34,28 41,27" fill="#f5c518" opacity="0.6"/>
+        <polygon points="14,36 18,29 24,31 24,38 18,42" fill="#f5c518" opacity="0.5"/>
+        <polygon points="38,36 34,29 28,31 28,38 34,42" fill="#f5c518" opacity="0.5"/>
+        <circle cx="26" cy="26" r="24" fill="none" stroke="#f5c518" stroke-width="1.5"/>
+      </svg>
+      <div class="role-title">SCOUT / CLUB</div>
+      <div class="role-tag">AI-POWERED</div>
+      <p class="role-desc">AI scouting reports, talent shortlists, and strategic club intelligence — all in one dashboard.</p>
+      <div class="role-features">
+        <span class="role-feature">Neural Scout AI reports</span>
+        <span class="role-feature">Player shortlisting tools</span>
+        <span class="role-feature">Club Strategic Intel</span>
+        <span class="role-feature">Contact Gateway access</span>
       </div>
     </div>
-  </section>
 
-  <!-- SECTION 3 — THREE ROLES -->
-  <section class="roles-section">
-    <div class="section-label">WHO IT'S FOR</div>
-    <h2 class="section-heading">ONE PLATFORM. THREE EXPERIENCES.</h2>
-    <div class="roles-grid">
-      <div class="role-card player">
-        <div class="role-icon">⚽</div>
-        <div class="role-title">PLAYER</div>
-        <p class="role-desc">Free forever. Upload your highlights. Get discovered by scouts and clubs worldwide.</p>
-      </div>
-      <div class="role-card scout">
-        <div class="role-icon">🔭</div>
-        <div class="role-title">SCOUT / CLUB</div>
-        <p class="role-desc">AI-powered scouting reports. Find hidden talent before your competitors do.</p>
-      </div>
-      <div class="role-card fan">
-        <div class="role-icon">📣</div>
-        <div class="role-title">FAN</div>
-        <p class="role-desc">Vote on talent. Award badges. The community decides who gets discovered.</p>
+    <div class="role-card fan">
+      <svg class="role-ball" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="26" cy="26" r="24" fill="#0a1a0f" stroke="#4da6ff" stroke-width="1.5"/>
+        <polygon points="26,8 31,14 29,21 23,21 21,14" fill="#4da6ff" opacity="0.85"/>
+        <polygon points="10,18 17,15 21,21 18,28 11,27" fill="#4da6ff" opacity="0.6"/>
+        <polygon points="42,18 35,15 31,21 34,28 41,27" fill="#4da6ff" opacity="0.6"/>
+        <polygon points="14,36 18,29 24,31 24,38 18,42" fill="#4da6ff" opacity="0.5"/>
+        <polygon points="38,36 34,29 28,31 28,38 34,42" fill="#4da6ff" opacity="0.5"/>
+        <circle cx="26" cy="26" r="24" fill="none" stroke="#4da6ff" stroke-width="1.5"/>
+      </svg>
+      <div class="role-title">FAN</div>
+      <div class="role-tag">COMMUNITY</div>
+      <p class="role-desc">Vote on talent. Award skill badges. The community decides who gets discovered.</p>
+      <div class="role-features">
+        <span class="role-feature">Vote on player highlights</span>
+        <span class="role-feature">Award talent badges</span>
+        <span class="role-feature">Follow grassroots stars</span>
+        <span class="role-feature">Shape the leaderboard</span>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- SECTION 4 — CHELSEA VALIDATION -->
-  <section class="validation-section">
-    <div class="validation-card">
-      <div class="validation-label">◆ VALIDATED AT THE HIGHEST LEVEL</div>
-      <h2 class="validation-heading">CHELSEA FC PROVED THIS WORKS.</h2>
-      <p class="validation-body">Chelsea FC partnered with AiSCOUT for 5 years to prove AI-powered talent discovery works at the highest level of football. Unknown 17-year-old Ben Greenwood downloaded the app, completed his profile, and got into real trials. ScoutMe brings that exact model to every grassroots player in Africa — for free. Because the Kasi deserves the same tools as the Premier League.</p>
-      <div class="validation-badge">◆ Chelsea FC × AiSCOUT Partnership Model — Validated</div>
+<div class="pitch-divider"></div>
+
+<!-- HOW IT WORKS -->
+<section class="how">
+  <div class="section-label">How It Works</div>
+  <h2 class="section-heading">FROM PITCH TO PROFILE IN MINUTES</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div>
+        <div class="step-title">CREATE YOUR PROFILE</div>
+        <p class="step-desc">Sign up free. Add your position, age, location, and stats. Your profile is your digital scouting card.</p>
+      </div>
     </div>
-  </section>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div>
+        <div class="step-title">UPLOAD YOUR HIGHLIGHTS</div>
+        <p class="step-desc">Record your best clips from Sunday league, training, or street football. Upload directly from your phone.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div>
+        <div class="step-title">GET DISCOVERED</div>
+        <p class="step-desc">Our AI surfaces your profile to verified scouts and clubs. Real-time notifications when someone views your work.</p>
+      </div>
+    </div>
+  </div>
+</section>
 
-  <!-- SECTION 5 — FINAL CTA -->
-  <section class="cta-section">
-    <h2 class="cta-heading">FROM THE STREETS OF EKASI</h2>
-    <h2 class="cta-heading">TO THE SCREENS OF THE WORLD.</h2>
-    <a href="/" class="cta-btn">JOIN SCOUTME FREE →</a>
-  </section>
+<div class="pitch-divider"></div>
 
-  <!-- SECTION 6 — FOOTER -->
-  <footer class="footer">
-    <div class="footer-logo">SCOUT<span>ME</span></div>
-    <p class="footer-copy">© 2026 ScoutMe · Kasi Silicon NPC · Built in South Africa 🇿🇦</p>
-    <p class="footer-links">Privacy Policy · Terms · Contact</p>
-  </footer>
+<!-- VALIDATION -->
+<section class="validation">
+  <div class="section-label">◆ Validated at the Highest Level</div>
+  <div class="val-card">
+    <div class="val-eyebrow">◆ Chelsea FC × AiSCOUT — Proof of Model</div>
+    <h2 class="val-heading">CHELSEA FC PROVED THIS WORKS.</h2>
+    <p class="val-body">
+      Chelsea FC partnered with AiSCOUT for 5 years to prove AI-powered talent discovery works at the highest level of football. Unknown 17-year-old Ben Greenwood downloaded the app, completed his profile, and got into real trials. ScoutMe brings that exact model to every grassroots player in Africa — for free. Because the Kasi deserves the same tools as the Premier League.
+    </p>
+    <div class="val-badge">◆ Chelsea FC × AiSCOUT Partnership Model — Validated</div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta">
+  <h2 class="cta-heading">YOUR HIGHLIGHT REEL<br>IS WAITING TO BE SEEN.</h2>
+  <p class="cta-sub">Join thousands of South African players already on the platform.</p>
+  <a href="/" class="cta-btn">JOIN SCOUTME FREE →</a>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">SCOUT<span>ME</span></div>
+  <p class="footer-copy">© 2026 ScoutMe · Built in South Africa 🇿🇦</p>
+  <div class="footer-links">
+    <a href="#">Privacy Policy</a>
+    <a href="#">Terms</a>
+    <a href="#">Contact</a>
+    <a href="/">Launch App</a>
+  </div>
+</footer>
+
+<script>
+  // Draw a proper soccer ball on canvas
+  (function () {
+    const canvas = document.getElementById('ball');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height, R = W / 2;
+
+    // Colours
+    const WHITE  = '#e8f5ee';
+    const BLACK  = '#050e08';
+    const GREEN  = '#00e56b';
+
+    // A classic soccer ball uses 12 pentagons + 20 hexagons.
+    // We'll draw a stylised version using patch geometry projected onto a circle.
+
+    function drawBall() {
+      ctx.clearRect(0, 0, W, H);
+
+      // Base circle
+      const grad = ctx.createRadialGradient(R - 30, R - 30, 10, R, R, R);
+      grad.addColorStop(0, '#1a3825');
+      grad.addColorStop(1, '#050e08');
+      ctx.beginPath();
+      ctx.arc(R, R, R - 2, 0, Math.PI * 2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // Patch geometry — 5 dark pentagons approximated as polygons
+      const patches = [
+        // top center
+        [[R, 32], [R+30, 60], [R+18, 88], [R-18, 88], [R-30, 60]],
+        // bottom left
+        [[R-52, 130], [R-26, 112], [R-6, 136], [R-24, 160], [R-52, 152]],
+        // bottom right
+        [[R+52, 130], [R+26, 112], [R+6, 136], [R+24, 160], [R+52, 152]],
+        // upper left
+        [[R-72, 72], [R-44, 58], [R-30, 80], [R-48, 100], [R-72, 94]],
+        // upper right
+        [[R+72, 72], [R+44, 58], [R+30, 80], [R+48, 100], [R+72, 94]],
+      ];
+
+      // Clip to circle
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(R, R, R - 2, 0, Math.PI * 2);
+      ctx.clip();
+
+      // Draw hexagonal grid lines (light)
+      ctx.strokeStyle = 'rgba(0,229,107,0.15)';
+      ctx.lineWidth = 1;
+      const hex = 28;
+      for (let y = -hex; y < H + hex; y += hex * 1.5) {
+        for (let x = -hex; x < W + hex * 2; x += hex * Math.sqrt(3)) {
+          drawHex(ctx, x, y, hex);
+          drawHex(ctx, x + hex * Math.sqrt(3) / 2, y + hex * 0.75, hex);
+        }
+      }
+
+      // Draw dark patches
+      patches.forEach(pts => {
+        ctx.beginPath();
+        ctx.moveTo(pts[0][0], pts[0][1]);
+        for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+        ctx.closePath();
+        ctx.fillStyle = GREEN;
+        ctx.globalAlpha = 0.22;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = 'rgba(0,229,107,0.5)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      });
+
+      ctx.restore();
+
+      // Outer ring
+      ctx.beginPath();
+      ctx.arc(R, R, R - 2, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(0,229,107,0.5)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Shine
+      const shine = ctx.createRadialGradient(R - 36, R - 36, 4, R - 24, R - 24, 48);
+      shine.addColorStop(0, 'rgba(232,245,238,0.18)');
+      shine.addColorStop(1, 'rgba(232,245,238,0)');
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(R, R, R - 2, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.fillStyle = shine;
+      ctx.fillRect(0, 0, W, H);
+      ctx.restore();
+    }
+
+    function drawHex(ctx, x, y, r) {
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const a = Math.PI / 180 * (60 * i - 30);
+        const px = x + r * Math.cos(a);
+        const py = y + r * Math.sin(a);
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.stroke();
+    }
+
+    drawBall();
+  })();
+</script>
 
 </body>
 </html>
