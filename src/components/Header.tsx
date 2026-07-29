@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useApp } from "../context/AppContext";
 import { useToast } from "./Toast";
-import { Bell, Trophy, ShieldAlert, Award } from "lucide-react";
+import { Bell, Trophy, ShieldAlert, Award, User } from "lucide-react";
 
 interface HeaderProps {
   onNotificationClick?: () => void;
@@ -75,14 +75,14 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick }) => {
           </div>
         )}
 
-        {/* Profile avatar in header — club only (nav tab removed to save space) */}
+        {/* Profile icon in header — club only (nav tab removed to save space) */}
         {currentUser?.role === "club" && onProfileClick && (
           <button
             onClick={onProfileClick}
-            className="w-8 h-8 rounded-full border-2 border-[#4da6ff] bg-[#0f1d23] flex items-center justify-center text-[#4da6ff] font-black text-xs uppercase hover:brightness-110 transition-all"
+            className="p-1.5 rounded-full text-[#5a8a6a] hover:text-[#4da6ff] hover:bg-[#0f1d23]/85 transition-all duration-300 focus:outline-none"
             title="Club Profile"
           >
-            {currentUser.name?.charAt(0) || "C"}
+            <User className="w-5 h-5" />
           </button>
         )}
 
