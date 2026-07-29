@@ -55,7 +55,6 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick }) => {
           className="h-9 w-auto object-contain filter drop-shadow"
           referrerPolicy="no-referrer"
         />
-        <span className="text-[10px] bg-[#1a3020] text-[#5a8a6a] px-1.5 py-0.5 rounded font-mono font-medium tracking-tight">KASI SILICON</span>
         {isDemoMode && (
           <div 
             onClick={() => showToast("Running in Demo Mode — any email/password works ✦", "info")}

@@ -247,11 +247,8 @@ export const OnboardingFlow: React.FC = () => {
             </div>
 
             <div className="space-y-4 max-w-sm z-10">
-              <p className="text-[#5a8a6a] text-xs uppercase tracking-widest font-mono font-bold">
-                Kasi Silicon NPC
-              </p>
               <h2 className="text-xl md:text-2xl font-bold text-[#e8f5ee]/95 px-4 leading-normal font-sans tracking-tight">
-                "From the streets of eKasi — to the screens of the world"
+                "TALENT IS EVERYWHERE. OPPORTUNITY ISN'T."
               </h2>
               <p className="text-xs text-[#5a8a6a] leading-relaxed px-6">
                 The first AI-powered football scouting platform built for South African grassroots players.

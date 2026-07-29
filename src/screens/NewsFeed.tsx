@@ -136,7 +136,7 @@ export const NewsFeed: React.FC = () => {
                   <div className="h-[1px] bg-[#1a3825]/40 my-3" />
                   
                   <p className="text-xs text-[#e8f5ee]/85 leading-relaxed font-sans select-all">
-                    {art.subtitle} This is a live, verified grassroots development update compiled dynamically by the Kasi Silicon NPC media desk. With hundreds of amateur leagues active across the provinces, our reports track and flag candidates performing at elite levels. Keep your video portfolios completely refreshed and updated daily to maintain high scout views metric visibility!
+                    {art.subtitle} This is a live, verified grassroots development update compiled dynamically by the ScoutMe media desk. With hundreds of amateur leagues active across the provinces, our reports track and flag candidates performing at elite levels. Keep your video portfolios completely refreshed and updated daily to maintain high scout views metric visibility!
                   </p>
                 </div>
               );

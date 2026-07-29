@@ -119,7 +119,7 @@ export const DigitalAgreementModal: React.FC<DigitalAgreementModalProps> = ({ is
                 </h2>
               </div>
               <p className="text-xs text-[#5a8a6a] font-mono">
-                Kasi Silicon NPC · South Africa
+                ScoutMe · South Africa
               </p>
             </div>
             <div className="flex flex-col items-end space-y-1.5">
@@ -140,7 +140,7 @@ export const DigitalAgreementModal: React.FC<DigitalAgreementModalProps> = ({ is
                 SCOUTME PLATFORM USAGE AND PLACEMENT AGREEMENT
               </p>
               <p className="text-xs text-[#5a8a6a] mt-1 italic">
-                Kasi Silicon NPC | Registration pending | South Africa<br />
+                ScoutMe | Registration pending | South Africa<br />
                 Effective date: Upon account registration
               </p>
             </div>
@@ -151,7 +151,7 @@ export const DigitalAgreementModal: React.FC<DigitalAgreementModalProps> = ({ is
               </p>
               <p className="text-xs text-[#e8f5ee]/80">
                 This agreement is entered into between:<br />
-                • <strong>ScoutMe</strong> (operated by Kasi Silicon NPC, hereinafter "the Platform"), and<br />
+                • <strong>ScoutMe</strong> (hereinafter "the Platform"), and<br />
                 • <strong>You</strong>, the registering user (hereinafter "the User")
               </p>
             </div>
@@ -209,7 +209,7 @@ export const DigitalAgreementModal: React.FC<DigitalAgreementModalProps> = ({ is
                 <div className="space-y-1">
                   <p className="font-bold text-white uppercase text-[11px] tracking-wider font-mono">2. PLACEMENT FEE OBLIGATION</p>
                   <p className="text-xs text-[#e8f5ee]/80 leading-relaxed">
-                    A placement fee is owed to ScoutMe (operated by Kasi Silicon NPC) upon any signing that originates from player discovery on this platform within the 24-month window.<br /><br />
+                    A placement fee is owed to ScoutMe upon any signing that originates from player discovery on this platform within the 24-month window.<br /><br />
                     <strong>Fee structure:</strong><br />
                     • Amateur and grassroots signings: negotiated based on contract value<br />
                     • Semi-professional signings (NFD and equivalent): <strong>3% of first-year contract value</strong><br />
@@ -221,7 +221,7 @@ export const DigitalAgreementModal: React.FC<DigitalAgreementModalProps> = ({ is
                 <div className="space-y-1">
                   <p className="font-bold text-amber-400 uppercase text-[11px] tracking-wider font-mono">3. LEGAL ACTION FOR NON-PAYMENT</p>
                   <p className="text-xs text-[#e8f5ee]/80 leading-relaxed">
-                    If a club, agent, or organisation discovers a player through ScoutMe and signs that player within the 24-month window WITHOUT declaring the signing or paying the placement fee, ScoutMe and Kasi Silicon NPC reserve the right to:<br /><br />
+                    If a club, agent, or organisation discovers a player through ScoutMe and signs that player within the 24-month window WITHOUT declaring the signing or paying the placement fee, ScoutMe reserves the right to:<br /><br />
                     • Issue a formal legal notice demanding payment plus damages<br />
                     • Escalate to SAFA's Intermediary Registration Team<br />
                     • Pursue civil litigation in South African courts to recover the full placement fee plus legal costs and interest<br />
@@ -296,7 +296,7 @@ export const DigitalAgreementModal: React.FC<DigitalAgreementModalProps> = ({ is
               </p>
               <p className="text-[10px] text-[#5a8a6a] mt-2 leading-relaxed">
                 *This agreement was last updated: June 2026<br />
-                *ScoutMe is operated by Kasi Silicon NPC, South Africa<br />
+                *ScoutMe · South Africa<br />
                 *For legal inquiries: legal@scoutme.co.za
               </p>
             </div>

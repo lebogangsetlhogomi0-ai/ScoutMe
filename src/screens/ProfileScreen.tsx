@@ -1712,7 +1712,7 @@ export const ProfileScreen: React.FC<{ clubId?: string; onBack?: () => void }> =
           </div>
           )}
 
-          <div className="p-4 flex justify-between items-center hover:bg-[#0f2318]/50 cursor-pointer" onClick={() => showToast("WhatsApp support is online — Kasi Silicon NPC ✦", "info")}>
+          <div className="p-4 flex justify-between items-center hover:bg-[#0f2318]/50 cursor-pointer" onClick={() => showToast("WhatsApp support is online — ScoutMe ✦", "info")}>
             <span className="text-[#e8f5ee]">Help and Support Desk</span>
             <ChevronRight className="w-4 h-4 text-[#5a8a6a]" />
           </div>
