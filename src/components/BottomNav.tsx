@@ -29,8 +29,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab })
     { id: "pitch", label: "PITCH", icon: Play },
     { id: "discover", label: "DISCOVER", icon: Search },
     ...(isScoutOrClub ? [{ id: "scout-ai", label: "SCOUT AI", icon: Cpu }] : []),
-    ...(role === "club" ? [{ id: "club-intel", label: "CLUB INTEL", icon: BarChart2 }] : []),
     { id: "upload", label: "UPLOAD", icon: PlusCircle, isCenter: true },
+    ...(role === "club" ? [{ id: "club-intel", label: "CLUB INTEL", icon: BarChart2 }] : []),
     { id: "news", label: "NEWS", icon: Radio },
     // Profile tab hidden for club — moved to header next to notification bell
     ...(role !== "club" ? [{ id: "profile", label: "PROFILE", icon: User }] : []),
