@@ -192,6 +192,60 @@ export const DigitalAgreementModal: React.FC<DigitalAgreementModalProps> = ({ is
               </p>
             </div>
 
+            {/* PLACEMENT FEE AND LEGAL ENFORCEMENT — Highlighted Block */}
+            <div className="space-y-3 pt-2 border-t-2 border-amber-500/50 mt-2">
+              <div className="bg-amber-500/10 border border-amber-500/40 rounded-xl p-4 space-y-4">
+                <p className="font-black text-amber-400 uppercase text-[13px] tracking-wider font-mono text-center">
+                  ⚖ PLACEMENT FEE AND LEGAL ENFORCEMENT
+                </p>
+
+                <div className="space-y-1">
+                  <p className="font-bold text-white uppercase text-[11px] tracking-wider font-mono">1. DISCOVERY DECLARATION</p>
+                  <p className="text-xs text-[#e8f5ee]/80 leading-relaxed">
+                    If a player is discovered through ScoutMe — defined as any scout, club, or agent viewing a player's profile, video content, or AI scouting report on this platform — and that player is subsequently signed, contracted, or placed with any club or organisation within <strong>24 months</strong> of first platform contact, that signing MUST be declared to ScoutMe within <strong>30 days</strong> of the official signing date.
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="font-bold text-white uppercase text-[11px] tracking-wider font-mono">2. PLACEMENT FEE OBLIGATION</p>
+                  <p className="text-xs text-[#e8f5ee]/80 leading-relaxed">
+                    A placement fee is owed to ScoutMe (operated by Kasi Silicon NPC) upon any signing that originates from player discovery on this platform within the 24-month window.<br /><br />
+                    <strong>Fee structure:</strong><br />
+                    • Amateur and grassroots signings: negotiated based on contract value<br />
+                    • Semi-professional signings (NFD and equivalent): <strong>3% of first-year contract value</strong><br />
+                    • Professional signings (PSL, CAF, international): <strong>5% of first-year contract value</strong><br /><br />
+                    The placement fee is payable within <strong>30 days</strong> of the official signing date.
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="font-bold text-amber-400 uppercase text-[11px] tracking-wider font-mono">3. LEGAL ACTION FOR NON-PAYMENT</p>
+                  <p className="text-xs text-[#e8f5ee]/80 leading-relaxed">
+                    If a club, agent, or organisation discovers a player through ScoutMe and signs that player within the 24-month window WITHOUT declaring the signing or paying the placement fee, ScoutMe and Kasi Silicon NPC reserve the right to:<br /><br />
+                    • Issue a formal legal notice demanding payment plus damages<br />
+                    • Escalate to SAFA's Intermediary Registration Team<br />
+                    • Pursue civil litigation in South African courts to recover the full placement fee plus legal costs and interest<br />
+                    • Permanently ban the offending club, agent, or organisation from the platform<br />
+                    • Publicly disclose the breach to relevant football governing bodies
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="font-bold text-white uppercase text-[11px] tracking-wider font-mono">4. PLATFORM EVIDENCE</p>
+                  <p className="text-xs text-[#e8f5ee]/80 leading-relaxed">
+                    All scout and club interactions on ScoutMe are <strong>timestamped and permanently logged</strong>. These records constitute legal evidence of discovery origin and will be used in any dispute or legal proceeding.
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="font-bold text-white uppercase text-[11px] tracking-wider font-mono">5. GOVERNING LAW</p>
+                  <p className="text-xs text-[#e8f5ee]/80 leading-relaxed">
+                    This agreement is governed by the laws of the Republic of South Africa. Any disputes will be subject to the jurisdiction of the South African courts. This electronic agreement is legally enforceable under the <strong>Electronic Communications and Transactions Act (ECTA)</strong> of South Africa.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div className="space-y-2 pt-2 border-t border-[#1a3825]/30">
               <p className="font-bold text-[#00e56b] uppercase text-[12px] tracking-wider font-mono">
                 4. SCOUT AND CLUB OBLIGATIONS
@@ -326,11 +380,11 @@ export const DigitalAgreementModal: React.FC<DigitalAgreementModalProps> = ({ is
                     onChange={(e) => setCheckboxTicked(e.target.checked)}
                     className="w-4 h-4 rounded mt-0.5 accent-[#00e56b] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                   />
-                  <label 
-                    htmlFor="checkbox_modal_verify" 
+                  <label
+                    htmlFor="checkbox_modal_verify"
                     className={`cursor-pointer leading-snug ${!scrolledToBottom ? "text-[#5a8a6a] opacity-50" : "text-white"}`}
                   >
-                    I have read, understood, and fully agree to be legally bound by this agreement.
+                    I agree to the ScoutMe Digital Agreement and understand its legally binding terms.
                   </label>
                 </div>
 

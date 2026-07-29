@@ -1587,9 +1587,10 @@ export const ProfileScreen: React.FC<{ clubId?: string; onBack?: () => void }> =
 
         <div className="divide-y divide-[#1a3825]/45 bg-[#0a1a0f] border border-[#1a3825] rounded-xl overflow-hidden text-xs">
           
-          {/* Upgrade to Pro */}
-          <div 
-            className="p-4 flex justify-between items-center bg-[#1a3825]/20 hover:bg-[#1a3825]/40 cursor-pointer border-b border-[#00e56b]/20" 
+          {/* Upgrade to Pro — scouts and clubs only */}
+          {(currentUser?.role === "scout" || currentUser?.role === "club") && (
+          <div
+            className="p-4 flex justify-between items-center bg-[#1a3825]/20 hover:bg-[#1a3825]/40 cursor-pointer border-b border-[#00e56b]/20"
             onClick={() => (window as any).triggerPaymentFlow()}
           >
             <div className="space-y-0.5">
@@ -1598,13 +1599,14 @@ export const ProfileScreen: React.FC<{ clubId?: string; onBack?: () => void }> =
                 Upgrade to Pro Subscriptions
               </span>
               <span className="text-[10px] text-[#5a8a6a] block uppercase font-mono">
-                {currentUser?.tier === "professional" || currentUser?.tier === "player_pro" || currentUser?.tier === "scout_pro" 
-                  ? "⚡ Pro Subscription Active!" 
+                {currentUser?.tier === "professional" || currentUser?.tier === "player_pro" || currentUser?.tier === "scout_pro"
+                  ? "⚡ Pro Subscription Active!"
                   : "R49 - R299/mo · Unlock Golden Radar, Benchmarks & PDF Cards"}
               </span>
             </div>
             <ChevronRight className="w-4 h-4 text-[#00e56b]" />
           </div>
+          )}
 
           {/* Apply for Verified Status */}
           <div 
@@ -1699,7 +1701,8 @@ export const ProfileScreen: React.FC<{ clubId?: string; onBack?: () => void }> =
             <ChevronRight className="w-4 h-4 text-[#5a8a6a]" />
           </div>
 
-          {/* Secure Payment methods (mentioning Ozow and PayFast!) */}
+          {/* Payment Gateway Methods — scouts and clubs only */}
+          {(currentUser?.role === "scout" || currentUser?.role === "club") && (
           <div className="p-4 flex justify-between items-center hover:bg-[#0f2318]/50 cursor-pointer" onClick={() => (window as any).triggerPaymentFlow()}>
             <div className="space-y-0.5">
               <span className="text-[#e8f5ee] block">Payment Gateway Methods</span>
@@ -1707,6 +1710,7 @@ export const ProfileScreen: React.FC<{ clubId?: string; onBack?: () => void }> =
             </div>
             <CreditCard className="w-4.5 h-4.5 text-[#5a8a6a]" />
           </div>
+          )}
 
           <div className="p-4 flex justify-between items-center hover:bg-[#0f2318]/50 cursor-pointer" onClick={() => showToast("WhatsApp support is online — Kasi Silicon NPC ✦", "info")}>
             <span className="text-[#e8f5ee]">Help and Support Desk</span>

@@ -266,7 +266,7 @@ const AppContent: React.FC = () => {
     <div className="flex flex-col min-h-screen bg-[#050e08] text-[#e8f5ee] relative select-none">
       
       {/* Navigation Top Header */}
-      <Header />
+      <Header onProfileClick={() => setActiveTab("profile")} />
 
       {/* Primary Scroll View Body Container */}
       <main className="flex-1 flex flex-col pt-3 w-full max-w-xl mx-auto overflow-hidden">

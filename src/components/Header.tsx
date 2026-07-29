@@ -5,9 +5,10 @@ import { Bell, Trophy, ShieldAlert, Award } from "lucide-react";
 
 interface HeaderProps {
   onNotificationClick?: () => void;
+  onProfileClick?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = () => {
+export const Header: React.FC<HeaderProps> = ({ onProfileClick }) => {
   const { currentUser, isDemoMode } = useApp();
   const { showToast } = useToast();
   const [showNotifications, setShowNotifications] = useState(false);
@@ -72,6 +73,17 @@ export const Header: React.FC<HeaderProps> = () => {
             {getRoleIcon(currentUser.role)}
             {currentUser.role}
           </div>
+        )}
+
+        {/* Profile avatar in header — club only (nav tab removed to save space) */}
+        {currentUser?.role === "club" && onProfileClick && (
+          <button
+            onClick={onProfileClick}
+            className="w-8 h-8 rounded-full border-2 border-[#4da6ff] bg-[#0f1d23] flex items-center justify-center text-[#4da6ff] font-black text-xs uppercase hover:brightness-110 transition-all"
+            title="Club Profile"
+          >
+            {currentUser.name?.charAt(0) || "C"}
+          </button>
         )}
 
         {/* Notifications Icon with popover */}

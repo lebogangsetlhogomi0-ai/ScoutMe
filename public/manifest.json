@@ -3,7 +3,7 @@
   "name": "ScoutMe - Grassroots Football Discovery Platform",
   "icons": [
     {
-      "src": "/icon-512.png",
+      "src": "/icon-192.png",
       "type": "image/png",
       "sizes": "192x192"
     },
