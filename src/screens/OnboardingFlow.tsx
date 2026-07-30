@@ -2,8 +2,11 @@ import React, { useState, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 import { UserRole, UserProfile } from "../types";
 import { motion, AnimatePresence } from "motion/react";
-import { Eye, EyeOff, Check, ArrowRight, Shield, Sparkles, ArrowLeft } from "lucide-react";
+import { Eye, EyeOff, Check, ArrowRight, Shield, Sparkles, ArrowLeft, Mail, RefreshCw } from "lucide-react";
 import { DigitalAgreementModal } from "../components/DigitalAgreementModal";
+import { auth } from "../firebase";
+import { reload } from "firebase/auth";
+import { useToast } from "../components/Toast";
 
 export const OnboardingFlow: React.FC = () => {
   const {
@@ -14,8 +17,10 @@ export const OnboardingFlow: React.FC = () => {
     selectedOnboardingRole,
     setSelectedOnboardingRole,
     loading,
-    error
+    error,
+    resendVerificationEmail
   } = useApp();
+  const { showToast } = useToast();
 
   // Multi-step local state
   const [isSignInMode, setIsSignInMode] = useState(false);
@@ -887,16 +892,83 @@ export const OnboardingFlow: React.FC = () => {
           </motion.div>
         )}
 
-        {/* STEP 4: WELCOME SCREEN */}
+        {/* STEP 4: EMAIL VERIFICATION */}
         {onboardingStep === 4 && (
           <motion.div
             key="step4"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
+            className="flex-1 flex flex-col items-center justify-center text-center space-y-7 px-4"
+          >
+            <div className="w-20 h-20 rounded-full bg-[#1f1b0a] border-2 border-[#f5c518]/60 flex items-center justify-center shadow-xl relative">
+              <Mail className="w-9 h-9 text-[#f5c518]" />
+              <div className="absolute inset-0 rounded-full border border-[#f5c518]/20 animate-ping" />
+            </div>
+
+            <div className="space-y-3 max-w-xs">
+              <h3 className="text-4xl font-black font-bebas tracking-wide text-white">
+                📧 Check your email
+              </h3>
+              <p className="text-sm text-[#e8d87a] font-semibold">
+                We sent a verification link to<br />
+                <span className="text-[#f5c518] font-bold break-all">{email}</span>
+              </p>
+              <p className="text-xs text-[#5a8a6a] leading-relaxed">
+                Verify your email to unlock all ScoutMe features. Check your spam folder if you don't see it.
+              </p>
+            </div>
+
+            <div className="w-full max-w-xs space-y-3 pt-2">
+              <button
+                onClick={async () => {
+                  const user = auth.currentUser;
+                  if (user) {
+                    await reload(user).catch(() => {});
+                    if (user.emailVerified) {
+                      setOnboardingStep(5);
+                    } else {
+                      showToast("Email not verified yet. Please check your inbox and click the link. ✦", "error");
+                    }
+                  } else {
+                    setOnboardingStep(5);
+                  }
+                }}
+                className="w-full py-4 text-sm font-extrabold uppercase tracking-widest rounded-xl hover:brightness-110 active:scale-95 transition-all duration-300 font-sans shadow-lg bg-[#f5c518] text-[#050e08]"
+              >
+                I've verified — continue →
+              </button>
+
+              <button
+                onClick={async () => {
+                  await resendVerificationEmail().catch(() => {});
+                  showToast("Verification email resent ✦", "success");
+                }}
+                className="w-full py-3 text-xs font-bold uppercase tracking-wider rounded-xl border border-[#1a3825] text-[#5a8a6a] hover:text-white hover:border-[#5a8a6a] flex items-center justify-center space-x-2 transition"
+              >
+                <RefreshCw className="w-4 h-4" />
+                <span>Resend email</span>
+              </button>
+
+              <button
+                onClick={() => setOnboardingStep(5)}
+                className="w-full text-xs text-[#5a8a6a]/60 hover:text-[#5a8a6a] pt-1"
+              >
+                Skip for now
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* STEP 5: WELCOME SCREEN */}
+        {onboardingStep === 5 && (
+          <motion.div
+            key="step5"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
             className="flex-1 flex flex-col items-center justify-center text-center space-y-8"
           >
-            {/* Checked success badge */}
             <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-[#00994a] to-[#00e56b] flex items-center justify-center shadow-xl shadow-[#00e56b]/20 relative">
               <motion.div
                 initial={{ scale: 0 }}
@@ -912,7 +984,6 @@ export const OnboardingFlow: React.FC = () => {
               <h3 className="text-5xl font-black font-bebas tracking-wide text-white">
                 YOUR PITCH IS READY
               </h3>
-              
               <div className="max-w-xs mx-auto">
                 {selectedOnboardingRole === "player" ? (
                   <p className="text-sm text-[#5a8a6a] leading-relaxed">
@@ -933,12 +1004,9 @@ export const OnboardingFlow: React.FC = () => {
             <div className="w-full max-w-xs pt-8">
               <button
                 id="lets_go_btn"
-                onClick={() => setOnboardingStep(5)} // advances out of onboarding
+                onClick={() => setOnboardingStep(6)}
                 className="w-full py-4 text-sm font-extrabold uppercase tracking-widest rounded-xl hover:brightness-110 active:scale-95 transition-all duration-300 font-sans shadow-lg"
-                style={{
-                  backgroundColor: activeColor,
-                  color: "#050e08"
-                }}
+                style={{ backgroundColor: activeColor, color: "#050e08" }}
               >
                 LET'S GO
               </button>

@@ -203,7 +203,7 @@ const AppContent: React.FC = () => {
   };
 
   // Direct state fallback if onboarding not completed
-  if (!currentUser || onboardingStep < 5) {
+  if (!currentUser || onboardingStep < 6) {
     return <OnboardingFlow />;
   }
 

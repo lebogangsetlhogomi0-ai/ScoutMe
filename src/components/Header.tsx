@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 import { useToast } from "./Toast";
-import { Bell, Trophy, ShieldAlert, Award, User, BarChart2, Settings, LogOut, ChevronRight } from "lucide-react";
+import { Bell, Trophy, ShieldAlert, Award, User, BarChart2, Settings, LogOut, ChevronRight, Mail } from "lucide-react";
+import { auth } from "../firebase";
+import { reload } from "firebase/auth";
 
 interface HeaderProps {
   onNotificationClick?: () => void;
@@ -10,7 +12,7 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick }) => {
-  const { currentUser, isDemoMode, signOutUser } = useApp();
+  const { currentUser, isDemoMode, signOutUser, resendVerificationEmail } = useApp();
   const { showToast } = useToast();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -52,8 +54,18 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick
     { id: 3, text: "Welcome to ScoutMe! Prepare your first match footage.", time: "1d ago" }
   ];
 
+  const [emailVerified, setEmailVerified] = React.useState<boolean | null>(null);
+
+  React.useEffect(() => {
+    if (!currentUser || !auth.currentUser) { setEmailVerified(null); return; }
+    reload(auth.currentUser)
+      .then(() => setEmailVerified(auth.currentUser?.emailVerified ?? null))
+      .catch(() => setEmailVerified(null));
+  }, [currentUser]);
+
   return (
-    <header className="sticky top-0 z-40 flex items-center justify-between px-4 py-3 bg-[#050e08]/90 backdrop-blur-md border-b border-[#1a3825]">
+    <div className="sticky top-0 z-40">
+    <header className="flex items-center justify-between px-4 py-3 bg-[#050e08]/90 backdrop-blur-md border-b border-[#1a3825]">
       {/* Brand logo */}
       <div className="flex items-center space-x-2 border-l border-transparent">
         <img
@@ -192,5 +204,27 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick
         </div>
       </div>
     </header>
+
+    {/* Gold unverified email banner */}
+    {currentUser && emailVerified === false && (
+      <div className="flex items-center justify-between px-4 py-2 bg-[#1f1b0a] border-b border-[#f5c518]/30">
+        <div className="flex items-center space-x-2">
+          <Mail className="w-3.5 h-3.5 text-[#f5c518] flex-shrink-0" />
+          <span className="text-[10.5px] text-[#e8d87a] font-sans">
+            📧 Verify your email to unlock all features
+          </span>
+        </div>
+        <button
+          onClick={async () => {
+            await resendVerificationEmail().catch(() => {});
+            showToast("Verification email resent ✦", "success");
+          }}
+          className="text-[10px] font-bold text-[#f5c518] uppercase tracking-wider hover:underline ml-3 flex-shrink-0"
+        >
+          Resend
+        </button>
+      </div>
+    )}
+    </div>
   );
 };

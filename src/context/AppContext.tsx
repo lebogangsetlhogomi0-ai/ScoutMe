@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { UserProfile, PostHighlight, ScoutReport, NewsItem, UserRole, PostComment, RatingDoc, ClubPost, AppNotification, ClubPostComment, SquadMember, PitchReport, CareerMoment, LiveSession, ChallengePost, ChallengeResponse, SpotlightPost, VerificationApplication, ScoutStamp } from "../types";
 import { db, auth, isDemoMode } from "../firebase";
 import { collection, doc, setDoc, getDoc, updateDoc, onSnapshot } from "firebase/firestore";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
 
 // Safe mock storage fallback to prevent iframe security/sandbox crashes
 const localStorageShadow = {
@@ -92,6 +92,7 @@ interface AppContextType {
   signUpUser: (profile: Partial<UserProfile>, password?: string) => Promise<boolean>;
   signInUser: (email: string, role: UserRole, password?: string) => Promise<boolean>;
   signOutUser: () => Promise<void>;
+  resendVerificationEmail: () => Promise<void>;
   updateBio: (bio: string, extraFields?: Partial<UserProfile>) => void;
   updateAvatar: (avatarBase64: string) => Promise<void>;
   signDigitalAgreement: () => void;
@@ -1085,6 +1086,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         try {
           const authResult = await createUserWithEmailAndPassword(auth, profile.email, password);
           authUserId = authResult.user.uid;
+          // Send verification email — non-blocking
+          sendEmailVerification(authResult.user).catch(e =>
+            console.warn("[Auth] sendEmailVerification failed:", e)
+          );
         } catch (authErr: any) {
           setLoading(false);
           const code = authErr?.code || "";
@@ -1273,6 +1278,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCurrentUser(null);
     setOnboardingStep(1);
     setSelectedOnboardingRole(null);
+  };
+
+  const resendVerificationEmail = async () => {
+    const user = auth.currentUser;
+    if (user) {
+      await sendEmailVerification(user);
+    }
   };
 
   const updateBio = (bio: string, extraFields?: Partial<UserProfile>) => {
@@ -2705,6 +2717,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         signOutUser,
         updateBio,
         updateAvatar,
+        resendVerificationEmail,
         signDigitalAgreement,
         votePost,
         addComment,
