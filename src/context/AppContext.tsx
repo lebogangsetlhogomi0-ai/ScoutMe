@@ -1176,7 +1176,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return true;
     } catch (err: any) {
       setLoading(false);
-      setError("Registration failed. Please try again.");
+      setError(`Registration failed (${err?.code || err?.message || JSON.stringify(err) || "unknown"}). Please try again.`);
       return false;
     }
   };
