@@ -81,8 +81,8 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick
           </div>
         )}
 
-        {/* Profile menu — all roles */}
-        {currentUser && (
+        {/* Profile menu — scout and club only */}
+        {currentUser && (currentUser.role === "scout" || currentUser.role === "club") && (
           <div className="relative" ref={profileMenuRef}>
             <button
               onClick={() => setShowProfileMenu(!showProfileMenu)}

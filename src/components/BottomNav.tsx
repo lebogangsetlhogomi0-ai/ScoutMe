@@ -1,6 +1,6 @@
 import React from "react";
 import { useApp } from "../context/AppContext";
-import { Play, Search, PlusCircle, Radio, Cpu } from "lucide-react";
+import { Play, Search, PlusCircle, Radio, Cpu, User } from "lucide-react";
 
 interface BottomNavProps {
   activeTab: string;
@@ -28,6 +28,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab })
       ]
     : [
         { id: "news", label: "NEWS", icon: Radio },
+        { id: "profile", label: "PROFILE", icon: User },
       ];
 
   const getRoleColorClass = () => {
