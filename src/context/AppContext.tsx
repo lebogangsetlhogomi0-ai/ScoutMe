@@ -1095,8 +1095,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             setError("Please enter a valid email address.");
           } else if (code === "auth/network-request-failed") {
             setError("Connection failed. Check your internet and try again.");
+          } else if (code === "auth/unauthorized-domain") {
+            setError("Domain not authorized. Please contact support.");
+          } else if (code === "auth/operation-not-allowed") {
+            setError("Email/password sign-up is not enabled. Please contact support.");
           } else {
-            setError("Registration failed. Please try again.");
+            setError(`Registration failed (${code || "unknown"}). Please try again.`);
           }
           return false;
         }
