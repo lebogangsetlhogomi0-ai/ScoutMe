@@ -23,15 +23,16 @@ export const DigitalPitchFeed: React.FC<DigitalPitchFeedProps> = ({
   onOpenPlayerProfile,
   onTriggerScoutAI
 }) => {
-  const { 
-    posts, 
-    users, 
-    currentUser, 
-    votePost, 
-    addComment, 
-    toggleShortlist, 
-    shortlist, 
-    pitchReports, 
+  const {
+    posts,
+    postsLoading,
+    users,
+    currentUser,
+    votePost,
+    addComment,
+    toggleShortlist,
+    shortlist,
+    pitchReports,
     archivePost,
     challengePosts,
     challengeResponses,
@@ -241,9 +242,51 @@ export const DigitalPitchFeed: React.FC<DigitalPitchFeedProps> = ({
       <div className="space-y-6 max-w-xl mx-auto">
         
         {activeTab === "talent" ? (
+          postsLoading ? (
+            /* Skeleton loading cards */
+            <div className="space-y-6">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="bg-[#0a1a0f] border border-[#1a3825] rounded-2xl overflow-hidden animate-pulse">
+                  <div className="p-4 flex items-center space-x-3 bg-[#06120b]">
+                    <div className="w-10 h-10 rounded-full bg-[#1a3825]" />
+                    <div className="space-y-2 flex-1">
+                      <div className="h-3 bg-[#1a3825] rounded w-1/3" />
+                      <div className="h-2.5 bg-[#1a3825] rounded w-1/4" />
+                    </div>
+                  </div>
+                  <div className="h-56 bg-[#0f2318]" />
+                  <div className="p-4 space-y-2">
+                    <div className="h-2.5 bg-[#1a3825] rounded w-3/4" />
+                    <div className="h-2.5 bg-[#1a3825] rounded w-1/2" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : talentPosts.length === 0 ? (
+            /* Empty state */
+            <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
+              <span className="text-5xl">⚽</span>
+              <p className="text-[#e8f5ee] font-bold text-lg font-bebas tracking-wide">No highlights yet.</p>
+              <p className="text-[#5a8a6a] text-sm">Be the first to upload. ⚽</p>
+              <button
+                onClick={onSuggestUpload}
+                className="mt-2 px-6 py-2.5 bg-[#00e56b] text-[#050e08] font-bold text-xs uppercase tracking-widest rounded-full"
+              >
+                Upload Now
+              </button>
+            </div>
+          ) : (
           /* TALENT FEED: Tier 1 grassroots children only */
-          talentPosts.length > 0 ? (
-            talentPosts.map((post) => {
+          <>
+            {/* Seed content label — shown when only seed posts exist (no real uploads yet) */}
+            {talentPosts.every(p => p.postId.startsWith("post_")) && (
+              <div className="text-center py-1">
+                <span className="text-[10px] text-[#5a8a6a]/70 font-mono uppercase tracking-widest">
+                  Sample content — be the first to post your highlights
+                </span>
+              </div>
+            )}
+            {talentPosts.map((post) => {
               const playerObj = users.find(u => u.name === post.playerName || u.userId === post.userId);
               const isVoted = votedPosts.includes(post.postId);
               const isPostShortlisted = shortlist.includes(playerObj?.userId || "");
@@ -554,9 +597,8 @@ export const DigitalPitchFeed: React.FC<DigitalPitchFeedProps> = ({
                   </div>
                 </div>
               );
-            })
-          ) : (
-            <p className="text-center text-xs text-[#5a8a6a] italic py-12">No talent footage posted yet. Stay ready!</p>
+            })}
+          </>
           )
 
         ) : (

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { UserProfile, PostHighlight, ScoutReport, NewsItem, UserRole, PostComment, RatingDoc, ClubPost, AppNotification, ClubPostComment, SquadMember, PitchReport, CareerMoment, LiveSession, ChallengePost, ChallengeResponse, SpotlightPost, VerificationApplication, ScoutStamp } from "../types";
 import { db, auth, isDemoMode } from "../firebase";
-import { collection, doc, setDoc, getDoc, updateDoc, onSnapshot } from "firebase/firestore";
+import { collection, doc, setDoc, getDoc, updateDoc, onSnapshot, query, orderBy, limit, addDoc, serverTimestamp, increment } from "firebase/firestore";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
 import { triggerGlobalToast } from "../components/Toast";
 
@@ -104,6 +104,9 @@ interface AppContextType {
   verificationApplications: VerificationApplication[];
   scoutStamps: ScoutStamp[];
   
+  postsLoading: boolean;
+  createPost: (data: { videoUrl: string; thumbnailUrl?: string; caption: string; tags: string[]; contentType: string; position: string; league?: string; province: string; visibility?: string; }) => Promise<void>;
+
   // Actions
   setOfflineMode: (active: boolean) => void;
   setOnboardingStep: (step: number) => void;
@@ -961,6 +964,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       console.warn("Firestore real-time ClubPosts monitoring failed:", err);
     });
 
+    // Listen to posts real-time syncing (live feed)
+    const unsubscribePosts = onSnapshot(
+      query(collection(db, "posts"), orderBy("createdAt", "desc"), limit(20)),
+      (snapshot) => {
+        if (snapshot.docs.length > 0) {
+          const livePosts: PostHighlight[] = snapshot.docs.map(d => ({
+            postId: d.id,
+            votes: 0,
+            views: 0,
+            commentsCount: 0,
+            comments: [],
+            timestamp: "Recently",
+            trending: false,
+            isArchived: false,
+            ...d.data(),
+          } as PostHighlight));
+          setPosts(livePosts);
+        }
+        setPostsLoading(false);
+      },
+      (err) => {
+        console.warn("Firestore posts listener failed:", err);
+        setPostsLoading(false);
+      }
+    );
+
     // Listen to notifications real-time syncing
     const unsubscribeNotifications = onSnapshot(collection(db, "notifications"), (snapshot) => {
       const liveNotifications: AppNotification[] = [];
@@ -987,6 +1016,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubscribeUsers();
       unsubscribeClubPosts();
       unsubscribeNotifications();
+      unsubscribePosts();
     };
   }, []);
 
@@ -1003,7 +1033,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [selectedOnboardingRole, setSelectedOnboardingRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [offlineMode, setOfflineMode] = useState<boolean>(true); // default true for immediate local simulation
+  const [offlineMode, setOfflineMode] = useState<boolean>(true);
+  const [postsLoading, setPostsLoading] = useState<boolean>(!isDemoMode && !!db); // default true for immediate local simulation
 
   // Persists states in localStorage
   useEffect(() => {
@@ -1348,21 +1379,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const votePost = (postId: string) => {
     setPosts(prev => prev.map(p => {
       if (p.postId === postId) {
-        // Toggle/Increment vote
-        const newVotes = p.votes + 1;
-        
-        // Update player votes too
         setUsers(prevUsers => prevUsers.map(u => {
           if (u.name === p.playerName) {
             return { ...u, votes: (u.votes || 0) + 1 };
           }
           return u;
         }));
-
-        return { ...p, votes: newVotes };
+        return { ...p, votes: p.votes + 1 };
       }
       return p;
     }));
+    if (!isDemoMode && db) {
+      updateDoc(doc(db, "posts", postId), { votes: increment(1) }).catch(e =>
+        console.warn("[Firestore] Vote update failed:", e)
+      );
+    }
   };
 
   const addComment = (postId: string, commentText: string) => {
@@ -2677,6 +2708,57 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
+  const createPost = async (data: {
+    videoUrl: string;
+    thumbnailUrl?: string;
+    caption: string;
+    tags: string[];
+    contentType: string;
+    position: string;
+    league?: string;
+    province: string;
+    visibility?: string;
+  }) => {
+    if (!currentUser) return;
+    const newPost: PostHighlight = {
+      postId: `post_${Date.now()}`,
+      userId: currentUser.userId,
+      playerName: currentUser.name,
+      position: data.position || currentUser.position || "CAM",
+      club: data.league || currentUser.club || "Unattached",
+      province: data.province || currentUser.province,
+      videoUrl: data.videoUrl,
+      thumbnailUrl: data.thumbnailUrl || "⚽ Match Highlight",
+      caption: data.caption,
+      tags: data.tags,
+      contentType: (data.contentType || "highlight") as any,
+      votes: 0,
+      views: 0,
+      commentsCount: 0,
+      timestamp: "Just now",
+      trending: false,
+      isArchived: false,
+      country: "South Africa",
+      comments: [],
+    };
+
+    setPosts(prev => [newPost, ...prev]);
+
+    if (!isDemoMode && db) {
+      try {
+        const docRef = await addDoc(collection(db, "posts"), {
+          ...newPost,
+          createdAt: serverTimestamp(),
+        });
+        setPosts(prev => prev.map(p => p.postId === newPost.postId ? { ...p, postId: docRef.id } : p));
+      } catch (e) {
+        console.warn("[Firestore] Post write failed:", e);
+      }
+    }
+
+    triggerGlobalToast("Your pitch is live. Scouts can find you now. ✦", "success");
+  };
+
   const addVirtualTrialResult = async (playerId: string, result: any) => {
     setUsers(prev => prev.map(u => {
       if (u.userId === playerId) {
@@ -2715,6 +2797,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         currentUser,
         users,
         posts,
+        postsLoading,
+        createPost,
         scoutReports,
         news,
         shortlist,

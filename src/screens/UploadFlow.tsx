@@ -54,7 +54,7 @@ function formatSeconds(s: number) {
 }
 
 export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
-  const { addNewPost, currentUser } = useApp();
+  const { addNewPost, createPost, currentUser } = useApp();
   const [step, setStep] = useState(1);
   const [contentType, setContentType] = useState<"highlight" | "match" | "training" | "full" | null>(null);
 
@@ -217,16 +217,18 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
         async () => {
           try {
             const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-            await addDoc(collection(db, "posts"), {
-              ...postData,
+            await createPost({
               videoUrl: downloadURL,
-              userId: currentUser.userId,
-              userName: currentUser.name,
-              createdAt: serverTimestamp(),
+              thumbnailUrl: `⚽ ${selectedThumbnail || "Match Play"}`,
+              caption: postData.caption,
+              tags: postData.tags,
+              contentType: postData.contentType,
+              position: postData.position,
+              league: postData.club,
+              province: postData.province,
             });
-            addNewPost({ ...postData, thumbnailUrl: downloadURL });
           } catch (err) {
-            console.error("Firestore save failed:", err);
+            console.error("Post save failed:", err);
           }
           setIsUploading(false);
           setUploadDone(true);
@@ -245,7 +247,16 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
         if (progress >= 100) {
           clearInterval(interval);
           setTimeout(() => {
-            addNewPost(postData);
+            createPost({
+              videoUrl: postData.videoUrl || "",
+              thumbnailUrl: postData.thumbnailUrl,
+              caption: postData.caption,
+              tags: postData.tags,
+              contentType: postData.contentType,
+              position: postData.position,
+              league: postData.club,
+              province: postData.province,
+            });
             setIsUploading(false);
             setUploadDone(true);
           }, 600);
