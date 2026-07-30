@@ -4,12 +4,12 @@ import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyBRms5EeqROmMZjlQ1WN9acCFQxrLKMX-E",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "scoutme-3e4b6.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "scoutme-3e4b6",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "scoutme-3e4b6.firebasestorage.app",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "477910526721",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:477910526721:web:3c5964e4ac1d62db5ac900",
+  apiKey: "AIzaSyAdDUv8nApCkZgZJas-XgxqI5Cm20qr2vw",
+  authDomain: "scoutme-10.firebaseapp.com",
+  projectId: "scoutme-10",
+  storageBucket: "scoutme-10.firebasestorage.app",
+  messagingSenderId: "1000343432088",
+  appId: "1:1000343432088:web:18cddf91845cc0718dd9ed",
 };
 
 // Demo Mode only if API key is a placeholder — never as an error fallback
