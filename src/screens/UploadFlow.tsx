@@ -248,21 +248,42 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
             className="space-y-6"
           >
             <div className="text-center">
-              <h3 className="text-md font-bold text-white uppercase">Upload and Trim Clip</h3>
-              <p className="text-xs text-[#5a8a6a] mt-0.5">Scrub or drag selectors to crop the most critical trial seconds.</p>
+              <h3 className="text-md font-bold text-white uppercase">Select Your Video</h3>
+              <p className="text-xs text-[#5a8a6a] mt-0.5">Choose a clip from your gallery to upload.</p>
             </div>
 
-            {/* Simulated Video Preview screen */}
-            <div className="aspect-video bg-[#050e08] rounded-2xl border border-[#1a3825] flex flex-col items-center justify-center relative overflow-hidden p-4 group">
-              <Video className="w-12 h-12 text-[#5a8a6a] mb-2 group-hover:text-[#00e56b] transition active:scale-95 duration-200 cursor-pointer" />
-              <span className="text-xs text-white font-medium">Selected: KASI_MOMENT_ASSIST.mp4</span>
-              <span className="text-[10px] text-[#5a8a6a] mt-1">File weight: 14.8 MB · Codec: H.264 HD</span>
-              
-              {/* Trim duration indicator */}
-              <div className="absolute top-3 right-3 bg-[#0a1a0f] border border-[#1a3825] px-2 py-0.5 rounded text-[10px] font-mono font-bold text-[#00e56b]">
-                DURATION: {Math.round((trimEnd - trimStart) * 0.3)}s
-              </div>
-            </div>
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="video/*"
+              className="hidden"
+              onChange={e => setSelectedFile(e.target.files?.[0] || null)}
+            />
+
+            {/* Video picker / preview area */}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full aspect-video bg-[#050e08] rounded-2xl border-2 border-dashed border-[#1a3825] hover:border-[#00e56b]/60 flex flex-col items-center justify-center relative overflow-hidden p-4 transition-colors duration-200 active:scale-[0.98]"
+            >
+              {selectedFile ? (
+                <>
+                  <CheckCircle className="w-12 h-12 text-[#00e56b] mb-2" />
+                  <span className="text-xs text-white font-bold">{selectedFile.name.length > 30 ? selectedFile.name.slice(0, 30) + "…" : selectedFile.name}</span>
+                  <span className="text-[10px] text-[#5a8a6a] mt-1">{(selectedFile.size / (1024 * 1024)).toFixed(1)} MB · Tap to change</span>
+                  <div className="absolute top-3 right-3 bg-[#0f2318] border border-[#00e56b]/40 px-2 py-0.5 rounded text-[10px] font-mono font-bold text-[#00e56b]">
+                    READY
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Video className="w-14 h-14 text-[#5a8a6a] mb-3" />
+                  <span className="text-sm font-bold text-white uppercase tracking-wide">Tap to Select Video</span>
+                  <span className="text-[10px] text-[#5a8a6a] mt-1">Opens your gallery · MP4, MOV supported</span>
+                </>
+              )}
+            </button>
 
             {/* Custom interactive trim sliders */}
             <div className="space-y-2 bg-[#0a1a0f] border border-[#1a3825] p-4.5 rounded-xl">
@@ -516,28 +537,11 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
               </button>
             </div>
 
-            {/* File picker — real upload */}
-            {!isDemoMode && (
-              <div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="video/*"
-                  className="hidden"
-                  onChange={e => setSelectedFile(e.target.files?.[0] || null)}
-                />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className={`w-full py-3 border-2 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center space-x-2 transition-colors ${
-                    selectedFile
-                      ? "border-[#00e56b] text-[#00e56b] bg-[#0f2318]"
-                      : "border-[#1a3825] text-[#5a8a6a] hover:border-[#00e56b]/50"
-                  }`}
-                >
-                  <Video className="w-4 h-4" />
-                  <span>{selectedFile ? `✓ ${selectedFile.name.slice(0, 30)}` : "SELECT VIDEO FILE"}</span>
-                </button>
+            {/* Selected file reminder */}
+            {selectedFile && (
+              <div className="flex items-center space-x-2 px-3 py-2 bg-[#0f2318] border border-[#00e56b]/30 rounded-xl">
+                <Video className="w-4 h-4 text-[#00e56b] flex-shrink-0" />
+                <span className="text-xs text-[#00e56b] truncate">{selectedFile.name}</span>
               </div>
             )}
 
