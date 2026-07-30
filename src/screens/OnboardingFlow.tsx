@@ -606,8 +606,6 @@ export const OnboardingFlow: React.FC = () => {
                         <input
                           id="signup_age"
                           type="number"
-                          min="15"
-                          max="40"
                           value={age}
                           onChange={(e) => setAge(parseInt(e.target.value) || 18)}
                           className="w-full bg-[#0a1a0f] border border-[#1a3825] text-white px-4 py-3 rounded-xl text-sm"
