@@ -1,5 +1,17 @@
-import React, { createContext, useCallback, useContext, useRef, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+
+// Module-level bridge so non-component code (e.g. AppContext.tsx business logic)
+// can trigger a toast without needing the useToast() hook.
+let globalShowToast: ((message: string, variant?: "success" | "info" | "error") => void) | null = null;
+
+export const triggerGlobalToast = (message: string, variant: "success" | "info" | "error" = "success") => {
+  if (globalShowToast) {
+    globalShowToast(message, variant);
+  } else {
+    console.log(`[Toast:${variant}] ${message}`);
+  }
+};
 
 interface ToastItem {
   id: number;
@@ -30,6 +42,13 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setToasts(prev => prev.filter(t => t.id !== id));
     }, 2800);
   }, []);
+
+  useEffect(() => {
+    globalShowToast = showToast;
+    return () => {
+      if (globalShowToast === showToast) globalShowToast = null;
+    };
+  }, [showToast]);
 
   return (
     <ToastContext.Provider value={{ showToast }}>

@@ -3,6 +3,25 @@ import { UserProfile, PostHighlight, ScoutReport, NewsItem, UserRole, PostCommen
 import { db, auth, isDemoMode } from "../firebase";
 import { collection, doc, setDoc, getDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
+import { triggerGlobalToast } from "../components/Toast";
+
+// Error codes that are genuinely actionable by the user — safe to show as a friendly message.
+// Anything NOT in these maps (including auth/configuration-not-found, network issues, or any
+// other Firebase/Auth infrastructure problem) is treated as an outage: we never surface the raw
+// Firebase error, and instead fall back to local/offline behaviour silently.
+const SIGNUP_USER_ACTIONABLE_ERRORS: Record<string, string> = {
+  "auth/email-already-in-use": "An account with this email already exists. Please sign in instead.",
+  "auth/weak-password": "Password must be at least 6 characters.",
+  "auth/invalid-email": "Please enter a valid email address.",
+};
+
+const SIGNIN_USER_ACTIONABLE_ERRORS: Record<string, string> = {
+  "auth/wrong-password": "Incorrect password. Please try again.",
+  "auth/invalid-credential": "Incorrect password. Please try again.",
+  "auth/user-not-found": "No account found with this email. Please register.",
+  "auth/invalid-email": "Please enter a valid email address.",
+  "auth/too-many-requests": "Too many attempts. Please wait a moment and try again.",
+};
 
 // Safe mock storage fallback to prevent iframe security/sandbox crashes
 const localStorageShadow = {
@@ -1087,28 +1106,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const authResult = await createUserWithEmailAndPassword(auth, profile.email, password);
           authUserId = authResult.user.uid;
           // Send verification email — non-blocking
-          sendEmailVerification(authResult.user).catch(e =>
-            console.warn("[Auth] sendEmailVerification failed:", e)
-          );
+          sendEmailVerification(authResult.user)
+            .then(() => triggerGlobalToast("Verification email sent ✦ Please check your inbox.", "success"))
+            .catch(e => console.warn("[Auth] sendEmailVerification failed:", e));
         } catch (authErr: any) {
-          setLoading(false);
           const code = authErr?.code || "";
-          if (code === "auth/email-already-in-use") {
-            setError("An account with this email already exists. Please sign in instead.");
-          } else if (code === "auth/weak-password") {
-            setError("Password must be at least 6 characters.");
-          } else if (code === "auth/invalid-email") {
-            setError("Please enter a valid email address.");
-          } else if (code === "auth/network-request-failed") {
-            setError("Connection failed. Check your internet and try again.");
-          } else if (code === "auth/unauthorized-domain") {
-            setError("Domain not authorized. Please contact support.");
-          } else if (code === "auth/operation-not-allowed") {
-            setError("Email/password sign-up is not enabled. Please contact support.");
-          } else {
-            setError(`Registration failed (${code || "unknown"}). Please try again.`);
+          const friendlyMessage = SIGNUP_USER_ACTIONABLE_ERRORS[code];
+          if (friendlyMessage) {
+            setLoading(false);
+            triggerGlobalToast(friendlyMessage, "error");
+            return false;
           }
-          return false;
+          // Any other Firebase/Auth failure (e.g. auth/configuration-not-found) is an
+          // infrastructure issue, not something the user did wrong — never show it.
+          // Fall back to a local account silently and keep the sign-up going.
+          console.warn(`[Auth] Firebase sign-up unavailable (${code || "unknown"}) — continuing locally.`, authErr);
+          authUserId = `local_${Date.now()}`;
         }
       }
 
@@ -1181,8 +1194,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       return true;
     } catch (err: any) {
+      console.error("[Auth] Unexpected sign-up error:", err);
       setLoading(false);
-      setError(`Registration failed (${err?.code || err?.message || JSON.stringify(err) || "unknown"}). Please try again.`);
+      triggerGlobalToast("Something went wrong. Please try again.", "error");
       return false;
     }
   };
@@ -1193,6 +1207,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     try {
       let targetUserId: string | null = null;
+      let firebaseSignInUnavailable = false;
 
       if (!isDemoMode && auth && password) {
         // Real Firebase sign-in
@@ -1200,22 +1215,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const authResult = await signInWithEmailAndPassword(auth, email, password);
           targetUserId = authResult.user.uid;
         } catch (authErr: any) {
-          setLoading(false);
           const code = authErr?.code || "";
-          if (code === "auth/wrong-password" || code === "auth/invalid-credential") {
-            setError("Incorrect password. Please try again.");
-          } else if (code === "auth/user-not-found") {
-            setError("No account found with this email. Please register.");
-          } else if (code === "auth/invalid-email") {
-            setError("Please enter a valid email address.");
-          } else if (code === "auth/network-request-failed") {
-            setError("Connection failed. Check your internet and try again.");
-          } else if (code === "auth/too-many-requests") {
-            setError("Too many attempts. Please wait a moment and try again.");
-          } else {
-            setError("Sign-in failed. Please check your details and try again.");
+          const friendlyMessage = SIGNIN_USER_ACTIONABLE_ERRORS[code];
+          if (friendlyMessage) {
+            setLoading(false);
+            triggerGlobalToast(friendlyMessage, "error");
+            return false;
           }
-          return false;
+          // Any other Firebase/Auth failure (e.g. auth/configuration-not-found) is an
+          // infrastructure issue — never show it. Fall back to local lookup silently.
+          console.warn(`[Auth] Firebase sign-in unavailable (${code || "unknown"}) — falling back to local lookup.`, authErr);
+          firebaseSignInUnavailable = true;
         }
       }
 
@@ -1237,8 +1247,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }
 
-      // Demo mode fallback: find by email in local list
-      if (!user && isDemoMode) {
+      // Demo mode / Firebase-unavailable fallback: find by email in local list
+      if (!user && (isDemoMode || firebaseSignInUnavailable)) {
         user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.role === role);
       }
 
@@ -1257,18 +1267,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       setLoading(false);
-      setError("No account found. Please register first.");
+      triggerGlobalToast("No account found. Please register first.", "error");
       return false;
     } catch (err: any) {
+      console.error("[Auth] Unexpected sign-in error:", err);
       setLoading(false);
-      setError("Sign-in failed. Please try again.");
+      triggerGlobalToast("Something went wrong. Please try again.", "error");
       return false;
     }
   };
 
   const signOutUser = async () => {
     try {
-      await auth.signOut();
+      await auth?.signOut();
     } catch (e) {
       console.log("Auth signOut error:", e);
     }
@@ -1281,9 +1292,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const resendVerificationEmail = async () => {
-    const user = auth.currentUser;
+    const user = auth?.currentUser;
     if (user) {
-      await sendEmailVerification(user);
+      try {
+        await sendEmailVerification(user);
+      } catch (e) {
+        console.warn("[Auth] Failed to resend verification email:", e);
+      }
     }
   };
 

@@ -908,27 +908,27 @@ export const OnboardingFlow: React.FC = () => {
 
             <div className="space-y-3 max-w-xs">
               <h3 className="text-4xl font-black font-bebas tracking-wide text-white">
-                📧 Check your email
+                CHECK YOUR EMAIL 📧
               </h3>
               <p className="text-sm text-[#e8d87a] font-semibold">
                 We sent a verification link to<br />
                 <span className="text-[#f5c518] font-bold break-all">{email}</span>
               </p>
               <p className="text-xs text-[#5a8a6a] leading-relaxed">
-                Verify your email to unlock all ScoutMe features. Check your spam folder if you don't see it.
+                Click the link to verify your account and unlock all ScoutMe features.
               </p>
             </div>
 
             <div className="w-full max-w-xs space-y-3 pt-2">
               <button
                 onClick={async () => {
-                  const user = auth.currentUser;
+                  const user = auth?.currentUser;
                   if (user) {
                     await reload(user).catch(() => {});
                     if (user.emailVerified) {
                       setOnboardingStep(5);
                     } else {
-                      showToast("Email not verified yet. Please check your inbox and click the link. ✦", "error");
+                      showToast("Email not verified yet. Please check your inbox.", "error");
                     }
                   } else {
                     setOnboardingStep(5);

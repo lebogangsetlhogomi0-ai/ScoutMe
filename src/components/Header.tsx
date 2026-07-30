@@ -57,9 +57,9 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick
   const [emailVerified, setEmailVerified] = React.useState<boolean | null>(null);
 
   React.useEffect(() => {
-    if (!currentUser || !auth.currentUser) { setEmailVerified(null); return; }
+    if (!currentUser || !auth?.currentUser) { setEmailVerified(null); return; }
     reload(auth.currentUser)
-      .then(() => setEmailVerified(auth.currentUser?.emailVerified ?? null))
+      .then(() => setEmailVerified(auth?.currentUser?.emailVerified ?? null))
       .catch(() => setEmailVerified(null));
   }, [currentUser]);
 
