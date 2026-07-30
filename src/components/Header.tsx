@@ -10,7 +10,7 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick }) => {
-  const { currentUser, isDemoMode } = useApp();
+  const { currentUser, isDemoMode, signOutUser } = useApp();
   const { showToast } = useToast();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -143,7 +143,7 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick
 
                 {/* Sign out */}
                 <button
-                  onClick={() => { setShowProfileMenu(false); showToast("Signed out ✦", "info"); }}
+                  onClick={() => { setShowProfileMenu(false); signOutUser(); }}
                   className="w-full flex items-center space-x-2.5 px-4 py-3 hover:bg-[#1a0f0f]/60 transition-colors duration-150 group"
                 >
                   <LogOut className="w-4 h-4 text-[#ff4444]/70 group-hover:text-[#ff4444]" />

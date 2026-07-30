@@ -91,7 +91,7 @@ interface AppContextType {
   setSelectedOnboardingRole: (role: UserRole | null) => void;
   signUpUser: (profile: Partial<UserProfile>, password?: string) => Promise<boolean>;
   signInUser: (email: string, role: UserRole, password?: string) => Promise<boolean>;
-  signOutUser: () => void;
+  signOutUser: () => Promise<void>;
   updateBio: (bio: string, extraFields?: Partial<UserProfile>) => void;
   signDigitalAgreement: () => void;
   votePost: (postId: string) => void;
@@ -1260,9 +1260,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const signOutUser = () => {
-    localStorage.setItem("scoutme_logged_out", "true");
+  const signOutUser = async () => {
+    try {
+      await auth.signOut();
+    } catch (e) {
+      console.log("Auth signOut error:", e);
+    }
     localStorage.removeItem("scoutme_current_user");
+    localStorage.removeItem("scoutme_session");
+    localStorage.removeItem("scoutme_logged_out");
     setCurrentUser(null);
     setOnboardingStep(1);
     setSelectedOnboardingRole(null);
