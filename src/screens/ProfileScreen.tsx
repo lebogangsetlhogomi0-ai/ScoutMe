@@ -1,11 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useApp } from "../context/AppContext";
-import { 
-  ShieldCheck, AlertTriangle, ChevronRight, HelpCircle, 
+import {
+  ShieldCheck, AlertTriangle, ChevronRight, HelpCircle,
   Settings, Wifi, WifiOff, CreditCard, LogOut, Check, ToggleLeft, ToggleRight,
-  Plus, Users, SwatchBook, Globe, Calendar, Medal, Trash2, Heart, MessageSquare, 
+  Plus, Users, SwatchBook, Globe, Calendar, Medal, Trash2, Heart, MessageSquare,
   Tag, Pin, Landmark, MapPin, Eye, Trophy, Send, PlusCircle, CheckCircle, Share2,
-  FolderLock, Archive, Sparkles, Smile, Star, Shield, X, Gem
+  FolderLock, Archive, Sparkles, Smile, Star, Shield, X, Gem, Camera
 } from "lucide-react";
 import { DigitalAgreementModal } from "../components/DigitalAgreementModal";
 import { ClubPost, UserProfile, CareerMoment, PostHighlight } from "../types";
@@ -13,10 +13,11 @@ import { StoryViewer } from "../components/StoryViewer";
 import { useToast } from "../components/Toast";
 
 export const ProfileScreen: React.FC<{ clubId?: string; onBack?: () => void }> = ({ clubId, onBack }) => {
-  const { 
-    currentUser, 
-    signOutUser, 
+  const {
+    currentUser,
+    signOutUser,
     updateBio,
+    updateAvatar,
     clubPosts,
     notifications,
     addClubPost,
@@ -50,6 +51,41 @@ export const ProfileScreen: React.FC<{ clubId?: string; onBack?: () => void }> =
     scoutStamps
   } = useApp();
   const { showToast } = useToast();
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    const allowed = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    if (!allowed.includes(file.type)) {
+      showToast("This file type is not supported. Please use MP4, MOV for videos or JPG, PNG for images.", "error");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      showToast("Photo too large. Please choose an image under 2MB.", "error");
+      return;
+    }
+
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const MAX = 400;
+      const scale = Math.min(MAX / img.width, MAX / img.height, 1);
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, w, h);
+      const base64 = canvas.toDataURL("image/jpeg", 0.85);
+      updateAvatar(base64).then(() => showToast("Profile photo updated ✦", "success"));
+    };
+    img.src = url;
+  };
 
   const [verificationModalOpen, setVerificationModalOpen] = useState(false);
   const [vRole, setVRole] = useState("scout");
@@ -311,11 +347,44 @@ export const ProfileScreen: React.FC<{ clubId?: string; onBack?: () => void }> =
           {/* PROFILE META INSTAGRAM STYLE */}
           <div className="space-y-4">
             <div className="flex items-center justify-between pb-1">
-              <div 
-                className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-[#0a1a0f] border-2 flex items-center justify-center text-4xl shadow-lg relative"
-                style={{ borderColor: isClub ? primaryColor : "#00e56b" }}
-              >
-                {getStoryEmoji(clubUser.name)}
+              <div className="relative flex-shrink-0">
+                {/* Hidden file input */}
+                {isOwner && (
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                    className="hidden"
+                    onChange={handleAvatarChange}
+                  />
+                )}
+
+                <div
+                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-[#0a1a0f] border-2 flex items-center justify-center text-4xl shadow-lg overflow-hidden"
+                  style={{ borderColor: isClub ? primaryColor : "#00e56b" }}
+                >
+                  {clubUser.avatarBase64 ? (
+                    <img
+                      src={clubUser.avatarBase64}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    getStoryEmoji(clubUser.name)
+                  )}
+                </div>
+
+                {/* Camera overlay — owner only */}
+                {isOwner && (
+                  <button
+                    onClick={() => avatarInputRef.current?.click()}
+                    className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-[#00e56b] border-2 border-[#050e08] flex items-center justify-center shadow-md hover:brightness-110 active:scale-95 transition-all"
+                    title="Change profile photo"
+                  >
+                    <Camera className="w-3.5 h-3.5 text-[#050e08]" />
+                  </button>
+                )}
+
                 {isClub && clubUser.verified && (
                   <span className="absolute -bottom-1 -right-1 bg-[#00e56b] p-0.5 rounded-full border border-[#050e08]" title="Verified Academy/Club Account">
                     <CheckCircle className="w-4 h-4 text-[#050e08]" />

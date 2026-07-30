@@ -93,6 +93,7 @@ interface AppContextType {
   signInUser: (email: string, role: UserRole, password?: string) => Promise<boolean>;
   signOutUser: () => Promise<void>;
   updateBio: (bio: string, extraFields?: Partial<UserProfile>) => void;
+  updateAvatar: (avatarBase64: string) => Promise<void>;
   signDigitalAgreement: () => void;
   votePost: (postId: string) => void;
   addComment: (postId: string, commentText: string) => void;
@@ -1284,6 +1285,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return nextUsers;
     });
     localStorage.setItem("scoutme_current_user", JSON.stringify(updated));
+  };
+
+  const updateAvatar = async (avatarBase64: string) => {
+    if (!currentUser) return;
+    const updated = { ...currentUser, avatarBase64 };
+    setCurrentUser(updated);
+    setUsers(prev => {
+      const nextUsers = prev.map(u => u.userId === currentUser.userId ? updated : u);
+      localStorage.setItem("scoutme_users", JSON.stringify(nextUsers));
+      return nextUsers;
+    });
+    localStorage.setItem("scoutme_current_user", JSON.stringify(updated));
+    if (!isDemoMode && db) {
+      try {
+        const { doc, updateDoc } = await import("firebase/firestore");
+        await updateDoc(doc(db, "users", currentUser.userId), { avatarBase64 });
+      } catch (e) {
+        console.log("Firestore avatar update failed:", e);
+      }
+    }
   };
 
   const signDigitalAgreement = () => {
@@ -2683,6 +2704,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         signInUser,
         signOutUser,
         updateBio,
+        updateAvatar,
         signDigitalAgreement,
         votePost,
         addComment,

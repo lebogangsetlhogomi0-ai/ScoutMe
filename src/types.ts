@@ -36,6 +36,7 @@ export interface UserProfile {
   finishing?: number;
   rating?: number;
   bio?: string;
+  avatarBase64?: string;
   endorsed?: boolean;
 
   // Scout/Club specific fields
