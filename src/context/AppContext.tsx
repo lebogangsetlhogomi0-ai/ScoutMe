@@ -1075,43 +1075,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const signUpUser = async (profile: Partial<UserProfile>, password?: string): Promise<boolean> => {
     setLoading(true);
     setError(null);
-    
-    console.log("[Firebase Sign Up] --- Step 1: Starting registration process ---");
-    console.log("[Firebase Sign Up] Email:", profile.email);
-    console.log("[Firebase Sign Up] Name:", profile.name);
-    console.log("[Firebase Sign Up] Role:", profile.role);
 
     try {
-      // Create Firebase Auth user if auth is real and initialized and not a placeholder/mock
-      const isPlaceholderFirebase = isDemoMode || auth?.app?.options?.apiKey === "AIzaSyMockPlaceholderKey12345" || !auth?.app?.options?.apiKey || auth?.app?.options?.apiKey.includes("Mock");
-      const isRealFirebase = auth && typeof auth.onAuthStateChanged === "function" && !isPlaceholderFirebase && !isDemoMode;
-      let authUserId = `user_${Date.now()}`;
-      let firebaseFailedSilently = false;
+      let authUserId = `demo_${Date.now()}`;
 
-      if (isRealFirebase && profile.email && password) {
-        console.log("[Firebase Sign Up] Step 2: Preparing Firebase Auth call (createUserWithEmailAndPassword)...");
+      if (!isDemoMode && auth && profile.email && password) {
+        // Real Firebase registration
         try {
-          console.log("[Firebase Sign Up] Step 3: Invoking createUserWithEmailAndPassword in Firebase SDK with 10s timeout...");
-          const authResult = await withTimeout(
-            createUserWithEmailAndPassword(auth, profile.email, password),
-            10000,
-            "Connection timed out. Please check your internet and try again."
-          );
-
-          console.log("[Firebase Sign Up] Step 4: Firebase Auth createUserWithEmailAndPassword succeeded!");
-          if (authResult?.user) {
-            authUserId = authResult.user.uid;
-            console.log("[Firebase Sign Up] User authenticated with official UID:", authUserId);
-          }
+          const authResult = await createUserWithEmailAndPassword(auth, profile.email, password);
+          authUserId = authResult.user.uid;
         } catch (authErr: any) {
-          // Any Firebase Auth error (e.g. auth/configuration-not-found) falls back to
-          // Demo Mode silently. The user must never see a red Firebase error.
-          console.warn("[Firebase Sign Up] Firebase Auth unavailable — falling back to Demo Mode silently.", authErr);
-          firebaseFailedSilently = true;
-          authUserId = `user_${Date.now()}`;
+          setLoading(false);
+          const code = authErr?.code || "";
+          if (code === "auth/email-already-in-use") {
+            setError("An account with this email already exists. Please sign in instead.");
+          } else if (code === "auth/weak-password") {
+            setError("Password must be at least 6 characters.");
+          } else if (code === "auth/invalid-email") {
+            setError("Please enter a valid email address.");
+          } else if (code === "auth/network-request-failed") {
+            setError("Connection failed. Check your internet and try again.");
+          } else {
+            setError("Registration failed. Please try again.");
+          }
+          return false;
         }
-      } else {
-        console.log("[Firebase Sign Up] Note: Skipping Firebase Auth signup (running in local simulation or mock mode)");
       }
 
       const newProfile: UserProfile = {
@@ -1124,7 +1112,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         followers: [],
         following: [],
         bio: profile.bio || "Grassroots football enthusiast.",
-        // role dynamic defaults
         ...(profile.role === "player" && {
           position: profile.position || "CAM",
           age: profile.age || 18,
@@ -1132,17 +1119,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           agreementSigned: false,
           votes: 0,
           views: 0,
-          pace: Math.floor(Math.random() * 25) + 70, // seeded stats
+          pace: Math.floor(Math.random() * 25) + 70,
           vision: Math.floor(Math.random() * 25) + 70,
           finishing: Math.floor(Math.random() * 25) + 70,
           rating: 75,
           endorsed: false
         }),
-        ...( (profile.role === "scout" || profile.role === "club") && {
+        ...((profile.role === "scout" || profile.role === "club") && {
           organisation: profile.organisation || "Amateur Scout Network",
           scoutRole: profile.scoutRole || "Independent Scout",
           accountType: profile.accountType || (profile.role === "club" ? "club" : "scout"),
-          // Club dynamic defaults
           ...(profile.accountType === "club" && {
             clubName: profile.clubName || profile.name || "",
             leagueAffiliation: profile.leagueAffiliation || "SAB League",
@@ -1159,157 +1145,113 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         })
       };
 
-      // Write to Firestore if db is available and real
-      if (db && !isPlaceholderFirebase && !firebaseFailedSilently) {
-        console.log("[Firebase Sign Up] Step 5: Preparing Firestore metadata write...");
-        try {
-          console.log("[Firebase Sign Up] Step 6: Invoking setDoc on Firestore with 10s timeout...");
-          await withTimeout(
-            setDoc(doc(db, "users", newProfile.userId), newProfile),
-            10000,
-            "Connection timed out. Please check your internet and try again."
-          );
-          console.log("[Firebase Sign Up] Step 7: Firestore setDoc successful!");
-        } catch (firestoreErr: any) {
-          // Firestore failures also fall back to Demo Mode silently — never shown to the user.
-          console.warn("[Firebase Sign Up] Firestore unavailable — continuing in Demo Mode silently.", firestoreErr);
-          firebaseFailedSilently = true;
-        }
+      // Write to Firestore (non-blocking — don't fail registration if Firestore is slow)
+      if (!isDemoMode && db) {
+        setDoc(doc(db, "users", newProfile.userId), newProfile).catch(e =>
+          console.warn("[Firestore] User write failed:", e)
+        );
       }
 
-      // Add to users and set active context
-      setUsers(prev => {
-        if (prev.some(u => u.userId === newProfile.userId)) {
-          return prev.map(u => u.userId === newProfile.userId ? newProfile : u);
-        }
-        return [...prev, newProfile];
-      });
+      setUsers(prev =>
+        prev.some(u => u.userId === newProfile.userId)
+          ? prev.map(u => u.userId === newProfile.userId ? newProfile : u)
+          : [...prev, newProfile]
+      );
       setCurrentUser(newProfile);
       setLoading(false);
-      console.log("[Firebase Sign Up] --- Registration process fully succeeded! ---");
 
-      // Queue background waiting-list email on the server (triggers within 30 seconds)
+      // Queue welcome email
       if (newProfile.email) {
         fetch("/api/queue-waiting-list", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: newProfile.email,
-            name: newProfile.name,
-            role: newProfile.role
-          })
-        }).then(async r => {
-          const dat = await r.json();
-          console.log("[AppContext Email Queuer] Server response queued successfully:", dat);
-        }).catch(e => {
-          console.warn("[AppContext Email Queuer] Failed to register with mail scheduler:", e);
-        });
+          body: JSON.stringify({ email: newProfile.email, name: newProfile.name, role: newProfile.role })
+        }).catch(() => {});
       }
 
       return true;
     } catch (err: any) {
-      // Catch-all: any unexpected Firebase-related failure falls back to Demo Mode
-      // silently instead of surfacing a red error to the user.
-      console.warn("[Firebase Sign Up] Unexpected error — falling back to Demo Mode silently.", err);
       setLoading(false);
+      setError("Registration failed. Please try again.");
       return false;
     }
   };
 
-  // Sign in simulation loader
   const signInUser = async (email: string, role: UserRole, password?: string): Promise<boolean> => {
     setLoading(true);
     setError(null);
-    
-    console.log("[Firebase Sign In] --- Step 1: Starting authentication process ---");
-    console.log("[Firebase Sign In] Email Search:", email);
-    console.log("[Firebase Sign In] Desired Role:", role);
 
     try {
-      const isPlaceholderFirebase = isDemoMode || auth?.app?.options?.apiKey === "AIzaSyMockPlaceholderKey12345" || !auth?.app?.options?.apiKey || auth?.app?.options?.apiKey.includes("Mock");
-      const isRealFirebase = auth && typeof auth.onAuthStateChanged === "function" && !isPlaceholderFirebase && !isDemoMode;
       let targetUserId: string | null = null;
 
-      if (isRealFirebase && password) {
-        console.log("[Firebase Sign In] Step 2: Preparing Firebase Auth call (signInWithEmailAndPassword)...");
+      if (!isDemoMode && auth && password) {
+        // Real Firebase sign-in
         try {
-          console.log("[Firebase Sign In] Step 3: Invoking signInWithEmailAndPassword in Firebase SDK with 10s timeout...");
-          const authResult = await withTimeout(
-            signInWithEmailAndPassword(auth, email, password),
-            10000,
-            "Connection timed out. Please check your internet and try again."
-          );
-          
-          console.log("[Firebase Sign In] Step 4: Firebase Auth signInWithEmailAndPassword succeeded!");
-          if (authResult?.user) {
-            targetUserId = authResult.user.uid;
-            console.log("[Firebase Sign In] Logged in with Firebase UID:", targetUserId);
-          }
+          const authResult = await signInWithEmailAndPassword(auth, email, password);
+          targetUserId = authResult.user.uid;
         } catch (authErr: any) {
-          // Any Firebase Auth error (e.g. auth/configuration-not-found) falls back to
-          // Demo Mode silently — never surfaced to the user. Continue with local lookup below.
-          console.warn("[Firebase Sign In] Firebase Auth unavailable — falling back to Demo Mode silently.", authErr);
-          targetUserId = null;
+          setLoading(false);
+          const code = authErr?.code || "";
+          if (code === "auth/wrong-password" || code === "auth/invalid-credential") {
+            setError("Incorrect password. Please try again.");
+          } else if (code === "auth/user-not-found") {
+            setError("No account found with this email. Please register.");
+          } else if (code === "auth/invalid-email") {
+            setError("Please enter a valid email address.");
+          } else if (code === "auth/network-request-failed") {
+            setError("Connection failed. Check your internet and try again.");
+          } else if (code === "auth/too-many-requests") {
+            setError("Too many attempts. Please wait a moment and try again.");
+          } else {
+            setError("Sign-in failed. Please check your details and try again.");
+          }
+          return false;
         }
-      } else {
-        console.log("[Firebase Sign In] Note: Skipping Firebase Auth signIn (no password provided or in mock mode)");
       }
 
-      // Find matching user profile by ID if we got one from auth, otherwise fallback to local lists
+      // Load profile: check memory cache first, then Firestore
       let user: UserProfile | undefined;
-      
+
       if (targetUserId) {
-        console.log("[Firebase Sign In] Step 5: Locating profile in caching list with UID...");
-        user = users.find(u => u.userId === targetUserId && u.role === role);
-        if (!user && db && !isPlaceholderFirebase) {
-          console.log("[Firebase Sign In] Profile not found in memory cache. Fetching from Firestore...");
+        user = users.find(u => u.userId === targetUserId);
+        if (!user && !isDemoMode && db) {
           try {
-            console.log("[Firebase Sign In] Step 6: Invoking getDoc on Firestore for UID with 10s timeout...");
-            const userSnap = await withTimeout(
-              getDoc(doc(db, "users", targetUserId)),
-              10000,
-              "Connection timed out. Please check your internet and try again."
-            );
+            const userSnap = await getDoc(doc(db, "users", targetUserId));
             if (userSnap.exists()) {
               user = { userId: userSnap.id, ...userSnap.data() } as UserProfile;
-              console.log("[Firebase Sign In] Step 7: Firestore fetch successful! Loaded custom metadata:", user);
+              setUsers(prev => [...prev.filter(u => u.userId !== user!.userId), user!]);
             }
-          } catch (fetchErr: any) {
-            // Firestore failures also fall back to Demo Mode silently — continue to local lookup below.
-            console.warn("[Firebase Sign In] Firestore unavailable — falling back to Demo Mode silently.", fetchErr);
+          } catch (e) {
+            console.warn("[Firestore] Profile fetch failed:", e);
           }
         }
       }
 
-      // If we still don't have a profile, look up by lowercase email matches
-      if (!user) {
-        console.log("[Firebase Sign In] Attempting alternative lookup by email locally...");
+      // Demo mode fallback: find by email in local list
+      if (!user && isDemoMode) {
         user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.role === role);
       }
 
       if (user) {
         setCurrentUser(user);
         setLoading(false);
-        console.log("[Firebase Sign In] --- Authentication process fully succeeded! Status: ACTIVE ---");
         return true;
-      } else {
-        console.log("[Firebase Sign In] User profile does not exist! Gracefully routing to autoprofile creation...");
-        // Auto-create profile with that email for friendly onboarding
-        const autoProfile: Partial<UserProfile> = {
-          email,
-          role,
-          name: email.split("@")[0].toUpperCase(),
-          province: "Gauteng",
-        };
-        const createSuccess = await signUpUser(autoProfile, password);
-        setLoading(false);
-        return createSuccess;
       }
-    } catch (err: any) {
-      // Catch-all: any unexpected Firebase-related failure falls back to Demo Mode
-      // silently instead of surfacing a red error to the user.
-      console.warn("[Firebase Sign In] Unexpected error — falling back to Demo Mode silently.", err);
+
+      // No profile in Firestore yet — create one (first-time sign-in after manual Firebase user creation)
+      if (targetUserId) {
+        const newProfile: Partial<UserProfile> = { email, role, name: email.split("@")[0].toUpperCase(), province: "Gauteng" };
+        const created = await signUpUser({ ...newProfile, userId: targetUserId } as any, undefined);
+        setLoading(false);
+        return created;
+      }
+
       setLoading(false);
+      setError("No account found. Please register first.");
+      return false;
+    } catch (err: any) {
+      setLoading(false);
+      setError("Sign-in failed. Please try again.");
       return false;
     }
   };

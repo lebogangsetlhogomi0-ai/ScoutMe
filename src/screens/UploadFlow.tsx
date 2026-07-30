@@ -1,10 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useApp } from "../context/AppContext";
-import { 
-  PlusCircle, Video, Play, CheckCircle, 
+import {
+  PlusCircle, Video, Play, CheckCircle,
   MapPin, ShieldCheck, ArrowRight, Eye, Sparkles, X, Scissors, Layers
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { storage, db, isDemoMode } from "../firebase";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 interface UploadFlowProps {
   onUploadSuccess: () => void;
@@ -30,9 +33,10 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
   // Thumbnail selection
   const [selectedThumbnail, setSelectedThumbnail] = useState("⚡ Strike Deflection");
 
-  // Progress percentage state
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Seed standard hashtags to click/tap to append
   const hashtagSuggestions = ["ScoutMe", "KasiFootball", "AthleteDiscovery", "BeingSeen", "SowetoLeague"];
@@ -50,32 +54,65 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
     setStep(2);
   };
 
-  const handleStartUpload = () => {
+  const handleStartUpload = async () => {
     setIsUploading(true);
     setStep(5);
-    
-    // Animate progress bar simulation
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += 10;
-      setUploadProgress(progress);
-      if (progress >= 100) {
-        clearInterval(interval);
-        setTimeout(() => {
-          // Commit post entry in Context
-          addNewPost({
-            caption: caption || `High-performance ${contentType} play in the match setup.`,
-            position: selectedPosition,
-            province: province,
-            club: matchContext || "Local Amateur League",
-            contentType: contentType === "full" ? "match" : contentType as any,
-            tags: selectedHashtags.length > 0 ? selectedHashtags : ["ScoutMe", "KasiFootball"],
-            thumbnailUrl: `⚽ ${selectedThumbnail || 'Match Play'}`
-          });
+
+    const postData = {
+      caption: caption || `High-performance ${contentType} play in the match setup.`,
+      position: selectedPosition,
+      province: province,
+      club: matchContext || "Local Amateur League",
+      contentType: contentType === "full" ? "match" : contentType as any,
+      tags: selectedHashtags.length > 0 ? selectedHashtags : ["ScoutMe", "KasiFootball"],
+      thumbnailUrl: `⚽ ${selectedThumbnail || "Match Play"}`
+    };
+
+    if (!isDemoMode && storage && db && selectedFile && currentUser) {
+      // Real Firebase Storage upload
+      const filePath = `videos/${currentUser.userId}/${Date.now()}_${selectedFile.name}`;
+      const storageRef = ref(storage, filePath);
+      const uploadTask = uploadBytesResumable(storageRef, selectedFile);
+
+      uploadTask.on(
+        "state_changed",
+        (snapshot) => {
+          const pct = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+          setUploadProgress(pct);
+        },
+        (error) => {
+          console.error("Upload failed:", error);
           setIsUploading(false);
-        }, 800);
-      }
-    }, 200);
+        },
+        async () => {
+          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+          // Save post to Firestore
+          await addDoc(collection(db, "posts"), {
+            ...postData,
+            videoUrl: downloadURL,
+            userId: currentUser.userId,
+            userName: currentUser.name,
+            createdAt: serverTimestamp(),
+          });
+          addNewPost({ ...postData, thumbnailUrl: downloadURL });
+          setIsUploading(false);
+        }
+      );
+    } else {
+      // Demo mode or no file selected — simulate progress
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 10;
+        setUploadProgress(progress);
+        if (progress >= 100) {
+          clearInterval(interval);
+          setTimeout(() => {
+            addNewPost(postData);
+            setIsUploading(false);
+          }, 800);
+        }
+      }, 200);
+    }
   };
 
   const handleFinalFinish = () => {
@@ -478,6 +515,31 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
                 <span>"Strike Deflection"</span>
               </button>
             </div>
+
+            {/* File picker — real upload */}
+            {!isDemoMode && (
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="video/*"
+                  className="hidden"
+                  onChange={e => setSelectedFile(e.target.files?.[0] || null)}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`w-full py-3 border-2 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center space-x-2 transition-colors ${
+                    selectedFile
+                      ? "border-[#00e56b] text-[#00e56b] bg-[#0f2318]"
+                      : "border-[#1a3825] text-[#5a8a6a] hover:border-[#00e56b]/50"
+                  }`}
+                >
+                  <Video className="w-4 h-4" />
+                  <span>{selectedFile ? `✓ ${selectedFile.name.slice(0, 30)}` : "SELECT VIDEO FILE"}</span>
+                </button>
+              </div>
+            )}
 
             <button
               id="confirm_upload_btn"
