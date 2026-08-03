@@ -2,7 +2,14 @@ import * as Brevo from "@getbrevo/brevo";
 
 const SENDER = {
   name: "ScoutMe",
-  email: "lebosetlhogomi.scoutme@gmail.com",
+  email: "noreply@scoutme-notification.com",
+};
+
+const REPLY_TO = { email: "lebosetlhogomi.scoutme@gmail.com" };
+
+const EMAIL_HEADERS = {
+  "X-Mailer": "ScoutMe Notification System",
+  "List-Unsubscribe": "<mailto:lebosetlhogomi.scoutme@gmail.com>",
 };
 
 function getWelcomeContent(role: string, name: string): { subject: string; html: string } {
@@ -102,6 +109,8 @@ export default async function handler(req: any, res: any) {
       const { subject, html } = getWelcomeContent(role || "player", name || "");
       const email = new Brevo.SendSmtpEmail();
       email.sender = SENDER;
+      email.replyTo = REPLY_TO;
+      email.headers = EMAIL_HEADERS;
       email.to = [{ email: to, name: name || "" }];
       email.subject = subject;
       email.htmlContent = html;
@@ -111,6 +120,8 @@ export default async function handler(req: any, res: any) {
     if (type === "admin_signup") {
       const email = new Brevo.SendSmtpEmail();
       email.sender = SENDER;
+      email.replyTo = REPLY_TO;
+      email.headers = EMAIL_HEADERS;
       email.to = [{ email: "lebosetlhogomi.scoutme@gmail.com", name: "Lebo" }];
       email.subject = `🆕 New ScoutMe signup — ${(role || "").toUpperCase()}: ${name}`;
       email.htmlContent = `
