@@ -59,7 +59,7 @@ export const OnboardingFlow: React.FC = () => {
     setResetLoading(true);
     try {
       await sendPasswordResetEmail(auth, resetEmail.trim());
-      showToast("Password reset email sent ✦ Check your inbox.", "success");
+      showToast(`Reset link sent to ${resetEmail.trim()} — check your inbox and spam folder.`, "success");
       setShowForgotPassword(false);
       setResetEmail("");
     } catch (err: any) {
@@ -549,7 +549,7 @@ export const OnboardingFlow: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => { setResetEmail(email); setShowForgotPassword(true); }}
-                      className="text-[11px] text-[#5a8a6a] hover:text-[#00e56b] transition font-medium"
+                      className="text-[12px] text-white/70 hover:text-[#00e56b] transition font-semibold underline underline-offset-2"
                     >
                       Forgot password?
                     </button>
@@ -934,6 +934,11 @@ export const OnboardingFlow: React.FC = () => {
               >
                 {resetLoading ? "Sending..." : "Send Reset Link →"}
               </button>
+
+              <p className="text-center text-[11px] text-[#5a8a6a] leading-relaxed">
+                Didn't get it? Check your <span className="text-white/80 font-semibold">spam / junk folder</span>.<br />
+                Make sure the email matches your ScoutMe account.
+              </p>
 
               <button
                 type="button"
