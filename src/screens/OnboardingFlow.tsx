@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Eye, EyeOff, Check, ArrowRight, Shield, Sparkles, ArrowLeft, Mail, RefreshCw } from "lucide-react";
 import { DigitalAgreementModal } from "../components/DigitalAgreementModal";
 import { auth } from "../firebase";
-import { reload } from "firebase/auth";
+import { reload, sendPasswordResetEmail } from "firebase/auth";
 import { useToast } from "../components/Toast";
 
 export const OnboardingFlow: React.FC = () => {
@@ -49,6 +49,31 @@ export const OnboardingFlow: React.FC = () => {
   const [website, setWebsite] = useState("");
   const [clubBio, setClubBio] = useState("");
   
+  // Forgot password flow
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
+
+  const handlePasswordReset = async () => {
+    if (!resetEmail.trim()) return;
+    setResetLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, resetEmail.trim());
+      showToast("Password reset email sent ✦ Check your inbox.", "success");
+      setShowForgotPassword(false);
+      setResetEmail("");
+    } catch (err: any) {
+      const code = err?.code || "";
+      const msg =
+        code === "auth/user-not-found" ? "No account found with this email." :
+        code === "auth/invalid-email" ? "Please enter a valid email address." :
+        "Something went wrong. Please try again.";
+      showToast(msg, "error");
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
   // Agreement checkbox
   const [agreementChecked, setAgreementChecked] = useState(false);
   const [agreementModalOpen, setAgreementModalOpen] = useState(false);
@@ -413,7 +438,7 @@ export const OnboardingFlow: React.FC = () => {
         )}
 
         {/* STEP 3: ACCOUNT CREATION FORM / SIGN IN PAGE */}
-        {onboardingStep === 3 && (
+        {onboardingStep === 3 && !showForgotPassword && (
           <motion.div
             key="step3"
             initial={{ opacity: 0, scale: 0.95 }}
@@ -516,6 +541,19 @@ export const OnboardingFlow: React.FC = () => {
                     </button>
                   </div>
                 </div>
+
+                {/* Forgot password link — sign in mode only */}
+                {isSignInMode && (
+                  <div className="flex justify-end -mt-1">
+                    <button
+                      type="button"
+                      onClick={() => { setResetEmail(email); setShowForgotPassword(true); }}
+                      className="text-[11px] text-[#5a8a6a] hover:text-[#00e56b] transition font-medium"
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
+                )}
 
                 {/* Province dropdown */}
                 {!isSignInMode && (
@@ -848,8 +886,61 @@ export const OnboardingFlow: React.FC = () => {
           </motion.div>
         )}
 
+        {/* FORGOT PASSWORD SCREEN */}
+        {showForgotPassword && (
+          <motion.div
+            key="forgot"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="w-full space-y-7"
+          >
+            <div className="space-y-1">
+              <h2 className="text-4xl font-extrabold tracking-wider font-bebas text-white uppercase">
+                Reset Your Password
+              </h2>
+              <p className="text-xs text-[#5a8a6a] font-sans">
+                Enter your email and we'll send you a reset link.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-[#5a8a6a] uppercase tracking-wide mb-1.5">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handlePasswordReset()}
+                  placeholder="your@email.com"
+                  autoFocus
+                  className="w-full bg-[#0a1a0f] border border-[#1a3825] focus:border-[#00e56b]/60 text-white px-4 py-3 rounded-xl text-sm outline-none transition"
+                />
+              </div>
+
+              <button
+                onClick={handlePasswordReset}
+                disabled={resetLoading || !resetEmail.trim()}
+                className="w-full py-4 bg-[#00e56b] hover:bg-[#00c75c] disabled:opacity-50 text-[#050e08] font-extrabold text-sm uppercase tracking-widest rounded-xl transition"
+              >
+                {resetLoading ? "Sending..." : "Send Reset Link →"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setShowForgotPassword(false); setResetEmail(""); }}
+                className="w-full text-center text-xs text-[#5a8a6a] hover:text-[#e8f5ee] transition font-medium py-1"
+              >
+                ← Back to Sign In
+              </button>
+            </div>
+          </motion.div>
+        )}
+
         {/* STEP 4: EMAIL VERIFICATION */}
-        {onboardingStep === 4 && (
+        {!showForgotPassword && onboardingStep === 4 && (
           <motion.div
             key="step4"
             initial={{ opacity: 0, y: 30 }}
