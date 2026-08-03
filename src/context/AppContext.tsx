@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { UserProfile, PostHighlight, ScoutReport, NewsItem, UserRole, PostComment, RatingDoc, ClubPost, AppNotification, ClubPostComment, SquadMember, PitchReport, CareerMoment, LiveSession, ChallengePost, ChallengeResponse, SpotlightPost, VerificationApplication, ScoutStamp, TrialEvent, TrialEventApplication } from "../types";
 import { db, auth, isDemoMode } from "../firebase";
 import { collection, doc, setDoc, getDoc, updateDoc, onSnapshot, query, orderBy, limit, addDoc, serverTimestamp, increment, where } from "firebase/firestore";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
 import { triggerGlobalToast } from "../components/Toast";
 import { sendWelcomeEmail, sendAdminSignupNotification } from "../utils/emailService";
 
@@ -1179,9 +1179,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try {
         const authResult = await createUserWithEmailAndPassword(auth, profile.email, password);
         authUserId = authResult.user.uid;
-        sendEmailVerification(authResult.user)
-          .then(() => triggerGlobalToast("Verification email sent ✦ Please check your inbox.", "success"))
-          .catch(e => console.warn("[Auth] sendEmailVerification failed:", e));
       } catch (authErr: any) {
         const code = authErr?.code || "";
         const friendlyMessage = SIGNUP_USER_ACTIONABLE_ERRORS[code];

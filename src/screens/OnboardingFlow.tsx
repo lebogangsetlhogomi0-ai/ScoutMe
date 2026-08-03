@@ -2,10 +2,10 @@ import React, { useState, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 import { UserRole, UserProfile } from "../types";
 import { motion, AnimatePresence } from "motion/react";
-import { Eye, EyeOff, Check, ArrowRight, Shield, Sparkles, ArrowLeft, Mail, RefreshCw } from "lucide-react";
+import { Eye, EyeOff, Check, ArrowRight, Shield, Sparkles, ArrowLeft, Mail, RefreshCw, KeyRound } from "lucide-react";
 import { DigitalAgreementModal } from "../components/DigitalAgreementModal";
 import { auth } from "../firebase";
-import { reload, sendPasswordResetEmail } from "firebase/auth";
+import { sendPasswordResetEmail } from "firebase/auth";
 import { useToast } from "../components/Toast";
 
 export const OnboardingFlow: React.FC = () => {
@@ -54,6 +54,14 @@ export const OnboardingFlow: React.FC = () => {
   const [resetEmail, setResetEmail] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
 
+  // OTP state
+  const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", "", "", ""]);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpShake, setOtpShake] = useState(false);
+  const [otpResendCountdown, setOtpResendCountdown] = useState(0);
+  const [otpSending, setOtpSending] = useState(false);
+  const otpRefs = Array.from({ length: 6 }, () => React.useRef<HTMLInputElement>(null));
+
   const handlePasswordReset = async () => {
     if (!resetEmail.trim()) return;
     setResetLoading(true);
@@ -71,6 +79,76 @@ export const OnboardingFlow: React.FC = () => {
       showToast(msg, "error");
     } finally {
       setResetLoading(false);
+    }
+  };
+
+  const sendOtp = async (targetEmail: string, targetName: string, targetRole: string) => {
+    setOtpSending(true);
+    try {
+      await fetch("/api/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: targetEmail, name: targetName, role: targetRole }),
+      });
+      setOtpResendCountdown(30);
+    } finally {
+      setOtpSending(false);
+    }
+  };
+
+  useEffect(() => {
+    if (otpResendCountdown <= 0) return;
+    const t = setTimeout(() => setOtpResendCountdown(c => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [otpResendCountdown]);
+
+  const handleOtpInput = (index: number, value: string) => {
+    const digit = value.replace(/\D/g, "").slice(-1);
+    const next = [...otpDigits];
+    next[index] = digit;
+    setOtpDigits(next);
+    if (digit && index < 5) otpRefs[index + 1].current?.focus();
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !otpDigits[index] && index > 0) {
+      otpRefs[index - 1].current?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (pasted.length === 6) {
+      setOtpDigits(pasted.split(""));
+      otpRefs[5].current?.focus();
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    const code = otpDigits.join("");
+    if (code.length < 6) return;
+    setOtpLoading(true);
+    try {
+      const res = await fetch("/api/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, otp: code }),
+      });
+      if (res.ok) {
+        setOnboardingStep(5);
+      } else {
+        const data = await res.json();
+        const msg =
+          data.error === "Code expired" ? "Code expired. Request a new one." :
+          data.error === "Code already used" ? "This code was already used." :
+          "Wrong code. Try again.";
+        showToast(msg, "error");
+        setOtpShake(true);
+        setOtpDigits(["", "", "", "", "", ""]);
+        setTimeout(() => { setOtpShake(false); otpRefs[0].current?.focus(); }, 600);
+      }
+    } finally {
+      setOtpLoading(false);
     }
   };
 
@@ -148,6 +226,10 @@ export const OnboardingFlow: React.FC = () => {
 
       const success = await signUpUser(profileData, password);
       if (success) {
+        const otpRole = profileData.role || "player";
+        const otpName = profileData.name || fullName;
+        await sendOtp(email, otpName, otpRole);
+        setOtpDigits(["", "", "", "", "", ""]);
         setOnboardingStep(4);
       }
     }
@@ -951,7 +1033,7 @@ export const OnboardingFlow: React.FC = () => {
           </motion.div>
         )}
 
-        {/* STEP 4: EMAIL VERIFICATION */}
+        {/* STEP 4: OTP VERIFICATION */}
         {!showForgotPassword && onboardingStep === 4 && (
           <motion.div
             key="step4"
@@ -960,60 +1042,66 @@ export const OnboardingFlow: React.FC = () => {
             exit={{ opacity: 0 }}
             className="flex-1 flex flex-col items-center justify-center text-center space-y-7 px-4"
           >
-            <div className="w-20 h-20 rounded-full bg-[#1f1b0a] border-2 border-[#f5c518]/60 flex items-center justify-center shadow-xl relative">
-              <Mail className="w-9 h-9 text-[#f5c518]" />
-              <div className="absolute inset-0 rounded-full border border-[#f5c518]/20 animate-ping" />
+            <div className="w-20 h-20 rounded-full bg-[#0a1a0f] border-2 border-[#00e56b]/60 flex items-center justify-center shadow-xl relative">
+              <KeyRound className="w-9 h-9 text-[#00e56b]" />
+              <div className="absolute inset-0 rounded-full border border-[#00e56b]/20 animate-ping" />
             </div>
 
-            <div className="space-y-3 max-w-xs">
+            <div className="space-y-2 max-w-xs">
               <h3 className="text-4xl font-black font-bebas tracking-wide text-white">
-                CHECK YOUR EMAIL 📧
+                CHECK YOUR EMAIL 🔑
               </h3>
-              <p className="text-sm text-[#e8d87a] font-semibold">
-                We sent a verification link to<br />
-                <span className="text-[#f5c518] font-bold break-all">{email}</span>
+              <p className="text-sm text-[#e8f5ee] font-semibold">
+                We sent a 6-digit code to<br />
+                <span className="text-[#00e56b] font-bold break-all">{email}</span>
               </p>
-              <p className="text-xs text-[#5a8a6a] leading-relaxed">
-                Click the link to verify your account and unlock all ScoutMe features.
-              </p>
+              <p className="text-xs text-[#5a8a6a]">Expires in 10 minutes</p>
             </div>
 
-            <div className="w-full max-w-xs space-y-3 pt-2">
+            {/* Six digit boxes */}
+            <motion.div
+              className="flex gap-3 justify-center"
+              animate={otpShake ? { x: [0, -10, 10, -10, 10, 0] } : {}}
+              transition={{ duration: 0.4 }}
+              onPaste={handleOtpPaste}
+            >
+              {otpDigits.map((d, i) => (
+                <input
+                  key={i}
+                  ref={otpRefs[i]}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={d}
+                  onChange={e => handleOtpInput(i, e.target.value)}
+                  onKeyDown={e => handleOtpKeyDown(i, e)}
+                  className="w-12 h-14 text-center text-2xl font-black bg-[#0a1a0f] border-2 border-[#1a3825] focus:border-[#00e56b] text-white rounded-xl outline-none transition-colors"
+                />
+              ))}
+            </motion.div>
+
+            <div className="w-full max-w-xs space-y-3">
               <button
-                onClick={async () => {
-                  const user = auth?.currentUser;
-                  if (user) {
-                    await reload(user).catch(() => {});
-                    if (user.emailVerified) {
-                      setOnboardingStep(5);
-                    } else {
-                      showToast("Email not verified yet. Please check your inbox.", "error");
-                    }
-                  } else {
-                    setOnboardingStep(5);
-                  }
-                }}
-                className="w-full py-4 text-sm font-extrabold uppercase tracking-widest rounded-xl hover:brightness-110 active:scale-95 transition-all duration-300 font-sans shadow-lg bg-[#f5c518] text-[#050e08]"
+                onClick={handleVerifyOtp}
+                disabled={otpLoading || otpDigits.join("").length < 6}
+                className="w-full py-4 bg-[#00e56b] hover:bg-[#00c75c] disabled:opacity-40 text-[#050e08] font-extrabold text-sm uppercase tracking-widest rounded-xl transition"
               >
-                I've verified — continue →
+                {otpLoading ? "Verifying..." : "VERIFY CODE →"}
               </button>
 
               <button
                 onClick={async () => {
-                  await resendVerificationEmail().catch(() => {});
-                  showToast("Verification email resent ✦", "success");
+                  const role = selectedOnboardingRole || "player";
+                  await sendOtp(email, fullName, role);
+                  showToast("New code sent — check your inbox.", "success");
+                  setOtpDigits(["", "", "", "", "", ""]);
+                  otpRefs[0].current?.focus();
                 }}
-                className="w-full py-3 text-xs font-bold uppercase tracking-wider rounded-xl border border-[#1a3825] text-[#5a8a6a] hover:text-white hover:border-[#5a8a6a] flex items-center justify-center space-x-2 transition"
+                disabled={otpResendCountdown > 0 || otpSending}
+                className="w-full py-3 text-xs font-bold uppercase tracking-wider rounded-xl border border-[#1a3825] text-[#5a8a6a] hover:text-white hover:border-[#5a8a6a] disabled:opacity-40 flex items-center justify-center space-x-2 transition"
               >
                 <RefreshCw className="w-4 h-4" />
-                <span>Resend email</span>
-              </button>
-
-              <button
-                onClick={() => setOnboardingStep(5)}
-                className="w-full text-xs text-[#5a8a6a]/60 hover:text-[#5a8a6a] pt-1"
-              >
-                Skip for now
+                <span>{otpResendCountdown > 0 ? `Resend in ${otpResendCountdown}s` : otpSending ? "Sending..." : "Resend code"}</span>
               </button>
             </div>
           </motion.div>

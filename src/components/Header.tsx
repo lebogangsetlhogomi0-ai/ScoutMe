@@ -1,9 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 import { useToast } from "./Toast";
-import { Bell, Trophy, ShieldAlert, Award, User, BarChart2, Settings, LogOut, ChevronRight, Mail, CheckCheck } from "lucide-react";
-import { auth } from "../firebase";
-import { reload } from "firebase/auth";
+import { Bell, Trophy, ShieldAlert, Award, User, BarChart2, Settings, LogOut, ChevronRight, CheckCheck } from "lucide-react";
 
 interface HeaderProps {
   onNotificationClick?: () => void;
@@ -12,7 +10,7 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick }) => {
-  const { currentUser, signOutUser, resendVerificationEmail, notifications, markNotificationRead, markAllNotificationsRead, unreadNotificationsCount } = useApp();
+  const { currentUser, signOutUser, notifications, markNotificationRead, markAllNotificationsRead, unreadNotificationsCount } = useApp();
   const { showToast } = useToast();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -68,14 +66,6 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick
     return `${Math.floor(hrs / 24)}d ago`;
   };
 
-  const [emailVerified, setEmailVerified] = React.useState<boolean | null>(null);
-
-  React.useEffect(() => {
-    if (!currentUser || !auth?.currentUser) { setEmailVerified(null); return; }
-    reload(auth.currentUser)
-      .then(() => setEmailVerified(auth?.currentUser?.emailVerified ?? null))
-      .catch(() => setEmailVerified(null));
-  }, [currentUser]);
 
   return (
     <div className="sticky top-0 z-40">
@@ -257,26 +247,6 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick
       </div>
     </header>
 
-    {/* Gold unverified email banner */}
-    {currentUser && emailVerified === false && (
-      <div className="flex items-center justify-between px-4 py-2 bg-[#1f1b0a] border-b border-[#f5c518]/30">
-        <div className="flex items-center space-x-2">
-          <Mail className="w-3.5 h-3.5 text-[#f5c518] flex-shrink-0" />
-          <span className="text-[10.5px] text-[#e8d87a] font-sans">
-            📧 Verify your email to unlock all features
-          </span>
-        </div>
-        <button
-          onClick={async () => {
-            await resendVerificationEmail().catch(() => {});
-            showToast("Verification email resent ✦", "success");
-          }}
-          className="text-[10px] font-bold text-[#f5c518] uppercase tracking-wider hover:underline ml-3 flex-shrink-0"
-        >
-          Resend
-        </button>
-      </div>
-    )}
     </div>
   );
 };
