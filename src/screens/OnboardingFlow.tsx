@@ -605,12 +605,15 @@ export const OnboardingFlow: React.FC = () => {
                         </label>
                         <input
                           id="signup_age"
-                          type="number"
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
                           value={age}
-                          onChange={(e) => setAge(e.target.value === "" ? "" : parseInt(e.target.value))}
+                          onChange={(e) => {
+                            const raw = e.target.value.replace(/[^0-9]/g, "");
+                            setAge(raw === "" ? "" : parseInt(raw));
+                          }}
                           placeholder="18"
-                          min={13}
-                          max={45}
                           className="w-full bg-[#0a1a0f] border border-[#1a3825] text-white px-4 py-3 rounded-xl text-sm"
                         />
                       </div>
