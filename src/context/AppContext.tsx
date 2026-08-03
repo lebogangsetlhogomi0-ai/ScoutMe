@@ -13,6 +13,7 @@ const SIGNUP_USER_ACTIONABLE_ERRORS: Record<string, string> = {
   "auth/email-already-in-use": "An account with this email already exists. Please sign in instead.",
   "auth/weak-password": "Password must be at least 6 characters.",
   "auth/invalid-email": "Please enter a valid email address.",
+  "auth/network-request-failed": "Connection failed. Please check your internet and try again.",
 };
 
 const SIGNIN_USER_ACTIONABLE_ERRORS: Record<string, string> = {
@@ -20,7 +21,8 @@ const SIGNIN_USER_ACTIONABLE_ERRORS: Record<string, string> = {
   "auth/invalid-credential": "Incorrect password. Please try again.",
   "auth/user-not-found": "No account found with this email. Please register.",
   "auth/invalid-email": "Please enter a valid email address.",
-  "auth/too-many-requests": "Too many attempts. Please wait a moment and try again.",
+  "auth/too-many-requests": "Too many attempts. Please wait a few minutes and try again.",
+  "auth/network-request-failed": "Connection failed. Please check your internet and try again.",
 };
 
 // Safe mock storage fallback to prevent iframe security/sandbox crashes
@@ -1129,31 +1131,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setError(null);
 
     try {
-      let authUserId = `demo_${Date.now()}`;
+      if (!auth || !profile.email || !password) {
+        setLoading(false);
+        triggerGlobalToast("Please provide a valid email and password.", "error");
+        return false;
+      }
 
-      if (!isDemoMode && auth && profile.email && password) {
-        // Real Firebase registration
-        try {
-          const authResult = await createUserWithEmailAndPassword(auth, profile.email, password);
-          authUserId = authResult.user.uid;
-          // Send verification email — non-blocking
-          sendEmailVerification(authResult.user)
-            .then(() => triggerGlobalToast("Verification email sent ✦ Please check your inbox.", "success"))
-            .catch(e => console.warn("[Auth] sendEmailVerification failed:", e));
-        } catch (authErr: any) {
-          const code = authErr?.code || "";
-          const friendlyMessage = SIGNUP_USER_ACTIONABLE_ERRORS[code];
-          if (friendlyMessage) {
-            setLoading(false);
-            triggerGlobalToast(friendlyMessage, "error");
-            return false;
-          }
-          // Any other Firebase/Auth failure (e.g. auth/configuration-not-found) is an
-          // infrastructure issue, not something the user did wrong — never show it.
-          // Fall back to a local account silently and keep the sign-up going.
-          console.warn(`[Auth] Firebase sign-up unavailable (${code || "unknown"}) — continuing locally.`, authErr);
-          authUserId = `local_${Date.now()}`;
-        }
+      let authUserId: string;
+
+      try {
+        const authResult = await createUserWithEmailAndPassword(auth, profile.email, password);
+        authUserId = authResult.user.uid;
+        sendEmailVerification(authResult.user)
+          .then(() => triggerGlobalToast("Verification email sent ✦ Please check your inbox.", "success"))
+          .catch(e => console.warn("[Auth] sendEmailVerification failed:", e));
+      } catch (authErr: any) {
+        const code = authErr?.code || "";
+        const friendlyMessage = SIGNUP_USER_ACTIONABLE_ERRORS[code];
+        setLoading(false);
+        triggerGlobalToast(friendlyMessage || "Something went wrong. Please try again.", "error");
+        return false;
       }
 
       const newProfile: UserProfile = {
@@ -1237,50 +1234,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setError(null);
 
     try {
-      let targetUserId: string | null = null;
-      let firebaseSignInUnavailable = false;
+      if (!auth || !password) {
+        setLoading(false);
+        triggerGlobalToast("Please enter your password.", "error");
+        return false;
+      }
 
-      if (!isDemoMode && auth && password) {
-        // Real Firebase sign-in
+      let targetUserId: string;
+
+      try {
+        const authResult = await signInWithEmailAndPassword(auth, email, password);
+        targetUserId = authResult.user.uid;
+      } catch (authErr: any) {
+        const code = authErr?.code || "";
+        const friendlyMessage = SIGNIN_USER_ACTIONABLE_ERRORS[code];
+        setLoading(false);
+        triggerGlobalToast(friendlyMessage || "Unable to connect. Please check your internet and try again.", "error");
+        return false;
+      }
+
+      // Load profile from local cache first, then Firestore
+      let user: UserProfile | undefined = users.find(u => u.userId === targetUserId);
+
+      if (!user && db) {
         try {
-          const authResult = await signInWithEmailAndPassword(auth, email, password);
-          targetUserId = authResult.user.uid;
-        } catch (authErr: any) {
-          const code = authErr?.code || "";
-          const friendlyMessage = SIGNIN_USER_ACTIONABLE_ERRORS[code];
-          if (friendlyMessage) {
-            setLoading(false);
-            triggerGlobalToast(friendlyMessage, "error");
-            return false;
+          const userSnap = await getDoc(doc(db, "users", targetUserId));
+          if (userSnap.exists()) {
+            user = { userId: userSnap.id, ...userSnap.data() } as UserProfile;
+            setUsers(prev => [...prev.filter(u => u.userId !== user!.userId), user!]);
           }
-          // Any other Firebase/Auth failure (e.g. auth/configuration-not-found) is an
-          // infrastructure issue — never show it. Fall back to local lookup silently.
-          console.warn(`[Auth] Firebase sign-in unavailable (${code || "unknown"}) — falling back to local lookup.`, authErr);
-          firebaseSignInUnavailable = true;
+        } catch (e) {
+          console.warn("[Firestore] Profile fetch failed:", e);
         }
-      }
-
-      // Load profile: check memory cache first, then Firestore
-      let user: UserProfile | undefined;
-
-      if (targetUserId) {
-        user = users.find(u => u.userId === targetUserId);
-        if (!user && !isDemoMode && db) {
-          try {
-            const userSnap = await getDoc(doc(db, "users", targetUserId));
-            if (userSnap.exists()) {
-              user = { userId: userSnap.id, ...userSnap.data() } as UserProfile;
-              setUsers(prev => [...prev.filter(u => u.userId !== user!.userId), user!]);
-            }
-          } catch (e) {
-            console.warn("[Firestore] Profile fetch failed:", e);
-          }
-        }
-      }
-
-      // Demo mode / Firebase-unavailable fallback: find by email in local list
-      if (!user && (isDemoMode || firebaseSignInUnavailable)) {
-        user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.role === role);
       }
 
       if (user) {
@@ -1289,17 +1274,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return true;
       }
 
-      // No profile in Firestore yet — create one (first-time sign-in after manual Firebase user creation)
-      if (targetUserId) {
-        const newProfile: Partial<UserProfile> = { email, role, name: email.split("@")[0].toUpperCase(), province: "Gauteng" };
-        const created = await signUpUser({ ...newProfile, userId: targetUserId } as any, undefined);
-        setLoading(false);
-        return created;
-      }
-
+      // Auth succeeded but no Firestore profile yet — create one
+      const newProfile: Partial<UserProfile> = {
+        email,
+        role,
+        name: email.split("@")[0].toUpperCase(),
+        province: "Gauteng",
+      };
+      const created = await signUpUser({ ...newProfile, userId: targetUserId } as any, undefined);
       setLoading(false);
-      triggerGlobalToast("No account found. Please register first.", "error");
-      return false;
+      return created;
     } catch (err: any) {
       console.error("[Auth] Unexpected sign-in error:", err);
       setLoading(false);

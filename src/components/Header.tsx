@@ -12,7 +12,7 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick }) => {
-  const { currentUser, isDemoMode, signOutUser, resendVerificationEmail } = useApp();
+  const { currentUser, signOutUser, resendVerificationEmail } = useApp();
   const { showToast } = useToast();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -74,15 +74,6 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick
           className="h-9 w-auto object-contain filter drop-shadow"
           referrerPolicy="no-referrer"
         />
-        {isDemoMode && (
-          <div
-            onClick={() => showToast("Running in Demo Mode — any email/password works ✦", "info")}
-            className="text-[10px] bg-[#f5c518] text-black font-extrabold px-2 py-0.5 rounded-full font-sans cursor-pointer uppercase tracking-wider shadow-sm select-none hover:scale-105 active:scale-95 transition-all whitespace-nowrap animate-pulse"
-            title="Firebase not connected. Running with demo data."
-          >
-            DEMO MODE
-          </div>
-        )}
       </div>
 
       <div className="flex items-center space-x-3.5">

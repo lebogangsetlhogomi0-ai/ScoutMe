@@ -308,50 +308,6 @@ export const OnboardingFlow: React.FC = () => {
                 </p>
               </div>
 
-              {/* DEMO BYPASS GATEWAYS */}
-              <div className="bg-[#140b09] border border-red-950/20 rounded-2xl p-4 mb-6 space-y-3">
-                <span className="text-[10px] font-mono tracking-wider text-[#ffaa77] font-bold block uppercase text-center select-none">
-                  ⚡ DEMO ACCESS CORRIDORS: QUICK SIGN-IN
-                </span>
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    onClick={async () => {
-                      const success = await signInUser("sipho@scoutme.org", "player");
-                      if (success) setOnboardingStep(5);
-                    }}
-                    className="p-2 border border-emerald-900 bg-[#06140b]/80 hover:bg-[#00e56b]/15 rounded-xl text-center space-y-1 transition duration-200 focus:outline-none"
-                  >
-                    <span className="text-sm block">⚽</span>
-                    <span className="text-[9px] font-bold block text-white uppercase truncate">Sipho D.</span>
-                    <span className="text-[8px] font-mono text-[#00e56b] block uppercase">Player</span>
-                  </button>
-
-                  <button
-                    onClick={async () => {
-                      const success = await signInUser("cellular@scoutme.org", "scout");
-                      if (success) setOnboardingStep(5);
-                    }}
-                    className="p-2 border border-[#f5c518]/25 bg-[#141209]/80 hover:bg-[#f5c518]/15 rounded-xl text-center space-y-1 transition duration-200 focus:outline-none"
-                  >
-                    <span className="text-sm block">💎</span>
-                    <span className="text-[9px] font-bold block text-white uppercase truncate">Cellular M.</span>
-                    <span className="text-[8px] font-mono text-[#f5c518] block uppercase">Pro Scout</span>
-                  </button>
-
-                  <button
-                    onClick={async () => {
-                      const success = await signInUser("vino@scoutme.org", "scout");
-                      if (success) setOnboardingStep(5);
-                    }}
-                    className="p-2 border border-indigo-900 bg-[#0a071c]/80 hover:bg-indigo-950/40 rounded-xl text-center space-y-1 transition duration-200 focus:outline-none"
-                  >
-                    <span className="text-sm block">🎙️</span>
-                    <span className="text-[9px] font-bold block text-white uppercase truncate">Vino Snap</span>
-                    <span className="text-[8px] font-mono text-indigo-400 block uppercase">Creator</span>
-                  </button>
-                </div>
-              </div>
-
               {/* Stacked Option Cards */}
               <div className="space-y-4 mt-8 pb-10">
                 

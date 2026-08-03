@@ -278,14 +278,6 @@ export const DigitalPitchFeed: React.FC<DigitalPitchFeedProps> = ({
           ) : (
           /* TALENT FEED: Tier 1 grassroots children only */
           <>
-            {/* Seed content label — shown when only seed posts exist (no real uploads yet) */}
-            {talentPosts.every(p => p.postId.startsWith("post_")) && (
-              <div className="text-center py-1">
-                <span className="text-[10px] text-[#5a8a6a]/70 font-mono uppercase tracking-widest">
-                  Sample content — be the first to post your highlights
-                </span>
-              </div>
-            )}
             {talentPosts.map((post) => {
               const playerObj = users.find(u => u.name === post.playerName || u.userId === post.userId);
               const isVoted = votedPosts.includes(post.postId);
