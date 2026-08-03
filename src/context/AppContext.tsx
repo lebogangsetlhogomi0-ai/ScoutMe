@@ -4,6 +4,7 @@ import { db, auth, isDemoMode } from "../firebase";
 import { collection, doc, setDoc, getDoc, updateDoc, onSnapshot, query, orderBy, limit, addDoc, serverTimestamp, increment, where } from "firebase/firestore";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
 import { triggerGlobalToast } from "../components/Toast";
+import { sendWelcomeEmail, sendAdminSignupNotification } from "../utils/emailService";
 
 const OFFICIAL_ACCOUNT_EMAIL = "lebosetlhogomi.scoutme@gmail.com";
 
@@ -1249,13 +1250,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // Request FCM permission after signup (non-blocking)
       requestNotificationPermission(newProfile.userId);
 
-      // Queue welcome email
+      // Send welcome + admin notification emails (non-blocking)
       if (newProfile.email) {
-        fetch("/api/queue-waiting-list", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: newProfile.email, name: newProfile.name, role: newProfile.role })
-        }).catch(() => {});
+        sendWelcomeEmail(
+          newProfile.email,
+          newProfile.name,
+          newProfile.role,
+          {
+            position: (newProfile as any).position,
+            club: (newProfile as any).club || (newProfile as any).clubName,
+            province: newProfile.province,
+          }
+        ).catch(console.error);
+
+        sendAdminSignupNotification({
+          name: newProfile.name,
+          email: newProfile.email,
+          role: newProfile.role,
+          province: newProfile.province,
+          position: (newProfile as any).position,
+          club: (newProfile as any).club || (newProfile as any).clubName,
+        }).catch(console.error);
       }
 
       return true;
