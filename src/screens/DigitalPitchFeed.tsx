@@ -306,6 +306,24 @@ export const DigitalPitchFeed: React.FC<DigitalPitchFeedProps> = ({
                       <span className="text-[10px] font-black text-[#00e56b] uppercase tracking-widest">◆ ScoutMe Official</span>
                     </div>
                   )}
+                  {/* Submission type label banner */}
+                  {post.submissionType === "weekly_challenge" && (
+                    <div className="px-4 py-1.5 bg-[#00e56b]/10 border-b border-[#00e56b]/20 flex items-center space-x-1.5">
+                      <span className="text-[10px] font-black text-[#00e56b] uppercase tracking-widest">⚡ Weekly Challenge Entry</span>
+                    </div>
+                  )}
+                  {post.submissionType === "club_trial" && (
+                    <div className="px-4 py-1.5 bg-[#f5c518]/10 border-b border-[#f5c518]/20 flex items-center space-x-1.5">
+                      <span className="text-[10px] font-black text-[#f5c518] uppercase tracking-widest">🔭 {post.clubTrialClubName || "Club"} Trial Application</span>
+                    </div>
+                  )}
+                  {post.submissionType === "both" && (
+                    <div className="px-4 py-1.5 bg-gradient-to-r from-[#00e56b]/10 to-[#f5c518]/10 border-b border-white/10 flex items-center space-x-2">
+                      <span className="text-[10px] font-black text-[#00e56b] uppercase tracking-widest">⚡ Weekly Challenge</span>
+                      <span className="text-[#5a8a6a] text-[10px]">+</span>
+                      <span className="text-[10px] font-black text-[#f5c518] uppercase tracking-widest">🔭 {post.clubTrialClubName || "Club"} Trial</span>
+                    </div>
+                  )}
                   {/* Card Header Row */}
                   <div className="p-4 flex items-center justify-between bg-[#06120b]">
                     <div className="flex items-center space-x-3">

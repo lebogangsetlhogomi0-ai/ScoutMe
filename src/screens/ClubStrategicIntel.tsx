@@ -1,15 +1,22 @@
 import React from "react";
 import { useApp } from "../context/AppContext";
 import { useToast } from "../components/Toast";
-import { Star, ShieldAlert, Users, Film, CheckCircle, BarChart2, Trash2 } from "lucide-react";
+import { Star, ShieldAlert, Users, Film, CheckCircle, BarChart2, Trash2, Zap } from "lucide-react";
 
 interface ClubStrategicIntelProps {
   onOpenPlayerProfile: (playerId: string) => void;
 }
 
 export const ClubStrategicIntel: React.FC<ClubStrategicIntelProps> = ({ onOpenPlayerProfile }) => {
-  const { shortlist, users, toggleShortlist } = useApp();
+  const { shortlist, users, toggleShortlist, currentUser, trialEvents, trialEventApplications } = useApp();
   const { showToast } = useToast();
+
+  // Filter trial applications for this club
+  const myClubId = currentUser?.userId;
+  const myTrialEvents = trialEvents.filter(e => e.clubId === myClubId || currentUser?.role === "club");
+  const myTrialApplications = trialEventApplications.filter(app =>
+    myTrialEvents.some(e => e.trialEventId === app.trialEventId)
+  );
 
   // Find shortlisted player profiles
   const shortlistedPlayers = users.filter(usr => shortlist.includes(usr.userId));
@@ -161,6 +168,63 @@ export const ClubStrategicIntel: React.FC<ClubStrategicIntelProps> = ({ onOpenPl
           </div>
         )}
       </div>
+
+      {/* VIRTUAL TRIAL APPLICANTS */}
+      {currentUser?.role === "club" && (
+        <div className="bg-[#0a1a0f] border border-[#1a3825] p-5 rounded-2xl space-y-4">
+          <h3 className="text-lg font-extrabold font-bebas tracking-wide text-white uppercase flex items-center space-x-2">
+            <Zap className="w-5 h-5 text-[#f5c518]" />
+            <span>🔭 Virtual Trial Applicants ({myTrialApplications.length})</span>
+          </h3>
+
+          {myTrialEvents.length === 0 ? (
+            <p className="text-xs text-[#5a8a6a] italic text-center py-4">No active trial events. Post a Virtual Trial Challenge to attract applicants.</p>
+          ) : myTrialApplications.length === 0 ? (
+            <div className="text-center p-6 bg-[#050e08]/60 border border-[#1a3825] rounded-xl space-y-2">
+              <p className="text-xs text-[#5a8a6a] italic">No applications yet for your active trial events.</p>
+              {myTrialEvents.map(e => (
+                <div key={e.trialEventId} className="inline-flex items-center space-x-1.5 px-3 py-1 bg-[#f5c518]/10 border border-[#f5c518]/30 rounded-full">
+                  <span className="text-[9px] font-black text-[#f5c518] uppercase tracking-widest">🔭 {e.drillName} — {e.clubName}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {myTrialApplications.map((app) => {
+                const player = users.find(u => u.userId === app.playerId);
+                return (
+                  <div
+                    key={app.applicationId}
+                    className="bg-[#050e08]/90 p-3.5 rounded-xl border border-[#1a3825] flex items-center justify-between"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <span className="text-2xl">{getStoryEmoji(app.playerName)}</span>
+                      <div>
+                        <h4 className="text-white text-xs font-bold">{app.playerName}</h4>
+                        <span className="text-[9px] text-[#5a8a6a] font-mono uppercase">{app.drillName}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <div className="text-right">
+                        <span className="text-[8.5px] text-[#5a8a6a] block uppercase font-mono">Score</span>
+                        <span className="text-sm font-black text-[#f5c518] font-mono">{app.score}<span className="text-[9px] text-[#5a8a6a]">/100</span></span>
+                      </div>
+                      {player && (
+                        <button
+                          onClick={() => onOpenPlayerProfile(player.userId)}
+                          className="px-2.5 py-1 bg-[#0a1a0f] border border-[#f5c518]/40 hover:border-[#f5c518] text-[#f5c518] rounded text-[10px] uppercase font-bold tracking-wider transition"
+                        >
+                          View
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 5. SUBSCRIPTION TIER DISPLAY */}
       <div className="bg-[#0a1a0f] border border-[#2e5d7a]/50 p-5 rounded-2xl space-y-4 border-l-4 border-l-[#4da6ff]">

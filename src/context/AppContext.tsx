@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { UserProfile, PostHighlight, ScoutReport, NewsItem, UserRole, PostComment, RatingDoc, ClubPost, AppNotification, ClubPostComment, SquadMember, PitchReport, CareerMoment, LiveSession, ChallengePost, ChallengeResponse, SpotlightPost, VerificationApplication, ScoutStamp } from "../types";
+import { UserProfile, PostHighlight, ScoutReport, NewsItem, UserRole, PostComment, RatingDoc, ClubPost, AppNotification, ClubPostComment, SquadMember, PitchReport, CareerMoment, LiveSession, ChallengePost, ChallengeResponse, SpotlightPost, VerificationApplication, ScoutStamp, TrialEvent, TrialEventApplication } from "../types";
 import { db, auth, isDemoMode } from "../firebase";
 import { collection, doc, setDoc, getDoc, updateDoc, onSnapshot, query, orderBy, limit, addDoc, serverTimestamp, increment } from "firebase/firestore";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
@@ -109,7 +109,7 @@ interface AppContextType {
   scoutStamps: ScoutStamp[];
   
   postsLoading: boolean;
-  createPost: (data: { videoUrl: string; thumbnailUrl?: string; caption: string; tags: string[]; contentType: string; position: string; league?: string; province: string; visibility?: string; featuredPlayerId?: string; featuredPlayerName?: string; }) => Promise<void>;
+  createPost: (data: { videoUrl: string; thumbnailUrl?: string; caption: string; tags: string[]; contentType: string; position: string; league?: string; province: string; visibility?: string; featuredPlayerId?: string; featuredPlayerName?: string; submissionType?: "weekly_challenge" | "club_trial" | "both"; clubTrialClubName?: string; }) => Promise<void>;
   checkAutoPost: () => Promise<void>;
 
   // Actions
@@ -170,6 +170,9 @@ interface AppContextType {
   voteChallengeResponse: (responseId: string) => Promise<void>;
   upgradeUserTier: (tier: string) => Promise<void>;
   addVirtualTrialResult: (playerId: string, result: any) => Promise<void>;
+  trialEvents: TrialEvent[];
+  trialEventApplications: TrialEventApplication[];
+  applyToTrialEvent: (trialEventId: string, result: { drillName: string; score: number }) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -885,6 +888,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     return parsed;
   });
+
+  const [trialEvents] = useState<TrialEvent[]>([
+    {
+      trialEventId: "trial_event_1",
+      clubId: "club_kaizer",
+      clubName: "Kaizer Chiefs FC",
+      drillId: "cone_slalom",
+      drillName: "Cone Slalom",
+      deadline: new Date(Date.now() + 7 * 24 * 3600000).toISOString(),
+      createdAt: new Date(Date.now() - 2 * 24 * 3600000).toISOString(),
+      isActive: true,
+    },
+    {
+      trialEventId: "trial_event_2",
+      clubId: "club_pirates",
+      clubName: "Orlando Pirates Academy",
+      drillId: "sprint_30m",
+      drillName: "30M Sprint",
+      deadline: new Date(Date.now() + 5 * 24 * 3600000).toISOString(),
+      createdAt: new Date(Date.now() - 1 * 24 * 3600000).toISOString(),
+      isActive: true,
+    },
+  ]);
+
+  const [trialEventApplications, setTrialEventApplications] = useState<TrialEventApplication[]>([]);
 
   const [spotlightPosts, setSpotlightPosts] = useState<SpotlightPost[]>(() => {
     const saved = localStorage.getItem("scoutme_spotlight_posts");
@@ -2731,6 +2759,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     visibility?: string;
     featuredPlayerId?: string;
     featuredPlayerName?: string;
+    submissionType?: "weekly_challenge" | "club_trial" | "both";
+    clubTrialClubName?: string;
   }) => {
     if (!currentUser) return;
     if (currentUser.role !== "player" && currentUser.role !== "platform") return;
@@ -2756,6 +2786,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       isOfficialPost: isOfficial,
       country: "South Africa",
       comments: [],
+      ...(data.submissionType && { submissionType: data.submissionType }),
+      ...(data.clubTrialClubName && { clubTrialClubName: data.clubTrialClubName }),
     };
 
     setPosts(prev => [newPost, ...prev]);
@@ -2788,6 +2820,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         `🏆 You are ScoutMe's Player of the Week! Your profile is now featured to all scouts.`
       );
     }
+  };
+
+  const applyToTrialEvent = async (trialEventId: string, result: { drillName: string; score: number }) => {
+    if (!currentUser) return;
+    const event = trialEvents.find(e => e.trialEventId === trialEventId);
+    if (!event) return;
+    const application: TrialEventApplication = {
+      applicationId: `app_${Date.now()}`,
+      trialEventId,
+      clubId: event.clubId,
+      clubName: event.clubName,
+      playerId: currentUser.userId,
+      playerName: currentUser.name,
+      playerPosition: currentUser.position,
+      drillName: result.drillName,
+      score: result.score,
+      submittedAt: new Date().toISOString(),
+    };
+    setTrialEventApplications(prev => [...prev, application]);
+    addSystemNotification(currentUser.userId, `🔭 Your trial application was sent to ${event.clubName}. They will review your ${result.drillName} result.`);
   };
 
   const checkAutoPost = async () => {
@@ -2958,7 +3010,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         voteChallengeResponse,
         upgradeUserTier,
         addVirtualTrialResult,
-        checkAutoPost
+        checkAutoPost,
+        trialEvents,
+        trialEventApplications,
+        applyToTrialEvent,
       }}
     >
       {children}

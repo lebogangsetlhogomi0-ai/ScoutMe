@@ -84,6 +84,31 @@ export interface VirtualTrialResult {
   ranking: string;
   assessment: string;
   completedAt: string;
+  submissionDestination?: "weekly_challenge" | "club_trial" | "both";
+}
+
+export interface TrialEvent {
+  trialEventId: string;
+  clubId: string;
+  clubName: string;
+  drillId: string;
+  drillName: string;
+  deadline: string;
+  createdAt: string;
+  isActive: boolean;
+}
+
+export interface TrialEventApplication {
+  applicationId: string;
+  trialEventId: string;
+  clubId: string;
+  clubName: string;
+  playerId: string;
+  playerName: string;
+  playerPosition?: string;
+  drillName: string;
+  score: number;
+  submittedAt: string;
 }
 
 export interface TalentBadge {
@@ -122,6 +147,10 @@ export interface PostHighlight {
   timestamp: string;
   trending?: boolean;
   comments?: PostComment[];
+
+  // Virtual trial submission labels
+  submissionType?: "weekly_challenge" | "club_trial" | "both";
+  clubTrialClubName?: string;
 
   // New social features compatibility
   isArchived?: boolean;

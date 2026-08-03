@@ -62,7 +62,7 @@ const DRILLS = [
 ];
 
 export const NeuralScoutAI: React.FC<NeuralScoutAIProps> = ({ initialPlayerId, onOpenPlayerProfile }) => {
-  const { users, generateReport, scoutReports, loading, currentUser, addVirtualTrialResult, addSystemNotification, toggleShortlist, shortlist } = useApp();
+  const { users, generateReport, scoutReports, loading, currentUser, addVirtualTrialResult, addSystemNotification, toggleShortlist, shortlist, trialEvents, applyToTrialEvent, createPost, posts } = useApp();
   const { showToast } = useToast();
   
   // Tab controller: "REPORT" for scouting report, "TRIAL" for virtual trial mode
@@ -87,6 +87,7 @@ export const NeuralScoutAI: React.FC<NeuralScoutAIProps> = ({ initialPlayerId, o
   const [diagnosticsProgress, setDiagnosticsProgress] = useState(0);
   const [generatedTrialResult, setGeneratedTrialResult] = useState<VirtualTrialResult | null>(null);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [showSubmissionModal, setShowSubmissionModal] = useState(false);
 
   // List of players
   const players = users.filter(u => u.role === "player");
@@ -282,11 +283,14 @@ export const NeuralScoutAI: React.FC<NeuralScoutAIProps> = ({ initialPlayerId, o
     }
   };
 
+  // Determine target player for rendering trial view
+  const activeTrialPlayer = currentUser?.role === "player"
+    ? currentUser
+    : (users.find(u => u.userId === selectedPlayerId) || currentUser);
+
   const handleSaveToProfile = async () => {
     if (!generatedTrialResult) return;
-    const playerToSave = currentUser?.role === "player" 
-      ? currentUser 
-      : (users.find(u => u.userId === selectedPlayerId) || currentUser);
+    const playerToSave = activeTrialPlayer;
 
     if (!playerToSave) return;
     setIsSavingProfile(true);
@@ -296,6 +300,89 @@ export const NeuralScoutAI: React.FC<NeuralScoutAIProps> = ({ initialPlayerId, o
     } catch (err) {
       console.error(err);
       showToast("Failed to pin Virtual Trial.", "error");
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
+  // Check for active weekly challenge (official platform trial_challenge post) + active club trial event
+  const activeWeeklyChallenge = posts.find(p => p.isOfficialPost && p.contentType === "trial_challenge");
+  const activeClubTrialEvent = selectedDrill
+    ? trialEvents.find(e => e.isActive && e.drillId === selectedDrill.id)
+    : null;
+
+  const handleSubmitClick = () => {
+    if (!generatedTrialResult || currentUser?.role !== "player") {
+      handleSaveToProfile();
+      return;
+    }
+    if (activeWeeklyChallenge && activeClubTrialEvent) {
+      setShowSubmissionModal(true);
+    } else {
+      handleSaveToProfile();
+    }
+  };
+
+  const handleSubmissionChoice = async (choice: "weekly_challenge" | "club_trial" | "both") => {
+    setShowSubmissionModal(false);
+    if (!generatedTrialResult || !activeTrialPlayer) return;
+    setIsSavingProfile(true);
+    try {
+      const resultWithDest = { ...generatedTrialResult, submissionDestination: choice };
+      await addVirtualTrialResult(activeTrialPlayer.userId, resultWithDest);
+
+      if (choice === "weekly_challenge" || choice === "both") {
+        await createPost({
+          videoUrl: "",
+          caption: `⚡ Weekly Challenge Entry — ${generatedTrialResult.drillName} | Score: ${generatedTrialResult.score}/100 | ${generatedTrialResult.ranking}`,
+          tags: ["#WeeklyChallenge", "#VirtualTrial", `#${generatedTrialResult.drillName.replace(/\s/g, "")}`],
+          contentType: "trial_challenge",
+          position: activeTrialPlayer.position || "Player",
+          province: activeTrialPlayer.province,
+          submissionType: choice,
+        });
+      }
+
+      if ((choice === "club_trial" || choice === "both") && activeClubTrialEvent) {
+        await applyToTrialEvent(activeClubTrialEvent.trialEventId, {
+          drillName: generatedTrialResult.drillName,
+          score: generatedTrialResult.score,
+        });
+        if (choice === "club_trial") {
+          await createPost({
+            videoUrl: "",
+            caption: `🔭 ${activeClubTrialEvent.clubName} Trial Application — ${generatedTrialResult.drillName} | Score: ${generatedTrialResult.score}/100`,
+            tags: ["#ClubTrial", "#VirtualTrial", `#${activeClubTrialEvent.clubName.replace(/\s/g, "")}`],
+            contentType: "trial_challenge",
+            position: activeTrialPlayer.position || "Player",
+            province: activeTrialPlayer.province,
+            submissionType: "club_trial",
+            clubTrialClubName: activeClubTrialEvent.clubName,
+          });
+        } else {
+          // "both" — update the already-created weekly post's submissionType
+          await createPost({
+            videoUrl: "",
+            caption: `🔭 ${activeClubTrialEvent.clubName} Trial Application — ${generatedTrialResult.drillName} | Score: ${generatedTrialResult.score}/100`,
+            tags: ["#ClubTrial", "#VirtualTrial", `#${activeClubTrialEvent.clubName.replace(/\s/g, "")}`],
+            contentType: "trial_challenge",
+            position: activeTrialPlayer.position || "Player",
+            province: activeTrialPlayer.province,
+            submissionType: "club_trial",
+            clubTrialClubName: activeClubTrialEvent.clubName,
+          });
+        }
+      }
+
+      showToast(
+        choice === "weekly_challenge" ? "⚡ Submitted to Weekly Challenge!" :
+        choice === "club_trial" ? `🔭 Applied to ${activeClubTrialEvent?.clubName}!` :
+        "⚡ Submitted to Weekly Challenge & Club Trial!",
+        "success"
+      );
+    } catch (err) {
+      console.error(err);
+      showToast("Submission failed. Please try again.", "error");
     } finally {
       setIsSavingProfile(false);
     }
@@ -344,10 +431,7 @@ export const NeuralScoutAI: React.FC<NeuralScoutAIProps> = ({ initialPlayerId, o
     }
   };
 
-  // Determine target player for rendering trial view
-  const activeTrialPlayer = currentUser?.role === "player" 
-    ? currentUser 
-    : (users.find(u => u.userId === selectedPlayerId) || currentUser);
+  // (activeTrialPlayer moved above handlers — defined earlier)
 
   return (
     <div className="flex-1 pb-24 overflow-y-auto w-full no-scrollbar px-3 space-y-6">
@@ -1315,13 +1399,29 @@ export const NeuralScoutAI: React.FC<NeuralScoutAIProps> = ({ initialPlayerId, o
 
                 {/* Save To profile / pin action button */}
                 <div className="p-4 bg-[#050e08]/60 border-b border-[#1a3825]/40 flex flex-col gap-2.5">
+                  {/* Show active challenge / trial banners for player role */}
+                  {currentUser?.role === "player" && activeWeeklyChallenge && (
+                    <div className="px-3 py-2 bg-[#00e56b]/10 border border-[#00e56b]/30 rounded-lg flex items-center space-x-2">
+                      <span className="text-[9px] font-black text-[#00e56b] uppercase tracking-widest">⚡ Weekly Challenge Active</span>
+                    </div>
+                  )}
+                  {currentUser?.role === "player" && activeClubTrialEvent && (
+                    <div className="px-3 py-2 bg-[#f5c518]/10 border border-[#f5c518]/30 rounded-lg flex items-center space-x-2">
+                      <span className="text-[9px] font-black text-[#f5c518] uppercase tracking-widest">🔭 {activeClubTrialEvent.clubName} Trial Active</span>
+                    </div>
+                  )}
                   <button
-                    onClick={handleSaveToProfile}
+                    onClick={handleSubmitClick}
                     disabled={isSavingProfile}
                     className="w-full bg-[#00e56b] hover:bg-[#00c75c] text-[#050e08] py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider transition disabled:opacity-50 flex items-center justify-center space-x-2 cursor-pointer shadow-lg"
                   >
                     <CheckCircle2 className="w-4 h-4" />
-                    <span>{isSavingProfile ? "⚡ SAVING TO MY PROFILE..." : "📌 SAVE TO PROFILE & PIN BADGE"}</span>
+                    <span>
+                      {isSavingProfile ? "⚡ SAVING..." :
+                        (currentUser?.role === "player" && activeWeeklyChallenge && activeClubTrialEvent)
+                          ? "⚡ SAVE & SUBMIT"
+                          : "📌 SAVE TO PROFILE & PIN BADGE"}
+                    </span>
                   </button>
                 </div>
 
@@ -1360,6 +1460,78 @@ export const NeuralScoutAI: React.FC<NeuralScoutAIProps> = ({ initialPlayerId, o
             </div>
           )}
 
+        </div>
+      )}
+
+
+      {/* SUBMISSION CHOICE MODAL */}
+      {showSubmissionModal && generatedTrialResult && activeClubTrialEvent && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-[#0a1a0f] border-t border-[#1a3825] rounded-t-3xl p-6 space-y-5 animate-in slide-in-from-bottom-5 duration-300">
+
+            <div className="text-center space-y-1">
+              <h3 className="text-xl font-black text-white font-bebas tracking-wider uppercase">
+                Submit Your Trial
+              </h3>
+              <p className="text-[11px] text-[#5a8a6a] font-sans">
+                Multiple opportunities detected for <strong className="text-white">{generatedTrialResult.drillName}</strong>. Choose where to submit.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              {/* Option 1: Weekly Challenge */}
+              <button
+                onClick={() => handleSubmissionChoice("weekly_challenge")}
+                className="w-full bg-[#050e08] border border-[#00e56b]/40 hover:border-[#00e56b] hover:bg-[#00e56b]/10 rounded-2xl p-4 text-left transition group"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <span className="block text-[9px] font-black text-[#00e56b] uppercase tracking-[2px]">⚡ Option 1</span>
+                    <span className="block text-sm font-bold text-white">ScoutMe Weekly Challenge</span>
+                    <span className="block text-[10.5px] text-[#5a8a6a]">Your score is posted to the Weekly Challenge leaderboard. Visible to all scouts.</span>
+                  </div>
+                  <span className="text-[#00e56b] text-lg font-black group-hover:scale-110 transition-transform">›</span>
+                </div>
+              </button>
+
+              {/* Option 2: Club Trial */}
+              <button
+                onClick={() => handleSubmissionChoice("club_trial")}
+                className="w-full bg-[#050e08] border border-[#f5c518]/40 hover:border-[#f5c518] hover:bg-[#f5c518]/10 rounded-2xl p-4 text-left transition group"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <span className="block text-[9px] font-black text-[#f5c518] uppercase tracking-[2px]">🔭 Option 2</span>
+                    <span className="block text-sm font-bold text-white">{activeClubTrialEvent.clubName} Trial</span>
+                    <span className="block text-[10.5px] text-[#5a8a6a]">Apply directly to the club's active trial event. The club scouts will review your result.</span>
+                  </div>
+                  <span className="text-[#f5c518] text-lg font-black group-hover:scale-110 transition-transform">›</span>
+                </div>
+              </button>
+
+              {/* Option 3: Both */}
+              <button
+                onClick={() => handleSubmissionChoice("both")}
+                className="w-full bg-gradient-to-r from-[#00e56b]/10 to-[#f5c518]/10 border border-white/20 hover:border-white/40 rounded-2xl p-4 text-left transition group"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <span className="block text-[9px] font-black text-white uppercase tracking-[2px]">✦ Option 3 — Best Exposure</span>
+                    <span className="block text-sm font-bold text-white">Submit to Both</span>
+                    <span className="block text-[10.5px] text-[#5a8a6a]">Enter the Weekly Challenge AND apply to the club trial simultaneously.</span>
+                  </div>
+                  <span className="text-white text-lg font-black group-hover:scale-110 transition-transform">›</span>
+                </div>
+              </button>
+            </div>
+
+            <button
+              onClick={() => setShowSubmissionModal(false)}
+              className="w-full py-3 text-[#5a8a6a] text-xs font-bold uppercase tracking-wider hover:text-white transition"
+            >
+              Cancel — Just Save to Profile
+            </button>
+          </div>
         </div>
       )}
 
