@@ -26,7 +26,7 @@ messaging.onBackgroundMessage((payload) => {
 
 // ─── PWA Cache (preserved from original sw.js) ───────────────────────────────
 
-const CACHE_NAME = "scoutme-cache-v2";
+const CACHE_NAME = "scoutme-cache-v3";
 const ASSETS_TO_CACHE = ["/", "/index.html", "/manifest.json", "/icon-512.png"];
 
 self.addEventListener("install", (event) => {
