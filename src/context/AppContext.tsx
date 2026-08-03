@@ -5,6 +5,8 @@ import { collection, doc, setDoc, getDoc, updateDoc, onSnapshot, query, orderBy,
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
 import { triggerGlobalToast } from "../components/Toast";
 
+const OFFICIAL_ACCOUNT_EMAIL = "lebosetlhogomi.scoutme@gmail.com";
+
 // Error codes that are genuinely actionable by the user — safe to show as a friendly message.
 // Anything NOT in these maps (including auth/configuration-not-found, network issues, or any
 // other Firebase/Auth infrastructure problem) is treated as an outage: we never surface the raw
@@ -107,7 +109,8 @@ interface AppContextType {
   scoutStamps: ScoutStamp[];
   
   postsLoading: boolean;
-  createPost: (data: { videoUrl: string; thumbnailUrl?: string; caption: string; tags: string[]; contentType: string; position: string; league?: string; province: string; visibility?: string; }) => Promise<void>;
+  createPost: (data: { videoUrl: string; thumbnailUrl?: string; caption: string; tags: string[]; contentType: string; position: string; league?: string; province: string; visibility?: string; featuredPlayerId?: string; featuredPlayerName?: string; }) => Promise<void>;
+  checkAutoPost: () => Promise<void>;
 
   // Actions
   setOfflineMode: (active: boolean) => void;
@@ -1251,6 +1254,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setLoading(false);
         triggerGlobalToast(friendlyMessage || "Unable to connect. Please check your internet and try again.", "error");
         return false;
+      }
+
+      // Official account: skip onboarding, assign platform role
+      if (email.toLowerCase() === OFFICIAL_ACCOUNT_EMAIL.toLowerCase()) {
+        const officialProfile: UserProfile = {
+          userId: targetUserId,
+          name: "ScoutMe Official",
+          email: OFFICIAL_ACCOUNT_EMAIL,
+          role: "platform",
+          province: "South Africa",
+          createdAt: new Date().toISOString(),
+          isOfficialAccount: true,
+          bio: "Discovering Africa's football talent. Player of the Week every Monday. Signing announcements. Platform updates. 🇿🇦⚽",
+          followers: [],
+          following: [],
+        };
+        if (db) {
+          setDoc(doc(db, "users", targetUserId), officialProfile, { merge: true }).catch(() => {});
+        }
+        setCurrentUser(officialProfile);
+        setUsers(prev => prev.some(u => u.userId === targetUserId) ? prev.map(u => u.userId === targetUserId ? officialProfile : u) : [...prev, officialProfile]);
+        setOnboardingStep(6);
+        setLoading(false);
+        return true;
       }
 
       // Load profile from local cache first, then Firestore
@@ -2702,17 +2729,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     league?: string;
     province: string;
     visibility?: string;
+    featuredPlayerId?: string;
+    featuredPlayerName?: string;
   }) => {
     if (!currentUser) return;
+    if (currentUser.role !== "player" && currentUser.role !== "platform") return;
+    const isOfficial = currentUser.role === "platform";
     const newPost: PostHighlight = {
       postId: `post_${Date.now()}`,
       userId: currentUser.userId,
-      playerName: currentUser.name,
-      position: data.position || currentUser.position || "CAM",
-      club: data.league || currentUser.club || "Unattached",
+      playerName: isOfficial ? "ScoutMe Official" : currentUser.name,
+      position: data.position || currentUser.position || "—",
+      club: data.league || currentUser.club || "ScoutMe Platform",
       province: data.province || currentUser.province,
       videoUrl: data.videoUrl,
-      thumbnailUrl: data.thumbnailUrl || "⚽ Match Highlight",
+      thumbnailUrl: data.thumbnailUrl || (isOfficial ? "◆ Official Post" : "⚽ Match Highlight"),
       caption: data.caption,
       tags: data.tags,
       contentType: (data.contentType || "highlight") as any,
@@ -2722,6 +2753,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       timestamp: "Just now",
       trending: false,
       isArchived: false,
+      isOfficialPost: isOfficial,
       country: "South Africa",
       comments: [],
     };
@@ -2740,7 +2772,79 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
 
-    triggerGlobalToast("Your pitch is live. Scouts can find you now. ✦", "success");
+    triggerGlobalToast(isOfficial ? "Official post is live ◆" : "Your pitch is live. Scouts can find you now. ✦", "success");
+
+    // POTW notification
+    if (data.contentType === "player_of_week" && data.featuredPlayerId) {
+      const until = new Date(Date.now() + 7 * 24 * 3600000).toISOString();
+      setUsers(prev => prev.map(u =>
+        u.userId === data.featuredPlayerId ? { ...u, potwUntil: until } : u
+      ));
+      if (db) {
+        updateDoc(doc(db, "users", data.featuredPlayerId), { potwUntil: until }).catch(() => {});
+      }
+      addSystemNotification(
+        data.featuredPlayerId,
+        `🏆 You are ScoutMe's Player of the Week! Your profile is now featured to all scouts.`
+      );
+    }
+  };
+
+  const checkAutoPost = async () => {
+    if (!currentUser || currentUser.role !== "platform" || !db) return;
+    try {
+      const configRef = doc(db, "platformConfig", "autoPost");
+      const configSnap = await getDoc(configRef);
+      const config = configSnap.exists() ? configSnap.data() : {};
+
+      const now = new Date();
+      const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon, 5=Fri
+
+      // Monday Player of the Week
+      if (dayOfWeek === 1) {
+        const lastPotw = config.lastPlayerOfWeekPost ? new Date(config.lastPlayerOfWeekPost) : null;
+        const daysSincePotw = lastPotw ? (Date.now() - lastPotw.getTime()) / 86400000 : 999;
+        if (daysSincePotw > 6) {
+          const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+          const postsSnap = await import("firebase/firestore").then(({ query, where, getDocs, orderBy: ob, limit: lim }) =>
+            getDocs(query(collection(db, "posts"), where("createdAt", ">=", weekAgo), ob("votes", "desc"), lim(1)))
+          );
+          if (!postsSnap.empty) {
+            const top = postsSnap.docs[0].data();
+            await createPost({
+              videoUrl: top.videoUrl || "",
+              caption: `🏆 PLAYER OF THE WEEK — ${top.playerName} with ${top.votes || 0} votes this week! Outstanding talent from ${top.province}. Scouts take note. 🇿🇦⚽`,
+              tags: ["ScoutMe", "PlayerOfTheWeek", "KasiFootball"],
+              contentType: "player_of_week",
+              position: top.position || "—",
+              province: top.province || "South Africa",
+              featuredPlayerId: top.userId,
+              featuredPlayerName: top.playerName,
+            });
+            await setDoc(configRef, { ...config, lastPlayerOfWeekPost: now.toISOString() }, { merge: true });
+          }
+        }
+      }
+
+      // Friday Trending
+      if (dayOfWeek === 5) {
+        const lastTrend = config.lastTrendingPost ? new Date(config.lastTrendingPost) : null;
+        const daysSinceTrend = lastTrend ? (Date.now() - lastTrend.getTime()) / 86400000 : 999;
+        if (daysSinceTrend > 6) {
+          await createPost({
+            videoUrl: "",
+            caption: `🔥 TRENDING THIS WEEK — South African grassroots talent is on the rise. Check the feed for this week's top highlights. 🇿🇦⚽ #ScoutMe #KasiFootball`,
+            tags: ["ScoutMe", "TrendingThisWeek"],
+            contentType: "platform_update",
+            position: "—",
+            province: "South Africa",
+          });
+          await setDoc(configRef, { ...config, lastTrendingPost: now.toISOString() }, { merge: true });
+        }
+      }
+    } catch (e) {
+      console.warn("[AutoPost] checkAutoPost failed:", e);
+    }
   };
 
   const addVirtualTrialResult = async (playerId: string, result: any) => {
@@ -2853,7 +2957,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addClinicUpload,
         voteChallengeResponse,
         upgradeUserTier,
-        addVirtualTrialResult
+        addVirtualTrialResult,
+        checkAutoPost
       }}
     >
       {children}

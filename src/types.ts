@@ -2,7 +2,7 @@
  * ScoutMe Application Types
  */
 
-export type UserRole = "player" | "scout" | "club" | "fan";
+export type UserRole = "player" | "scout" | "club" | "fan" | "platform";
 
 export interface UserProfile {
   userId: string;
@@ -69,6 +69,10 @@ export interface UserProfile {
 
   // Virtual Trial Mode Results
   virtualTrial?: VirtualTrialResult;
+
+  // Official account flags
+  isOfficialAccount?: boolean;
+  potwUntil?: string; // Player of the Week featured until ISO date
 }
 
 export interface VirtualTrialResult {
@@ -110,7 +114,8 @@ export interface PostHighlight {
   thumbnailUrl: string;
   caption: string;
   tags: string[];
-  contentType: "highlight" | "match" | "training" | "full";
+  contentType: "highlight" | "match" | "training" | "full" | "player_of_week" | "signing" | "most_improved" | "platform_update" | "trial_challenge";
+  isOfficialPost?: boolean;
   votes: number;
   views: number;
   commentsCount: number;

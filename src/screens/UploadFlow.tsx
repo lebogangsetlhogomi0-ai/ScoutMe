@@ -53,8 +53,17 @@ function formatSeconds(s: number) {
   return m > 0 ? `${m}m ${sec}s` : `${sec}s`;
 }
 
+const PLATFORM_TEMPLATES = [
+  { id: "player_of_week", label: "🏆 Player of the Week", desc: "Feature top player · auto Monday", border: "border-[#f5c518]", accent: "#f5c518" },
+  { id: "signing", label: "✍️ Signing Announcement", desc: "Player × Club · discovered on ScoutMe", border: "border-[#00e56b]", accent: "#00e56b" },
+  { id: "most_improved", label: "📈 Most Improved", desc: "Before/after score showcase", border: "border-[#f5c518]", accent: "#f5c518" },
+  { id: "platform_update", label: "📢 Platform Update", desc: "Text only · no video required", border: "border-[#00e56b]", accent: "#00e56b" },
+  { id: "trial_challenge", label: "⚡ Virtual Trial Challenge", desc: "Weekly drill challenge", border: "border-[#f5c518]", accent: "#f5c518" },
+] as const;
+
 export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
-  const { addNewPost, createPost, currentUser } = useApp();
+  const { addNewPost, createPost, currentUser, users } = useApp();
+  const isPlatform = currentUser?.role === "platform";
   const [step, setStep] = useState(1);
   const [contentType, setContentType] = useState<"highlight" | "match" | "training" | "full" | null>(null);
 
@@ -80,6 +89,12 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
 
   // Thumbnail
   const [selectedThumbnail, setSelectedThumbnail] = useState("⚡ Strike Deflection");
+
+  // Platform template state
+  const [platformTemplate, setPlatformTemplate] = useState<string | null>(null);
+  const [platformCaption, setPlatformCaption] = useState("");
+  const [featuredPlayerId, setFeaturedPlayerId] = useState("");
+  const [platformPosting, setPlatformPosting] = useState(false);
 
   // Upload state
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -345,37 +360,149 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
         {/* ─── STEP 1 — CHOOSE TYPE ─── */}
         {step === 1 && (
           <motion.div key="upload1" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-4">
-            <div className="text-center py-1">
-              <h3 className="text-xl font-bold text-white font-sans uppercase tracking-tight">Select Upload Format</h3>
-              <p className="text-xs text-[#5a8a6a] mt-1">What kind of footage are you publishing today?</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              {(["highlight", "match", "training", "full"] as const).map((type) => {
-                const icons = { highlight: Layers, match: Video, training: Scissors, full: PlusCircle };
-                const Icon = icons[type];
-                return (
-                  <button
-                    key={type}
-                    onClick={() => handleContentTypeSelect(type)}
-                    className="bg-[#0a1a0f] border-2 border-[#1a3825] p-4 rounded-2xl flex flex-col items-center text-center space-y-2 hover:border-[#00e56b] transition duration-200 min-h-[150px] justify-between"
-                  >
-                    <div className="bg-[#050e08] p-3 rounded-full text-[#00e56b]">
-                      <Icon className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h4 className="text-white text-xs font-black uppercase tracking-wider font-sans">{CONTENT_TYPE_LABELS[type]}</h4>
-                      <p className="text-[9.5px] text-[#5a8a6a] mt-0.5 font-mono">{CONTENT_TYPE_INFO[type]}</p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+            {isPlatform ? (
+              /* Platform account: official post templates */
+              <>
+                <div className="text-center py-1">
+                  <h3 className="text-xl font-bold text-[#00e56b] font-bebas tracking-wide uppercase">◆ Official Post Templates</h3>
+                  <p className="text-xs text-[#5a8a6a] mt-1">Choose a post type to publish as ScoutMe Official</p>
+                </div>
+                <div className="space-y-3">
+                  {PLATFORM_TEMPLATES.map(tmpl => (
+                    <button
+                      key={tmpl.id}
+                      onClick={() => { setPlatformTemplate(tmpl.id); setContentType("highlight"); setStep(2); }}
+                      className={`w-full bg-[#0a1a0f] border-2 ${tmpl.border} p-4 rounded-2xl flex items-center justify-between hover:bg-[#0f2318] transition`}
+                    >
+                      <div className="text-left">
+                        <p className="text-sm font-bold text-white">{tmpl.label}</p>
+                        <p className="text-[10px] text-[#5a8a6a] font-mono mt-0.5">{tmpl.desc}</p>
+                      </div>
+                      <span className="text-[#5a8a6a]">→</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              /* Regular player upload */
+              <>
+                <div className="text-center py-1">
+                  <h3 className="text-xl font-bold text-white font-sans uppercase tracking-tight">Select Upload Format</h3>
+                  <p className="text-xs text-[#5a8a6a] mt-1">What kind of footage are you publishing today?</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {(["highlight", "match", "training", "full"] as const).map((type) => {
+                    const icons = { highlight: Layers, match: Video, training: Scissors, full: PlusCircle };
+                    const Icon = icons[type];
+                    return (
+                      <button
+                        key={type}
+                        onClick={() => handleContentTypeSelect(type)}
+                        className="bg-[#0a1a0f] border-2 border-[#1a3825] p-4 rounded-2xl flex flex-col items-center text-center space-y-2 hover:border-[#00e56b] transition duration-200 min-h-[150px] justify-between"
+                      >
+                        <div className="bg-[#050e08] p-3 rounded-full text-[#00e56b]">
+                          <Icon className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <h4 className="text-white text-xs font-black uppercase tracking-wider font-sans">{CONTENT_TYPE_LABELS[type]}</h4>
+                          <p className="text-[9.5px] text-[#5a8a6a] mt-0.5 font-mono">{CONTENT_TYPE_INFO[type]}</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
           </motion.div>
         )}
 
-        {/* ─── STEP 2 — SELECT VIDEO ─── */}
-        {step === 2 && (
+        {/* ─── STEP 2 — PLATFORM TEMPLATE FORM (text-only posts) ─── */}
+        {step === 2 && isPlatform && platformTemplate === "platform_update" && (
+          <motion.div key="platform_form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+            <div className="text-center">
+              <h3 className="text-md font-bold text-[#00e56b] uppercase font-bebas tracking-wide">📢 Platform Update</h3>
+              <p className="text-xs text-[#5a8a6a] mt-0.5">This post requires no video</p>
+            </div>
+            <textarea
+              rows={5}
+              value={platformCaption}
+              onChange={e => setPlatformCaption(e.target.value)}
+              placeholder="Write your platform update message..."
+              className="w-full bg-[#0a1a0f] border border-[#1a3825] text-white rounded-xl px-4 py-3 text-sm focus:border-[#00e56b] focus:outline-none resize-none"
+            />
+            <button
+              disabled={!platformCaption.trim() || platformPosting}
+              onClick={async () => {
+                setPlatformPosting(true);
+                await createPost({ videoUrl: "", caption: platformCaption, tags: ["ScoutMe"], contentType: "platform_update", position: "—", province: "South Africa" });
+                setPlatformPosting(false);
+                onUploadSuccess();
+              }}
+              className="w-full bg-[#00e56b] text-[#050e08] py-3 rounded-xl text-sm font-black uppercase tracking-widest disabled:opacity-40"
+            >
+              {platformPosting ? "Publishing..." : "◆ Publish Update"}
+            </button>
+          </motion.div>
+        )}
+
+        {/* ─── STEP 2 — PLATFORM TEMPLATE FORM (player-pick posts) ─── */}
+        {step === 2 && isPlatform && platformTemplate !== "platform_update" && platformTemplate !== null && (
+          <motion.div key="platform_player_form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+            <div className="text-center">
+              <h3 className="text-md font-bold text-[#00e56b] uppercase font-bebas tracking-wide">
+                {PLATFORM_TEMPLATES.find(t => t.id === platformTemplate)?.label}
+              </h3>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] uppercase font-bold text-[#5a8a6a] tracking-wider block">Select Player</label>
+              <select
+                value={featuredPlayerId}
+                onChange={e => setFeaturedPlayerId(e.target.value)}
+                className="w-full bg-[#0a1a0f] border border-[#1a3825] text-white rounded-xl px-3 py-2.5 text-sm focus:border-[#00e56b] focus:outline-none"
+              >
+                <option value="">-- Choose a player --</option>
+                {users.filter(u => u.role === "player").map(u => (
+                  <option key={u.userId} value={u.userId}>{u.name} · {u.position} · {u.province}</option>
+                ))}
+              </select>
+            </div>
+            <textarea
+              rows={4}
+              value={platformCaption}
+              onChange={e => setPlatformCaption(e.target.value)}
+              placeholder="Add a message about this player..."
+              className="w-full bg-[#0a1a0f] border border-[#1a3825] text-white rounded-xl px-4 py-3 text-sm focus:border-[#00e56b] focus:outline-none resize-none"
+            />
+            <button
+              disabled={!platformCaption.trim() || !featuredPlayerId || platformPosting}
+              onClick={async () => {
+                setPlatformPosting(true);
+                const player = users.find(u => u.userId === featuredPlayerId);
+                const finalCaption = platformTemplate === "signing"
+                  ? `${platformCaption}\n\nDiscovered on ScoutMe 🇿🇦⚽`
+                  : platformCaption;
+                await createPost({
+                  videoUrl: "",
+                  caption: finalCaption,
+                  tags: ["ScoutMe"],
+                  contentType: platformTemplate as any,
+                  position: player?.position || "—",
+                  province: player?.province || "South Africa",
+                  featuredPlayerId,
+                  featuredPlayerName: player?.name,
+                });
+                setPlatformPosting(false);
+                onUploadSuccess();
+              }}
+              className="w-full bg-[#00e56b] text-[#050e08] py-3 rounded-xl text-sm font-black uppercase tracking-widest disabled:opacity-40"
+            >
+              {platformPosting ? "Publishing..." : "◆ Publish Post"}
+            </button>
+          </motion.div>
+        )}
+
+        {/* ─── STEP 2 — SELECT VIDEO (regular players) ─── */}
+        {step === 2 && !isPlatform && (
           <motion.div key="upload2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
             <div className="text-center">
               <h3 className="text-md font-bold text-white uppercase">Select Your Video</h3>

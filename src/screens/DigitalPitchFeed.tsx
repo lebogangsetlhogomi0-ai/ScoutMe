@@ -142,12 +142,15 @@ export const DigitalPitchFeed: React.FC<DigitalPitchFeedProps> = ({
     setSubmittingResponse(false);
   };
 
-  // Filter posts based on Grassroots (Tier 1) Players
-  // Grassroots Player is tier="player" or missing tier (all seed players default to this)
-  const talentPosts = posts.filter(post => {
-    const playerObj = users.find(u => u.name === post.playerName || u.userId === post.userId);
-    return !playerObj || playerObj.tier === "player" || !playerObj.tier;
-  });
+  // Filter posts: show all non-archived posts (official + grassroots)
+  // Official posts always first, then sorted by timestamp
+  const talentPosts = posts
+    .filter(post => !post.isArchived)
+    .sort((a, b) => {
+      if (a.isOfficialPost && !b.isOfficialPost) return -1;
+      if (!a.isOfficialPost && b.isOfficialPost) return 1;
+      return 0;
+    });
 
   return (
     <div id="digital_pitch_feed_container" className="flex-1 pb-24 overflow-y-auto w-full no-scrollbar px-3 space-y-6">
@@ -289,27 +292,40 @@ export const DigitalPitchFeed: React.FC<DigitalPitchFeedProps> = ({
               const hasClinicBadge = playerObj?.userId === "player_1"; // Sipho clinic badge
               
               return (
-                <div 
+                <div
                   key={post.postId}
-                  className="bg-[#0a1a0f] border border-[#1a3825] rounded-2xl overflow-hidden shadow-xl"
+                  className={`bg-[#0a1a0f] rounded-2xl overflow-hidden shadow-xl ${
+                    post.isOfficialPost
+                      ? "border-l-4 border-l-[#00e56b] border border-[#00e56b]/30"
+                      : "border border-[#1a3825]"
+                  }`}
                 >
+                  {/* Official label banner */}
+                  {post.isOfficialPost && (
+                    <div className="px-4 py-1.5 bg-[#00e56b]/10 border-b border-[#00e56b]/20 flex items-center space-x-1.5">
+                      <span className="text-[10px] font-black text-[#00e56b] uppercase tracking-widest">◆ ScoutMe Official</span>
+                    </div>
+                  )}
                   {/* Card Header Row */}
                   <div className="p-4 flex items-center justify-between bg-[#06120b]">
                     <div className="flex items-center space-x-3">
-                      <button 
+                      <button
                         onClick={() => playerObj && onOpenPlayerProfile(playerObj.userId)}
                         className="w-10 h-10 rounded-full bg-[#050e08] border border-[#1a3825] flex items-center justify-center relative text-lg"
                       >
-                        {getStoryEmoji(post.playerName)}
+                        {post.isOfficialPost ? "◆" : getStoryEmoji(post.playerName)}
                       </button>
                       <div>
                         <div className="flex items-center space-x-2">
-                          <span 
+                          <span
                             onClick={() => playerObj && onOpenPlayerProfile(playerObj.userId)}
                             className="text-white text-sm font-bold font-sans hover:underline cursor-pointer flex items-center"
                           >
                             {post.playerName}
-                            {isStamped && (
+                            {post.isOfficialPost && (
+                              <span className="ml-1.5 px-1.5 py-0.5 bg-[#00e56b] text-[#050e08] text-[8px] font-black rounded uppercase tracking-wide">◆ Official</span>
+                            )}
+                            {isStamped && !post.isOfficialPost && (
                               <Gem className="w-3.5 h-3.5 text-[#f5c518] fill-[#f5c518] ml-1" />
                             )}
                           </span>
