@@ -972,18 +972,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       snapshot.forEach(doc => {
         liveUsers.push({ userId: doc.id, ...doc.data() } as UserProfile);
       });
-      if (liveUsers.length > 0) {
-        setUsers(prev => {
-          // Merge live users into state safely to live sync
-          const merged = [...liveUsers];
-          prev.forEach(u => {
-            if (!merged.some(lu => lu.userId === u.userId)) {
-              merged.push(u);
-            }
-          });
-          return merged;
-        });
-      }
+      // Replace state entirely with Firestore data — never merge seed/local accounts into real data
+      setUsers(liveUsers);
+      // Clear any seed data that was persisted to localStorage
+      localStorage.setItem("scoutme_users", JSON.stringify(liveUsers));
     }, (err) => {
       console.warn("Firestore real-time users monitoring failed, falling back to local simulation:", err);
     });
