@@ -4,7 +4,7 @@ import { db, auth, isDemoMode } from "../firebase";
 import { collection, doc, setDoc, getDoc, updateDoc, onSnapshot, query, orderBy, limit, addDoc, serverTimestamp, increment, where } from "firebase/firestore";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
 import { triggerGlobalToast } from "../components/Toast";
-import { sendWelcomeEmail, sendAdminSignupNotification } from "../utils/emailService";
+import { sendAdminSignupNotification } from "../utils/emailService";
 
 const OFFICIAL_ACCOUNT_EMAIL = "lebosetlhogomi.scoutme@gmail.com";
 
@@ -1247,19 +1247,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // Request FCM permission after signup (non-blocking)
       requestNotificationPermission(newProfile.userId);
 
-      // Send welcome + admin notification emails (non-blocking)
+      // Admin notification only — welcome copy is included in the OTP email
       if (newProfile.email) {
-        sendWelcomeEmail(
-          newProfile.email,
-          newProfile.name,
-          newProfile.role,
-          {
-            position: (newProfile as any).position,
-            club: (newProfile as any).club || (newProfile as any).clubName,
-            province: newProfile.province,
-          }
-        ).catch(console.error);
-
         sendAdminSignupNotification({
           name: newProfile.name,
           email: newProfile.email,
