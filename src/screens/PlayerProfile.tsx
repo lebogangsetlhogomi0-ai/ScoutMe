@@ -32,6 +32,21 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({ playerId, onBack, 
     return () => clearTimeout(timer);
   }, [playerId]);
 
+  // Notify player when a scout or club views their profile
+  useEffect(() => {
+    if (!currentUser || !playerId || currentUser.userId === playerId) return;
+    if (currentUser.role !== "scout" && currentUser.role !== "club") return;
+    const rateLimitKey = `scout_view_${currentUser.userId}_${playerId}`;
+    const lastSent = parseInt(localStorage.getItem(rateLimitKey) || "0");
+    if (Date.now() - lastSent < 3600000) return;
+    localStorage.setItem(rateLimitKey, String(Date.now()));
+    const orgLabel = currentUser.organisation || currentUser.clubName || "an independent scout";
+    addSystemNotification(
+      playerId,
+      `👀 A verified scout from ${orgLabel} just viewed your profile. Keep uploading to stay visible! 🔥`
+    );
+  }, [playerId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Find targeted player
   const player = users.find(u => u.userId === playerId);
 

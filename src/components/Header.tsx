@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 import { useToast } from "./Toast";
-import { Bell, Trophy, ShieldAlert, Award, User, BarChart2, Settings, LogOut, ChevronRight, Mail } from "lucide-react";
+import { Bell, Trophy, ShieldAlert, Award, User, BarChart2, Settings, LogOut, ChevronRight, Mail, CheckCheck } from "lucide-react";
 import { auth } from "../firebase";
 import { reload } from "firebase/auth";
 
@@ -12,18 +12,23 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick }) => {
-  const { currentUser, signOutUser, resendVerificationEmail } = useApp();
+  const { currentUser, signOutUser, resendVerificationEmail, notifications, markNotificationRead, markAllNotificationsRead, unreadNotificationsCount } = useApp();
   const { showToast } = useToast();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const notifPanelRef = useRef<HTMLDivElement>(null);
 
   const isScoutOrClub = currentUser?.role === "scout" || currentUser?.role === "club";
 
+  // Close panels on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
         setShowProfileMenu(false);
+      }
+      if (notifPanelRef.current && !notifPanelRef.current.contains(e.target as Node)) {
+        setShowNotifications(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -48,11 +53,20 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick
     }
   };
 
-  const dummyNotifications = [
-    { id: 1, text: "Your highlight got 120 new votes from eKasi supporters soccer fans!", time: "5m ago" },
-    { id: 2, text: "Verified Scout Coach Lebo viewed your profile details.", time: "2h ago" },
-    { id: 3, text: "Welcome to ScoutMe! Prepare your first match footage.", time: "1d ago" }
-  ];
+  // My notifications only (already filtered by listener, but guard here too)
+  const myNotifications = notifications
+    .filter(n => n.recipientId === currentUser?.userId)
+    .slice(0, 20);
+
+  const formatTime = (createdAt: string) => {
+    const diff = Date.now() - new Date(createdAt).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "Just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
+  };
 
   const [emailVerified, setEmailVerified] = React.useState<boolean | null>(null);
 
@@ -97,13 +111,11 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick
 
             {showProfileMenu && (
               <div className="absolute right-0 mt-2 w-56 bg-[#0a1a0f] border border-[#1a3825] rounded-xl shadow-2xl z-50 overflow-hidden divide-y divide-[#1a3825]/60 animate-in fade-in slide-in-from-top-3 duration-200">
-                {/* User info header */}
                 <div className="px-4 py-3 bg-[#0f2318]">
                   <p className="text-xs font-bold text-[#e8f5ee] truncate">{currentUser.name || "My Account"}</p>
                   <p className="text-[10px] text-[#5a8a6a] uppercase tracking-wider mt-0.5">{currentUser.role}</p>
                 </div>
 
-                {/* View Profile */}
                 <button
                   onClick={() => { setShowProfileMenu(false); onProfileClick?.(); }}
                   className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#0f2318]/60 transition-colors duration-150 group"
@@ -115,7 +127,6 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick
                   <ChevronRight className="w-3.5 h-3.5 text-[#5a8a6a]/60" />
                 </button>
 
-                {/* Club Intel — scout & club only */}
                 {isScoutOrClub && (
                   <button
                     onClick={() => { setShowProfileMenu(false); onClubIntelClick?.(); }}
@@ -132,7 +143,6 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick
                   </button>
                 )}
 
-                {/* Settings */}
                 <button
                   onClick={() => { setShowProfileMenu(false); showToast("Settings coming soon ✦", "info"); }}
                   className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#0f2318]/60 transition-colors duration-150 group"
@@ -144,7 +154,6 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick
                   <ChevronRight className="w-3.5 h-3.5 text-[#5a8a6a]/60" />
                 </button>
 
-                {/* Sign out */}
                 <button
                   onClick={() => { setShowProfileMenu(false); signOutUser(); }}
                   className="w-full flex items-center space-x-2.5 px-4 py-3 hover:bg-[#1a0f0f]/60 transition-colors duration-150 group"
@@ -157,37 +166,89 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick
           </div>
         )}
 
-        {/* Notifications */}
-        <div className="relative">
+        {/* Notification Bell */}
+        <div className="relative" ref={notifPanelRef}>
           <button
             id="notification_bell"
             onClick={() => setShowNotifications(!showNotifications)}
             className="p-1.5 rounded-full text-[#5a8a6a] hover:text-[#00e56b] hover:bg-[#0a1a0f]/85 transition-all duration-300 relative focus:outline-none"
           >
             <Bell className="w-5 h-5" />
-            <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-[#ff4444] rounded-full border border-[#050e08]" />
+            {unreadNotificationsCount > 0 && (
+              <span className="absolute top-0.5 right-0.5 min-w-[14px] h-3.5 bg-[#ff4444] rounded-full border border-[#050e08] flex items-center justify-center">
+                <span className="text-[8px] font-black text-white leading-none px-0.5">
+                  {unreadNotificationsCount > 9 ? "9+" : unreadNotificationsCount}
+                </span>
+              </span>
+            )}
+            {unreadNotificationsCount === 0 && (
+              <span className="absolute top-1 right-1 w-2 h-2 bg-[#1a3825] rounded-full border border-[#050e08]" />
+            )}
           </button>
 
           {showNotifications && (
-            <div className="absolute right-0 mt-2 w-72 bg-[#0a1a0f] border border-[#1a3825] rounded-xl shadow-2xl z-50 overflow-hidden divide-y divide-[#1a3825] animate-in fade-in slide-in-from-top-3 duration-200">
+            <div className="absolute right-0 mt-2 w-80 bg-[#0a1a0f] border border-[#1a3825] rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-3 duration-200">
+              {/* Header */}
               <div className="px-4 py-2.5 bg-[#0f2318] flex items-center justify-between">
-                <span className="text-xs font-bold font-bebas tracking-wide uppercase text-[#00e56b]">Recent Notifications</span>
-                <span className="text-[9px] text-[#5a8a6a] bg-[#050e08] px-1.5 py-0.5 rounded">3 NEW</span>
+                <span className="text-xs font-bold font-bebas tracking-wide uppercase text-[#00e56b]">
+                  Notifications
+                </span>
+                <div className="flex items-center space-x-2">
+                  {unreadNotificationsCount > 0 && (
+                    <span className="text-[9px] text-[#ff4444] bg-[#050e08] px-1.5 py-0.5 rounded font-black">
+                      {unreadNotificationsCount} UNREAD
+                    </span>
+                  )}
+                  {myNotifications.some(n => !n.read) && (
+                    <button
+                      onClick={() => markAllNotificationsRead()}
+                      className="flex items-center space-x-1 text-[9px] text-[#5a8a6a] hover:text-[#00e56b] transition"
+                      title="Mark all as read"
+                    >
+                      <CheckCheck className="w-3 h-3" />
+                      <span>All read</span>
+                    </button>
+                  )}
+                </div>
               </div>
-              <div className="max-h-60 overflow-y-auto divide-y divide-[#1a3825]/50">
-                {dummyNotifications.map(notif => (
-                  <div key={notif.id} className="p-3 hover:bg-[#0f2318]/50 transition duration-150">
-                    <p className="text-xs text-[#e8f5ee]/90 leading-relaxed">{notif.text}</p>
-                    <span className="block mt-1 text-[9px] text-[#5a8a6a]/80 font-mono">{notif.time}</span>
+
+              {/* List */}
+              <div className="max-h-72 overflow-y-auto divide-y divide-[#1a3825]/50">
+                {myNotifications.length === 0 ? (
+                  <div className="p-6 text-center text-xs text-[#5a8a6a] italic">
+                    No notifications yet. Actions you take and receive will appear here.
                   </div>
-                ))}
+                ) : (
+                  myNotifications.map(notif => (
+                    <button
+                      key={notif.notificationId}
+                      onClick={() => markNotificationRead(notif.notificationId)}
+                      className={`w-full text-left p-3.5 hover:bg-[#0f2318]/60 transition duration-150 ${
+                        notif.read ? "opacity-60" : "bg-[#0f2318]/30"
+                      }`}
+                    >
+                      <div className="flex items-start space-x-2.5">
+                        {!notif.read && (
+                          <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#00e56b] flex-shrink-0" />
+                        )}
+                        <div className={!notif.read ? "" : "ml-4"}>
+                          <p className="text-xs text-[#e8f5ee]/90 leading-relaxed">{notif.text}</p>
+                          <span className="block mt-1 text-[9px] text-[#5a8a6a]/80 font-mono">
+                            {formatTime(notif.createdAt)}
+                          </span>
+                        </div>
+                      </div>
+                    </button>
+                  ))
+                )}
               </div>
+
               <div className="p-2 text-center bg-[#050e08]">
                 <button
                   onClick={() => setShowNotifications(false)}
-                  className="text-[10px] font-bold text-[#00e56b] hover:underline uppercase tracking-wider"
+                  className="text-[10px] font-bold text-[#5a8a6a] hover:text-[#00e56b] uppercase tracking-wider transition"
                 >
-                  Close Panel
+                  Close
                 </button>
               </div>
             </div>

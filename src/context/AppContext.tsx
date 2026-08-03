@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { UserProfile, PostHighlight, ScoutReport, NewsItem, UserRole, PostComment, RatingDoc, ClubPost, AppNotification, ClubPostComment, SquadMember, PitchReport, CareerMoment, LiveSession, ChallengePost, ChallengeResponse, SpotlightPost, VerificationApplication, ScoutStamp, TrialEvent, TrialEventApplication } from "../types";
 import { db, auth, isDemoMode } from "../firebase";
-import { collection, doc, setDoc, getDoc, updateDoc, onSnapshot, query, orderBy, limit, addDoc, serverTimestamp, increment } from "firebase/firestore";
+import { collection, doc, setDoc, getDoc, updateDoc, onSnapshot, query, orderBy, limit, addDoc, serverTimestamp, increment, where } from "firebase/firestore";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
 import { triggerGlobalToast } from "../components/Toast";
 
@@ -141,6 +141,9 @@ interface AppContextType {
   addPlayerToSquad: (playerId: string, contractStatus: "Signed" | "Trial" | "Released") => Promise<void>;
   removeFromSquad: (playerId: string) => Promise<void>;
   addSystemNotification: (recipientId: string, text: string, options?: { senderId?: string; type?: string; postId?: string }) => Promise<void>;
+  markNotificationRead: (notificationId: string) => Promise<void>;
+  markAllNotificationsRead: () => Promise<void>;
+  unreadNotificationsCount: number;
 
   // Custom Social Layer Actions
   addPitchReport: (reportData: Partial<PitchReport>) => Promise<void>;
@@ -1023,26 +1026,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     );
 
-    // Listen to notifications real-time syncing
-    const unsubscribeNotifications = onSnapshot(collection(db, "notifications"), (snapshot) => {
-      const liveNotifications: AppNotification[] = [];
-      snapshot.forEach(doc => {
-        liveNotifications.push({ notificationId: doc.id, ...doc.data() } as AppNotification);
-      });
-      if (liveNotifications.length > 0) {
-        setNotifications(prev => {
-          const merged = [...liveNotifications];
-          prev.forEach(item => {
-            if (!merged.some(l => l.notificationId === item.notificationId)) {
-              merged.push(item);
-            }
-          });
-          return merged;
-        });
-      }
-    }, (err) => {
-      console.warn("Firestore real-time notifications monitoring failed:", err);
-    });
+    // Notifications are re-subscribed per-user in a separate useEffect below
+    const unsubscribeNotifications = () => {};
 
     return () => {
       unsubscribeRatings();
@@ -1052,6 +1037,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubscribePosts();
     };
   }, []);
+
+  // Re-subscribe notifications when currentUser changes (login/logout)
+  useEffect(() => {
+    if (!db || !currentUser?.userId) return;
+    const notifQuery = query(
+      collection(db, "notifications"),
+      where("recipientId", "==", currentUser.userId),
+      orderBy("createdAt", "desc"),
+      limit(30)
+    );
+    const unsub = onSnapshot(notifQuery, (snapshot) => {
+      const live: AppNotification[] = snapshot.docs.map(d => ({
+        notificationId: d.id, ...d.data()
+      } as AppNotification));
+      setNotifications(live);
+    }, (err) => {
+      console.warn("Notifications listener failed:", err);
+    });
+    return () => unsub();
+  }, [currentUser?.userId]);
 
   const [onboardingStep, setOnboardingStep] = useState<number>(() => {
     const loggedOut = localStorage.getItem("scoutme_logged_out");
@@ -1241,6 +1246,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       );
       setCurrentUser(newProfile);
       setLoading(false);
+      // Request FCM permission after signup (non-blocking)
+      requestNotificationPermission(newProfile.userId);
 
       // Queue welcome email
       if (newProfile.email) {
@@ -1326,6 +1333,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (user) {
         setCurrentUser(user);
         setLoading(false);
+        // Request FCM permission after login (non-blocking)
+        requestNotificationPermission(user.userId);
         return true;
       }
 
@@ -1416,12 +1425,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const votePost = (postId: string) => {
+    let targetPost: PostHighlight | undefined;
     setPosts(prev => prev.map(p => {
       if (p.postId === postId) {
+        targetPost = p;
         setUsers(prevUsers => prevUsers.map(u => {
-          if (u.name === p.playerName) {
-            return { ...u, votes: (u.votes || 0) + 1 };
-          }
+          if (u.name === p.playerName) return { ...u, votes: (u.votes || 0) + 1 };
           return u;
         }));
         return { ...p, votes: p.votes + 1 };
@@ -1433,6 +1442,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         console.warn("[Firestore] Vote update failed:", e)
       );
     }
+    // Notify post owner — rate-limit to once per hour per post
+    setTimeout(() => {
+      if (!targetPost || !currentUser) return;
+      const owner = users.find(u => u.name === targetPost!.playerName);
+      if (!owner || owner.userId === currentUser.userId) return;
+      const rateLimitKey = `vote_notif_${postId}`;
+      const lastSent = parseInt(localStorage.getItem(rateLimitKey) || "0");
+      if (Date.now() - lastSent < 3600000) return;
+      localStorage.setItem(rateLimitKey, String(Date.now()));
+      addSystemNotification(owner.userId,
+        `▲ ${currentUser.name} voted for your highlight. Keep posting! 🔥`
+      );
+    }, 500);
   };
 
   const addComment = (postId: string, commentText: string) => {
@@ -1857,6 +1879,63 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
   };
+
+  // ── FCM Token Registration ─────────────────────────────────────────────────
+  const requestNotificationPermission = async (userId: string) => {
+    if (!db || typeof Notification === "undefined") return;
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") return;
+      const vapidKey = (import.meta as any).env?.VITE_FIREBASE_VAPID_KEY;
+      if (!vapidKey || vapidKey === "your_vapid_key_here") return;
+      const { getFirebaseMessaging } = await import("../firebase");
+      const { getToken, onMessage } = await import("firebase/messaging");
+      const msg = await getFirebaseMessaging();
+      if (!msg) return;
+      const token = await getToken(msg, { vapidKey });
+      if (token) {
+        await updateDoc(doc(db, "users", userId), { fcmToken: token, notificationsEnabled: true });
+        // Foreground push display
+        onMessage(msg, (payload) => {
+          const title = payload.notification?.title || "ScoutMe";
+          const body = payload.notification?.body || "";
+          if (Notification.permission === "granted") {
+            new Notification(title, {
+              body,
+              icon: "/scoutme_logo.png",
+              badge: "/icon-192.png",
+            });
+          }
+        });
+      }
+    } catch (err) {
+      console.warn("[FCM] Token registration failed:", err);
+    }
+  };
+
+  // ── Notification Read/Unread ───────────────────────────────────────────────
+  const markNotificationRead = async (notificationId: string) => {
+    setNotifications(prev => prev.map(n =>
+      n.notificationId === notificationId ? { ...n, read: true } : n
+    ));
+    if (db) {
+      updateDoc(doc(db, "notifications", notificationId), { read: true }).catch(() => {});
+    }
+  };
+
+  const markAllNotificationsRead = async () => {
+    const unread = notifications.filter(n => !n.read && n.recipientId === currentUser?.userId);
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    if (db) {
+      await Promise.all(unread.map(n =>
+        updateDoc(doc(db, "notifications", n.notificationId), { read: true }).catch(() => {})
+      ));
+    }
+  };
+
+  const unreadNotificationsCount = notifications.filter(
+    n => !n.read && n.recipientId === currentUser?.userId
+  ).length;
 
   const addSystemNotification = async (recipientId: string, text: string) => {
     const newNotif: AppNotification = {
@@ -2820,6 +2899,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         `🏆 You are ScoutMe's Player of the Week! Your profile is now featured to all scouts.`
       );
     }
+
+    // Weekly Challenge notification — notify all players
+    if (data.contentType === "trial_challenge" && isOfficial) {
+      const drillName = data.caption.match(/\[(.+?)\]/)?.[1] || "Virtual Trial";
+      users.filter(u => u.role === "player").forEach(u => {
+        addSystemNotification(
+          u.userId,
+          `⚡ This week's challenge is live! Complete the ${drillName} challenge for a chance to win Player of the Week 🏆`
+        );
+      });
+    }
   };
 
   const applyToTrialEvent = async (trialEventId: string, result: { drillName: string; score: number }) => {
@@ -3014,6 +3104,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         trialEvents,
         trialEventApplications,
         applyToTrialEvent,
+        markNotificationRead,
+        markAllNotificationsRead,
+        unreadNotificationsCount,
       }}
     >
       {children}
