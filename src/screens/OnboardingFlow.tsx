@@ -34,7 +34,7 @@ export const OnboardingFlow: React.FC = () => {
   
   // Role-specific fields
   const [position, setPosition] = useState("CAM");
-  const [age, setAge] = useState<number>(18);
+  const [age, setAge] = useState<number | "">("");
   const [currentClub, setCurrentClub] = useState("");
   const [orgName, setOrgName] = useState("");
   const [scoutRole, setScoutRole] = useState("Head Scout");
@@ -94,9 +94,10 @@ export const OnboardingFlow: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSignInMode) {
-      if (!email || !selectedOnboardingRole) return;
-      let success = await signInUser(email, selectedOnboardingRole, password);
-      if (!success && (selectedOnboardingRole === "scout" || selectedOnboardingRole === "club")) {
+      if (!email) return;
+      const roleToTry = selectedOnboardingRole || "player";
+      let success = await signInUser(email, roleToTry, password);
+      if (!success && (roleToTry === "scout" || roleToTry === "club")) {
         success = await signInUser(email, "club", password);
         if (!success) {
           success = await signInUser(email, "scout", password);
@@ -119,7 +120,7 @@ export const OnboardingFlow: React.FC = () => {
         accountType: (selectedOnboardingRole === "scout" || selectedOnboardingRole === "club") ? accountType : "scout",
         ...(selectedOnboardingRole === "player" && {
           position,
-          age,
+          age: age === "" ? 18 : age,
           club: currentClub || "Unattached",
         }),
         ...( (selectedOnboardingRole === "scout" || selectedOnboardingRole === "club") && {
@@ -606,7 +607,10 @@ export const OnboardingFlow: React.FC = () => {
                           id="signup_age"
                           type="number"
                           value={age}
-                          onChange={(e) => setAge(parseInt(e.target.value) || 18)}
+                          onChange={(e) => setAge(e.target.value === "" ? "" : parseInt(e.target.value))}
+                          placeholder="18"
+                          min={13}
+                          max={45}
                           className="w-full bg-[#0a1a0f] border border-[#1a3825] text-white px-4 py-3 rounded-xl text-sm"
                         />
                       </div>
