@@ -1105,7 +1105,7 @@ export const OnboardingFlow: React.FC = () => {
               <button
                 onClick={async () => {
                   const role = selectedOnboardingRole || "player";
-                  await sendOtp(email, fullName, role);
+                  await sendOtp(email, fullName || email.split("@")[0], role);
                   showToast("New code sent — check your inbox.", "success");
                   setOtpDigits(["", "", "", "", "", ""]);
                   otpRefs[0].current?.focus();
