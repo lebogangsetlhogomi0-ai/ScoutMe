@@ -8,6 +8,7 @@ import { TalentBadges } from "../components/TalentBadges";
 import { motion } from "motion/react";
 import { POSITION_BENCHMARKS, calculateRanking, getOverallRanking } from "../utils/benchmark";
 import { generateAndShareReportCard } from "../utils/shareReport";
+import { computeAiScore } from "../utils/aiScore";
 
 interface PlayerProfileProps {
   playerId: string;
@@ -208,7 +209,7 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({ playerId, onBack, 
             </div>
             <div className="text-center">
               <span className="block text-sm font-extrabold text-[#00e56b] font-mono">
-                {player.rating || 82}
+                {computeAiScore(player)}
               </span>
               <span className="text-[9.5px] uppercase text-[#5a8a6a] tracking-tight">AI Score</span>
             </div>
@@ -390,7 +391,7 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({ playerId, onBack, 
               <div className="flex items-center space-x-3 text-right">
                 <div>
                   <span className="text-[10px] text-[#5a8a6a] block uppercase font-mono tracking-tighter">AI AGGREGATE</span>
-                  <span className="text-xl font-bold font-mono text-[#00e56b]">{player?.rating || 82}</span>
+                  <span className="text-xl font-bold font-mono text-[#00e56b]">{computeAiScore(player!)}</span>
                 </div>
                 {overallRanking && (
                   <span className="px-2 py-1 rounded text-[10px] font-black uppercase" style={{ backgroundColor: `${overallRanking.color}20`, color: overallRanking.color, border: `1px solid ${overallRanking.color}40` }}>
@@ -511,8 +512,8 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({ playerId, onBack, 
 
           <div className="flex items-center justify-between text-[10px] bg-[#050e08]/90 p-2.5 rounded-lg border border-[#1a3825]/80 mt-2">
             <span className="text-[#5a8a6a] uppercase">CALIBRATED CONFIDENCE LIMIT</span>
-            <span className={`px-2 py-0.5 font-bold rounded ${player?.rating && player.rating > 85 ? "bg-[#00e56b]/15 text-[#00e56b] border border-[#00e56b]/30" : "bg-[#f5c518]/15 text-[#f5c518] border border-[#f5c518]/30"}`}>
-              {player?.rating && player.rating > 85 ? "HIGH CONFIDENCE" : "MEDIUM CONFIDENCE"}
+            <span className={`px-2 py-0.5 font-bold rounded ${computeAiScore(player!) > 70 ? "bg-[#00e56b]/15 text-[#00e56b] border border-[#00e56b]/30" : "bg-[#f5c518]/15 text-[#f5c518] border border-[#f5c518]/30"}`}>
+              {computeAiScore(player!) > 70 ? "HIGH CONFIDENCE" : "MEDIUM CONFIDENCE"}
             </span>
           </div>
 
@@ -533,7 +534,7 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({ playerId, onBack, 
               id="scout_share_report_profile_btn"
               onClick={() => {
                 generateAndShareReportCard(player, {
-                  overallScore: player.rating || 82,
+                  overallScore: computeAiScore(player),
                   paceScore: player.pace || 92,
                   visionScore: player.vision || 85,
                   finishingScore: player.finishing || 79,

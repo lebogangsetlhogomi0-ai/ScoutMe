@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useApp } from "../context/AppContext";
 import { Search, Flame, Star, Trophy, MapPin, Zap } from "lucide-react";
 import { getOverallRanking } from "../utils/benchmark";
+import { computeAiScore } from "../utils/aiScore";
 
 interface DiscoverProps {
   onOpenPlayerProfile: (playerId: string) => void;
@@ -172,7 +173,7 @@ export const Discover: React.FC<DiscoverProps> = ({ onOpenPlayerProfile }) => {
                 <div className="flex items-start justify-between">
                   <span className="text-3xl bg-[#050e08]/60 p-2 rounded-lg">{getStoryEmoji(tp.name)}</span>
                   <div className="bg-[#f5c518] text-[#050e08] text-[9.5px] font-extrabold uppercase px-2 py-0.5 rounded font-mono">
-                    SCORE: {tp.rating || 85}
+                    SCORE: {computeAiScore(tp)}
                   </div>
                 </div>
                 <div className="mt-4">
@@ -250,7 +251,7 @@ export const Discover: React.FC<DiscoverProps> = ({ onOpenPlayerProfile }) => {
 
                   {/* Top Right: AI Score badge */}
                   <div className={`absolute top-2 right-2 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wide z-10 select-none ${getRoleColorBg()} text-[#050e08]`}>
-                    AI {pl.rating || 82}
+                    AI {computeAiScore(pl)}
                   </div>
 
                   {/* Top Left: Scout Endorsed star (if endorsed) */}

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 import { useToast } from "../components/Toast";
 import { UserProfile, ScoutReport, VirtualTrialResult } from "../types";
+import { computeAiScore } from "../utils/aiScore";
 import { 
   Search, Trophy, Bot, Cpu, Bookmark, Sparkles, Send, CheckCircle2, History,
   Camera, Zap, RefreshCw, Play, Circle, PlayCircle, Star, Award, 
@@ -543,7 +544,7 @@ export const NeuralScoutAI: React.FC<NeuralScoutAIProps> = ({ initialPlayerId, o
                     <div className="flex items-center space-x-3.5">
                       <div className="text-right">
                         <span className="text-[9px] text-[#5a8a6a] block uppercase font-mono">AI RATING</span>
-                        <span className="text-xs font-bold text-[#f5c518] font-mono">{pl.rating || 82}</span>
+                        <span className="text-xs font-bold text-[#f5c518] font-mono">{computeAiScore(pl)}</span>
                       </div>
                       <input
                         id={`radio_select_${pl.userId}`}

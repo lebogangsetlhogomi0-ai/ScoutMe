@@ -5,6 +5,7 @@ import { collection, doc, setDoc, getDoc, updateDoc, onSnapshot, query, orderBy,
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
 import { triggerGlobalToast } from "../components/Toast";
 import { sendAdminSignupNotification } from "../utils/emailService";
+import { computeAiScore } from "../utils/aiScore";
 
 const OFFICIAL_ACCOUNT_EMAIL = "lebosetlhogomi.scoutme@gmail.com";
 
@@ -870,9 +871,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       snapshot.forEach(doc => {
         liveClubPosts.push({ postId: doc.id, ...doc.data() } as ClubPost);
       });
-      if (liveClubPosts.length > 0) {
-        setClubPosts(liveClubPosts);
-      }
+      setClubPosts(liveClubPosts);
     }, (err) => {
       console.warn("Firestore real-time ClubPosts monitoring failed:", err);
     });
@@ -881,20 +880,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const unsubscribePosts = onSnapshot(
       query(collection(db, "posts"), orderBy("createdAt", "desc"), limit(20)),
       (snapshot) => {
-        if (snapshot.docs.length > 0) {
-          const livePosts: PostHighlight[] = snapshot.docs.map(d => ({
-            postId: d.id,
-            votes: 0,
-            views: 0,
-            commentsCount: 0,
-            comments: [],
-            timestamp: "Recently",
-            trending: false,
-            isArchived: false,
-            ...d.data(),
-          } as PostHighlight));
-          setPosts(livePosts);
-        }
+        const livePosts: PostHighlight[] = snapshot.docs.map(d => ({
+          postId: d.id,
+          votes: 0,
+          views: 0,
+          commentsCount: 0,
+          comments: [],
+          timestamp: "Recently",
+          trending: false,
+          isArchived: false,
+          ...d.data(),
+        } as PostHighlight));
+        setPosts(livePosts);
         setPostsLoading(false);
       },
       (err) => {
@@ -1080,11 +1077,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           agreementSigned: false,
           votes: 0,
           views: 0,
-          pace: Math.floor(Math.random() * 25) + 70,
-          vision: Math.floor(Math.random() * 25) + 70,
-          finishing: Math.floor(Math.random() * 25) + 70,
-          rating: 75,
-          endorsed: false
+          endorsed: false,
+          communityRating: 0,
+          totalRatings: 0,
+          talentBadges: [],
         }),
         ...((profile.role === "scout" || profile.role === "club") && {
           organisation: profile.organisation || "Amateur Scout Network",
@@ -2019,7 +2015,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       name: targetPlayer.name,
       position: targetPlayer.position || "CAM",
       age: targetPlayer.age || 18,
-      aiScore: targetPlayer.rating || 75,
+      aiScore: computeAiScore(targetPlayer),
       contractStatus
     };
 

@@ -2,6 +2,7 @@ import React from "react";
 import { useApp } from "../context/AppContext";
 import { useToast } from "../components/Toast";
 import { Star, ShieldAlert, Users, Film, CheckCircle, BarChart2, Trash2, Zap } from "lucide-react";
+import { computeAiScore } from "../utils/aiScore";
 
 interface ClubStrategicIntelProps {
   onOpenPlayerProfile: (playerId: string) => void;
@@ -144,7 +145,7 @@ export const ClubStrategicIntel: React.FC<ClubStrategicIntelProps> = ({ onOpenPl
                 <div className="flex items-center space-x-3">
                   <div className="text-right">
                     <span className="text-[8.5px] text-[#5a8a6a] block uppercase font-mono">AI RATING</span>
-                    <span className="text-xs font-bold text-[#f5c518] font-mono">{player.rating || 82}</span>
+                    <span className="text-xs font-bold text-[#f5c518] font-mono">{computeAiScore(player)}</span>
                   </div>
                   <div className="flex space-x-1.5">
                     <button
