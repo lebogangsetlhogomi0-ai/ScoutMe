@@ -6,9 +6,7 @@ import {
   RefreshCw, Info
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { storage, db, isDemoMode } from "../firebase";
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { isDemoMode } from "../firebase";
 
 interface UploadFlowProps {
   onUploadSuccess: () => void;
@@ -209,31 +207,33 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
       thumbnailUrl: `⚽ ${selectedThumbnail || "Match Play"}`,
     };
 
-    if (!isDemoMode && storage && db && selectedFile && currentUser) {
-      const filePath = `videos/${currentUser.userId}/${Date.now()}_${selectedFile.name}`;
-      const storageRef = ref(storage, filePath);
-      const uploadTask = uploadBytesResumable(storageRef, selectedFile);
+    if (!isDemoMode && selectedFile && currentUser) {
       setTotalBytes(selectedFile.size);
       setUploadStartTime(Date.now());
 
-      uploadTask.on(
-        "state_changed",
-        (snapshot) => {
-          const pct = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      formData.append("upload_preset", "yeojbrl8");
+      formData.append("folder", `scoutme/videos/${currentUser.userId}`);
+
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", "https://api.cloudinary.com/v1_1/oqojtuol/video/upload");
+
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          const pct = Math.round((e.loaded / e.total) * 100);
           setUploadProgress(pct);
-          setUploadedBytes(snapshot.bytesTransferred);
-          setTotalBytes(snapshot.totalBytes);
-        },
-        (error) => {
-          console.error("Upload failed:", error);
-          setUploadError("Upload failed. Please check your connection and try again.");
-          setIsUploading(false);
-        },
-        async () => {
+          setUploadedBytes(e.loaded);
+          setTotalBytes(e.total);
+        }
+      };
+
+      xhr.onload = async () => {
+        if (xhr.status === 200) {
           try {
-            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+            const result = JSON.parse(xhr.responseText);
             await createPost({
-              videoUrl: downloadURL,
+              videoUrl: result.secure_url,
               thumbnailUrl: `⚽ ${selectedThumbnail || "Match Play"}`,
               caption: postData.caption,
               tags: postData.tags,
@@ -247,8 +247,19 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
           }
           setIsUploading(false);
           setUploadDone(true);
+        } else {
+          console.error("Cloudinary upload failed:", xhr.responseText);
+          setUploadError("Upload failed. Please check your connection and try again.");
+          setIsUploading(false);
         }
-      );
+      };
+
+      xhr.onerror = () => {
+        setUploadError("Upload failed. Please check your connection and try again.");
+        setIsUploading(false);
+      };
+
+      xhr.send(formData);
     } else {
       // Demo / no file — simulate progress with detail
       let progress = 0;
