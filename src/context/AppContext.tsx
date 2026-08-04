@@ -700,7 +700,7 @@ const initialSeedClubPosts: ClubPost[] = [
   }
 ];
 
-const CACHE_VERSION = "v3";
+const CACHE_VERSION = "v4";
 function clearSeedCache() {
   if (localStorageShadow.getItem("scoutme_cache_version") !== CACHE_VERSION) {
     const seedKeys = [
