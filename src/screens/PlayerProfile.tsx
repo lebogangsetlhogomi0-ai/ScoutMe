@@ -9,6 +9,7 @@ import { motion } from "motion/react";
 import { POSITION_BENCHMARKS, calculateRanking, getOverallRanking } from "../utils/benchmark";
 import { generateAndShareReportCard } from "../utils/shareReport";
 import { computeAiScore } from "../utils/aiScore";
+import { FollowListModal } from "../components/FollowListModal";
 
 interface PlayerProfileProps {
   playerId: string;
@@ -51,6 +52,7 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({ playerId, onBack, 
   // Find targeted player
   const player = users.find(u => u.userId === playerId);
 
+  const [followModal, setFollowModal] = useState<"followers" | "following" | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(player?.name || "");
   const [editAge, setEditAge] = useState(player?.age || 18);
@@ -218,20 +220,30 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({ playerId, onBack, 
 
         {/* Row 1.5: Dynamic Followers & Following stats block */}
         <div id={`stats_follows_bar_${player.userId}`} className="flex items-center justify-around bg-[#0a1a0f] border border-[#1a3825] py-2.5 px-3 rounded-2xl font-mono mt-1 select-none">
-          <div className="text-center flex-1">
+          <button className="text-center flex-1 active:opacity-70 transition" onClick={() => setFollowModal("followers")}>
             <span className="block text-sm font-extrabold text-[#00e56b]">
               {(player.followers || []).length}
             </span>
             <span className="text-[9px] uppercase tracking-wider text-[#5a8a6a] font-sans font-medium">Followers</span>
-          </div>
+          </button>
           <div className="w-px h-6 bg-[#1a3825]/60" />
-          <div className="text-center flex-1">
+          <button className="text-center flex-1 active:opacity-70 transition" onClick={() => setFollowModal("following")}>
             <span className="block text-sm font-extrabold text-white">
               {(player.following || []).length}
             </span>
             <span className="text-[9px] uppercase tracking-wider text-[#5a8a6a] font-sans font-medium">Following</span>
-          </div>
+          </button>
         </div>
+
+        {followModal && (
+          <FollowListModal
+            title={followModal === "followers" ? `${player.name.split(" ")[0]}'s Followers` : `${player.name.split(" ")[0]} is Following`}
+            userIds={followModal === "followers" ? (player.followers || []) : (player.following || [])}
+            allUsers={users}
+            onClose={() => setFollowModal(null)}
+            onViewProfile={(uid) => { setFollowModal(null); onBack(); }}
+          />
+        )}
 
         {/* Row 2: Player Headline */}
         <div className="space-y-1">

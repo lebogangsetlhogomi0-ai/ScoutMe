@@ -8,6 +8,7 @@ import {
   FolderLock, Archive, Sparkles, Smile, Star, Shield, X, Gem, Camera
 } from "lucide-react";
 import { DigitalAgreementModal } from "../components/DigitalAgreementModal";
+import { FollowListModal } from "../components/FollowListModal";
 import { ClubPost, UserProfile, CareerMoment, PostHighlight } from "../types";
 import { StoryViewer } from "../components/StoryViewer";
 import { useToast } from "../components/Toast";
@@ -146,6 +147,7 @@ export const ProfileScreen: React.FC<{ clubId?: string; onBack?: () => void }> =
   const [newHighlightSelectedPostIds, setNewHighlightSelectedPostIds] = useState<string[]>([]);
   const [newHighlightCoverUrl, setNewHighlightCoverUrl] = useState("");
   const [vaultOpen, setVaultOpen] = useState(false);
+  const [followModal, setFollowModal] = useState<"followers" | "following" | null>(null);
 
   // Inline comment state per post
   const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(null);
@@ -410,20 +412,20 @@ export const ProfileScreen: React.FC<{ clubId?: string; onBack?: () => void }> =
                   </div>
                 )}
 
-                <div className={!isClub ? "border-x border-[#1a3825]/45 px-8" : "pr-2"}>
+                <button className={`${!isClub ? "border-x border-[#1a3825]/45 px-8" : "pr-2"} text-center active:opacity-70 transition`} onClick={() => setFollowModal("followers")}>
                   <span className="block text-base font-extrabold text-[#e8f5ee] font-mono leading-none">
-                    {isClub ? (clubUser.followers || []).length || clubUser.followersCount || 1024 : (clubUser.followers || []).length}
+                    {isClub ? (clubUser.followers || []).length || clubUser.followersCount || 0 : (clubUser.followers || []).length}
                   </span>
                   <span className="text-[10px] text-[#5a8a6a] uppercase block mt-1 tracking-wider font-semibold">Followers</span>
-                </div>
+                </button>
 
                 {!isClub && (
-                  <div>
+                  <button className="text-center active:opacity-70 transition" onClick={() => setFollowModal("following")}>
                     <span className="block text-base font-extrabold text-[#e8f5ee] font-mono leading-none">
                       {(clubUser.following || []).length}
                     </span>
                     <span className="text-[10px] text-[#5a8a6a] uppercase block mt-1 tracking-wider font-semibold">Following</span>
-                  </div>
+                  </button>
                 )}
               </div>
             </div>
@@ -2076,10 +2078,19 @@ export const ProfileScreen: React.FC<{ clubId?: string; onBack?: () => void }> =
       )}
 
       {/* Digital agreement modal controller */}
-      <DigitalAgreementModal 
-        isOpen={agreementOpen} 
-        onClose={() => setAgreementOpen(false)} 
+      <DigitalAgreementModal
+        isOpen={agreementOpen}
+        onClose={() => setAgreementOpen(false)}
       />
+
+      {followModal && (
+        <FollowListModal
+          title={followModal === "followers" ? "Followers" : "Following"}
+          userIds={followModal === "followers" ? (clubUser.followers || []) : (clubUser.following || [])}
+          allUsers={users}
+          onClose={() => setFollowModal(null)}
+        />
+      )}
 
     </div>
   );
