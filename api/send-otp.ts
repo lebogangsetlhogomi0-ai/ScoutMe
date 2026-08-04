@@ -1,4 +1,5 @@
 import { createHmac } from "crypto";
+import nodemailer from "nodemailer";
 
 const WINDOW_MINUTES = 10;
 const BASE_URL = "https://scoutme-mu.vercel.app";
@@ -88,12 +89,13 @@ function buildEmail(otp: string, role: string, firstName: string): { subject: st
 export default async function handler(req: any, res: any) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const brevoKey = process.env.BREVO_API_KEY;
+  const gmailUser = process.env.GMAIL_USER;
+  const gmailPass = process.env.GMAIL_APP_PASSWORD;
   const otpSecret = process.env.OTP_SECRET;
 
-  console.log("[send-otp] called, has BREVO_API_KEY:", !!brevoKey, "has OTP_SECRET:", !!otpSecret);
+  console.log("[send-otp] called, has GMAIL_USER:", !!gmailUser, "has GMAIL_APP_PASSWORD:", !!gmailPass, "has OTP_SECRET:", !!otpSecret);
 
-  if (!brevoKey || !otpSecret) {
+  if (!gmailUser || !gmailPass || !otpSecret) {
     console.error("[send-otp] Missing env vars");
     return res.status(500).json({ error: "Server not configured" });
   }
@@ -108,37 +110,22 @@ export default async function handler(req: any, res: any) {
   const { subject, html } = buildEmail(otp, role || "player", firstName);
 
   try {
-    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
-      headers: {
-        "accept": "application/json",
-        "api-key": brevoKey,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        sender: { name: "ScoutMe", email: "noreply@scoutme-notification.com" },
-        replyTo: { email: "lebosetlhogomi.scoutme@gmail.com" },
-        to: [{ email, name }],
-        subject,
-        htmlContent: html,
-        headers: {
-          "X-Mailer": "ScoutMe Notification System",
-          "List-Unsubscribe": "<mailto:lebosetlhogomi.scoutme@gmail.com>",
-        },
-      }),
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: { user: gmailUser, pass: gmailPass },
     });
 
-    const result = await response.json();
-    console.log("[send-otp] Brevo response:", JSON.stringify(result));
+    await transporter.sendMail({
+      from: `"ScoutMe" <${gmailUser}>`,
+      to: email,
+      subject,
+      html,
+    });
 
-    if (!response.ok) {
-      console.error("[send-otp] Brevo error status:", response.status, result);
-      return res.status(500).json({ error: "Brevo rejected the request", detail: result });
-    }
-
+    console.log("[send-otp] Gmail sent successfully to:", email);
     res.status(200).json({ success: true });
   } catch (err: any) {
-    console.error("[send-otp] fetch error:", err?.message || err);
+    console.error("[send-otp] Gmail error:", err?.message || err);
     res.status(500).json({ error: "Failed to send OTP", detail: err?.message });
   }
 }

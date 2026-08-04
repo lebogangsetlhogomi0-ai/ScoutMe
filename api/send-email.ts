@@ -1,14 +1,4 @@
-const SENDER = {
-  name: "ScoutMe",
-  email: "noreply@scoutme-notification.com",
-};
-
-const REPLY_TO = { email: "lebosetlhogomi.scoutme@gmail.com" };
-
-const EMAIL_HEADERS = {
-  "X-Mailer": "ScoutMe Notification System",
-  "List-Unsubscribe": "<mailto:lebosetlhogomi.scoutme@gmail.com>",
-};
+import nodemailer from "nodemailer";
 
 const BASE_URL = "https://scoutme-mu.vercel.app";
 
@@ -103,48 +93,30 @@ function getWelcomeContent(role: string, name: string): { subject: string; html:
   };
 }
 
-async function brevoSend(apiKey: string, payload: object): Promise<void> {
-  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-    method: "POST",
-    headers: {
-      "accept": "application/json",
-      "api-key": apiKey,
-      "content-type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
-  const result = await response.json();
-  console.log("[send-email] Brevo response:", JSON.stringify(result));
-  if (!response.ok) throw new Error(JSON.stringify(result));
-}
-
 export default async function handler(req: any, res: any) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const apiKey = process.env.BREVO_API_KEY;
-  console.log("[send-email] called, has BREVO_API_KEY:", !!apiKey);
-  if (!apiKey) return res.status(500).json({ error: "Email service not configured" });
+  const gmailUser = process.env.GMAIL_USER;
+  const gmailPass = process.env.GMAIL_APP_PASSWORD;
+  console.log("[send-email] called, has GMAIL_USER:", !!gmailUser, "has GMAIL_APP_PASSWORD:", !!gmailPass);
+  if (!gmailUser || !gmailPass) return res.status(500).json({ error: "Email service not configured" });
 
   const { type, to, name, role, province, position, club } = req.body;
   if (!type || !to) return res.status(400).json({ error: "Missing required fields" });
 
-  const base = {
-    sender: { name: "ScoutMe", email: "noreply@scoutme-notification.com" },
-    replyTo: { email: "lebosetlhogomi.scoutme@gmail.com" },
-    headers: {
-      "X-Mailer": "ScoutMe Notification System",
-      "List-Unsubscribe": "<mailto:lebosetlhogomi.scoutme@gmail.com>",
-    },
-  };
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: { user: gmailUser, pass: gmailPass },
+  });
 
   try {
     if (type === "admin_signup") {
       console.log("[send-email] sending admin notification for:", name, role);
-      await brevoSend(apiKey, {
-        ...base,
-        to: [{ email: "lebosetlhogomi.scoutme@gmail.com", name: "Lebo" }],
+      await transporter.sendMail({
+        from: `"ScoutMe" <${gmailUser}>`,
+        to: "lebosetlhogomi.scoutme@gmail.com",
         subject: `🆕 ${(role || "").toUpperCase()} just joined ScoutMe — ${name}`,
-        htmlContent: `
+        html: `
           <div style="font-family:Inter,Arial,sans-serif;padding:32px;background:#050e08;color:#e8f5ee;max-width:500px;">
             <h2 style="color:#00e56b;letter-spacing:2px;margin-bottom:4px;">NEW SIGNUP 🎉</h2>
             <p style="color:#5a8a6a;font-size:13px;margin-top:0;">Someone just joined the platform.</p>
@@ -169,3 +141,4 @@ export default async function handler(req: any, res: any) {
     res.status(500).json({ error: "Failed to send email", detail: err?.message });
   }
 }
+
