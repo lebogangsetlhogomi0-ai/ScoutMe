@@ -192,6 +192,9 @@ export const OnboardingFlow: React.FC = () => {
         }
       }
       if (success) {
+        const userRole = selectedOnboardingRole || "player";
+        await sendOtp(email, email.split("@")[0], userRole);
+        setOtpDigits(["", "", "", "", "", ""]);
         setOnboardingStep(4);
       }
     } else {
