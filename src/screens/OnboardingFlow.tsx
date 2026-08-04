@@ -85,12 +85,22 @@ export const OnboardingFlow: React.FC = () => {
   const sendOtp = async (targetEmail: string, targetName: string, targetRole: string) => {
     setOtpSending(true);
     try {
-      await fetch("/api/send-otp", {
+      const res = await fetch("/api/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: targetEmail, name: targetName, role: targetRole }),
       });
-      setOtpResendCountdown(30);
+      if (res.ok) {
+        setOtpResendCountdown(30);
+        showToast(`Code sent to ${targetEmail} — check your inbox`, "success");
+      } else {
+        const data = await res.json().catch(() => ({}));
+        console.error("[sendOtp] failed:", data);
+        showToast("Failed to send verification code. Tap resend to try again.", "error");
+      }
+    } catch (err) {
+      console.error("[sendOtp] network error:", err);
+      showToast("Failed to send verification code. Check your connection.", "error");
     } finally {
       setOtpSending(false);
     }
