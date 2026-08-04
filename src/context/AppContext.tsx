@@ -700,6 +700,21 @@ const initialSeedClubPosts: ClubPost[] = [
   }
 ];
 
+const CACHE_VERSION = "v3";
+function clearSeedCache() {
+  if (localStorageShadow.getItem("scoutme_cache_version") !== CACHE_VERSION) {
+    const seedKeys = [
+      "scoutme_users", "scoutme_posts", "scoutme_club_posts", "scoutme_news",
+      "scoutme_pitch_reports", "scoutme_career_moments", "scoutme_challenge_posts",
+      "scoutme_challenge_responses", "scoutme_spotlight_posts", "scoutme_notifications",
+      "scoutme_ratings", "scoutme_shortlist", "scoutme_reports", "scoutme_live_sessions",
+    ];
+    seedKeys.forEach(k => localStorageShadow.removeItem(k));
+    localStorageShadow.setItem("scoutme_cache_version", CACHE_VERSION);
+  }
+}
+clearSeedCache();
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Load initial local states with localStorage backup
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
