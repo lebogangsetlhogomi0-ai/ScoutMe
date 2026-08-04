@@ -711,11 +711,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         // Fallback
       }
     }
-    const loggedOut = localStorage.getItem("scoutme_logged_out");
-    if (loggedOut === "true") {
-      return null;
-    }
-    return initialSeedPlayers[0];
+    return null;
   });
 
   const [users, setUsers] = useState<UserProfile[]>(() => {
