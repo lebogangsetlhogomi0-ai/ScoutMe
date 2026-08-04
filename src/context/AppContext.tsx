@@ -721,12 +721,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [posts, setPosts] = useState<PostHighlight[]>(() => {
     const saved = localStorage.getItem("scoutme_posts");
-    return saved ? JSON.parse(saved) : initialSeedPosts;
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [clubPosts, setClubPosts] = useState<ClubPost[]>(() => {
     const saved = localStorage.getItem("scoutme_club_posts");
-    return saved ? JSON.parse(saved) : initialSeedClubPosts;
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [notifications, setNotifications] = useState<AppNotification[]>(() => {
