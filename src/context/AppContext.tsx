@@ -716,7 +716,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [users, setUsers] = useState<UserProfile[]>(() => {
     const saved = localStorage.getItem("scoutme_users");
-    return saved ? JSON.parse(saved) : initialSeedPlayers;
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [posts, setPosts] = useState<PostHighlight[]>(() => {
@@ -741,7 +741,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [news, setNews] = useState<NewsItem[]>(() => {
     const saved = localStorage.getItem("scoutme_news");
-    return saved ? JSON.parse(saved) : initialSeedNews;
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [shortlist, setShortlist] = useState<string[]>(() => {
@@ -756,90 +756,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [pitchReports, setPitchReports] = useState<PitchReport[]>(() => {
     const saved = localStorage.getItem("scoutme_pitch_reports");
-    const parsed = saved ? JSON.parse(saved) : [];
-    if (parsed.length === 0) {
-      return [
-        {
-          reportId: "report_seed_1",
-          userId: "player_1",
-          userName: "Sipho Dlamini",
-          userRole: "player",
-          mediaUrl: "https://images.unsplash.com/photo-1543351611-58f69d7c1781?w=800&auto=format&fit=cover&q=60",
-          mediaType: "image",
-          caption: "Match day focus! Let's go Owls 🦉🔥",
-          textContent: "Match day focus! Let's go Owls 🦉🔥",
-          backgroundColour: "pitch_green",
-          audience: "everyone",
-          expiresAt: new Date(Date.now() + 12 * 3600000).toISOString(),
-          createdAt: new Date(Date.now() - 12 * 3600000).toISOString(),
-          viewCount: 147,
-          savedToMoments: false,
-          replies: []
-        },
-        {
-          reportId: "report_seed_2",
-          userId: "player_2",
-          userName: "Thabo Nkosi",
-          userRole: "player",
-          mediaUrl: "",
-          mediaType: "text",
-          textContent: "Morning training done. Shooting drills were clinical! ⚽🥅",
-          backgroundColour: "dark_green",
-          audience: "everyone",
-          expiresAt: new Date(Date.now() + 23 * 3600000).toISOString(),
-          createdAt: new Date(Date.now() - 1 * 3600000).toISOString(),
-          viewCount: 201,
-          savedToMoments: false,
-          replies: []
-        },
-        {
-          reportId: "report_seed_3",
-          userId: "player_3",
-          userName: "Kagiso Sithole",
-          userRole: "player",
-          mediaUrl: "https://images.unsplash.com/photo-1517466787929-bc90951d0974?w=800&auto=format&fit=cover&q=60",
-          mediaType: "image",
-          caption: "Chasing dreams out on the turf ⚡",
-          textContent: "Chasing dreams out on the turf ⚡",
-          backgroundColour: "gold",
-          audience: "everyone",
-          expiresAt: new Date(Date.now() + 2 * 3600000).toISOString(), // expires in 2 hours
-          createdAt: new Date(Date.now() - 22 * 3600000).toISOString(),
-          viewCount: 39,
-          savedToMoments: false,
-          replies: []
-        }
-      ];
-    }
-    return parsed;
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [careerMoments, setCareerMoments] = useState<CareerMoment[]>(() => {
     const saved = localStorage.getItem("scoutme_career_moments");
-    const parsed = saved ? JSON.parse(saved) : [];
-    if (parsed.length === 0) {
-      return [
-        {
-          momentId: "moment_seed_1",
-          userId: "player_1",
-          title: "Best Goals",
-          coverUrl: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=300&auto=format&fit=cover&q=60",
-          contentIds: ["post_1"],
-          createdAt: new Date().toISOString(),
-          order: 1
-        },
-        {
-          momentId: "moment_seed_2",
-          userId: "player_1",
-          title: "Top Skills",
-          coverUrl: "https://images.unsplash.com/photo-1517466787929-bc90951d0974?w=300&auto=format&fit=cover&q=60",
-          contentIds: ["post_2"],
-          createdAt: new Date().toISOString(),
-          order: 2
-        }
-      ];
-    }
-    return parsed;
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [liveSessions, setLiveSessions] = useState<LiveSession[]>(() => {
@@ -849,44 +771,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [challengePosts, setChallengePosts] = useState<ChallengePost[]>(() => {
     const saved = localStorage.getItem("scoutme_challenge_posts");
-    const parsed = saved ? JSON.parse(saved) : [];
-    if (parsed.length === 0) {
-      return [
-        {
-          challengeId: "challenge_1",
-          creatorId: "vino_snap",
-          creatorName: "Vino Snap",
-          creatorRole: "Football Content Creator",
-          title: "Show me your best first touch",
-          description: "Grassroots ballers, upload your cleanest first touch control and dynamic turn. I'll spotlight the absolute best response to my 50K followers on eKasi!",
-          hashtag: "#FirstTouchChallenge #ScoutMe",
-          responseCount: 1,
-          createdAt: new Date(Date.now() - 3600000 * 48).toISOString()
-        }
-      ];
-    }
-    return parsed;
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [challengeResponses, setChallengeResponses] = useState<ChallengeResponse[]>(() => {
     const saved = localStorage.getItem("scoutme_challenge_responses");
-    const parsed = saved ? JSON.parse(saved) : [];
-    if (parsed.length === 0) {
-      return [
-        {
-          responseId: "resp_1",
-          challengeId: "challenge_1",
-          playerId: "player_1",
-          playerName: "Sipho Dlamini",
-          playerAvatarEmoji: "⚽",
-          mediaUrl: "https://assets.mixkit.co/videos/preview/mixkit-player-kicking-a-soccer-ball-in-the-grass-32860-large.mp4",
-          caption: "My entry for the Vino Snap #FirstTouchChallenge ! Composed turn & clean release. Let's grow! ⚡",
-          votes: 142,
-          createdAt: new Date(Date.now() - 3600000 * 24).toISOString()
-        }
-      ];
-    }
-    return parsed;
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [trialEvents] = useState<TrialEvent[]>([
@@ -916,24 +806,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [spotlightPosts, setSpotlightPosts] = useState<SpotlightPost[]>(() => {
     const saved = localStorage.getItem("scoutme_spotlight_posts");
-    const parsed = saved ? JSON.parse(saved) : [];
-    if (parsed.length === 0) {
-      return [
-        {
-          spotlightId: "spot_1",
-          creatorId: "cellular_maake",
-          creatorName: "Cellular Maake",
-          creatorRole: "Technical Scout",
-          featuredPlayerId: "player_1",
-          featuredPlayerName: "Sipho Dlamini",
-          endorsementText: "Watching Sipho Dlamini in Soweto is pure joy. Outstanding scan rate, high football IQ, and absolute speed transitional stability. PSL scouts, pay close attention to this u18 CAM!",
-          createdAt: new Date(Date.now() - 3600000 * 12).toISOString(),
-          viewCount: 489,
-          boostExpiresAt: new Date(Date.now() + 3600000 * 60).toISOString()
-        }
-      ];
-    }
-    return parsed;
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [verificationApplications, setVerificationApplications] = useState<VerificationApplication[]>(() => {
