@@ -1049,7 +1049,8 @@ export const ProfileScreen: React.FC<{ clubId?: string; onBack?: () => void }> =
                               <img src={post.thumbnailUrl} alt="post" className="w-full max-h-72 object-cover" />
                             ) : (
                               <div className="w-full h-40 bg-[#050e08] flex items-center justify-center text-[#1a3825] text-3xl">⚽</div>
-                          )}
+                            );
+                          })()}
 
                           {/* Caption */}
                           {post.caption && (
