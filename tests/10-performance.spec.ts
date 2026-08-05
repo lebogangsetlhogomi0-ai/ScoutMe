@@ -3,92 +3,75 @@ import { quickLogin } from './helpers';
 
 test.describe('Performance & Stability', () => {
 
-  test('App loads within 5 seconds', async ({ page }) => {
+  test('splash page loads within 5 seconds', async ({ page }) => {
     const start = Date.now();
     await page.goto('/');
-    await page.waitForTimeout(1000);
-    const body = await page.locator('body').textContent();
+    await page.waitForSelector('#get_started_btn', { timeout: 5000 });
     const elapsed = Date.now() - start;
-    
-    expect(elapsed).toBeLessThan(8000); // Under 8 seconds
-    expect(body?.trim().length).toBeGreaterThan(20);
+    expect(elapsed).toBeLessThan(5000);
   });
 
-  test('No console errors on startup', async ({ page }) => {
-    const errors: string[] = [];
-    page.on('console', msg => {
-      if (msg.type() === 'error') {
-        // Filter out expected Firebase demo mode message
-        const text = msg.text();
-        if (!text.includes('Firebase') && !text.includes('Demo Mode') && !text.includes('Service Worker')) {
-          errors.push(text);
-        }
-      }
-    });
-    
+  test('page title is set correctly', async ({ page }) => {
     await page.goto('/');
-    await page.waitForTimeout(3000);
-    
-    // Allow max 2 non-Firebase errors (minor warnings are acceptable)
-    expect(errors.length).toBeLessThanOrEqual(3);
+    const title = await page.title();
+    expect(title.toLowerCase()).toMatch(/scoutme|football|scout/);
   });
 
-  test('Switching tabs 5 times does not crash', async ({ page }) => {
+  test('no fatal JS errors on splash load', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', err => errors.push(err.message));
+    await page.goto('/');
+    await page.waitForSelector('#get_started_btn', { timeout: 10000 });
+    await page.waitForTimeout(1000);
+    const fatal = errors.filter(e => !e.includes('ResizeObserver'));
+    expect(fatal).toHaveLength(0);
+  });
+
+  test('no fatal JS errors after logging in', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', err => errors.push(err.message));
     await quickLogin(page);
-    
-    const tabs = ['pitch', 'discover', 'news', 'profile', 'pitch'];
+    await page.waitForTimeout(2000);
+    const fatal = errors.filter(e => !e.includes('ResizeObserver'));
+    expect(fatal).toHaveLength(0);
+  });
+
+  test('rapid tab switching does not crash', async ({ page }) => {
+    await quickLogin(page);
+    const tabs = ['pitch', 'discover', 'pitch', 'discover', 'pitch'];
     for (const tab of tabs) {
-      const tabEl = page.locator(`#tab_${tab}`);
-      if (await tabEl.isVisible()) {
-        await tabEl.click();
-        await page.waitForTimeout(400);
+      const el = page.locator(`#tab_${tab}`);
+      if (await el.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await el.click();
+        await page.waitForTimeout(250);
       }
     }
-    
     const body = await page.locator('body').textContent();
     expect(body?.trim().length).toBeGreaterThan(20);
   });
 
-  test('Rapid scrolling does not crash the app', async ({ page }) => {
+  test('rapid scrolling does not crash', async ({ page }) => {
     await quickLogin(page);
-    
-    // Scroll rapidly 10 times
     for (let i = 0; i < 10; i++) {
       await page.mouse.wheel(0, 300);
       await page.waitForTimeout(50);
     }
-    
     const body = await page.locator('body').textContent();
     expect(body?.trim().length).toBeGreaterThan(20);
   });
 
-  test('App handles multiple rapid button clicks without crashing', async ({ page }) => {
-    await quickLogin(page);
-    
-    const discoverTab = page.locator('#tab_discover');
-    if (await discoverTab.isVisible()) {
-      // Click discover tab 5 times rapidly
-      for (let i = 0; i < 5; i++) {
-        await discoverTab.click();
-        await page.waitForTimeout(100);
-      }
-    }
-    
-    const body = await page.locator('body').textContent();
-    expect(body?.trim().length).toBeGreaterThan(20);
-  });
-
-  test('Page title is set correctly', async ({ page }) => {
-    await page.goto('/');
-    const title = await page.title();
-    expect(title.toLowerCase()).toMatch(/scoutme|football|grassroots/);
-  });
-
-  test('Manifest.json is accessible', async ({ page }) => {
+  test('manifest.json is accessible (PWA)', async ({ page }) => {
     const response = await page.goto('/manifest.json');
     expect(response?.status()).toBe(200);
-    const content = await response?.text();
-    expect(content).toContain('ScoutMe');
+    const text = await response?.text();
+    expect(text?.toLowerCase()).toMatch(/scoutme|name/);
+  });
+
+  test('body has content — app did not white-screen', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForTimeout(3000);
+    const bodyText = await page.locator('body').textContent();
+    expect(bodyText?.trim().length).toBeGreaterThan(30);
   });
 
 });

@@ -36,6 +36,9 @@ export const OnboardingFlow: React.FC = () => {
   const [position, setPosition] = useState("CAM");
   const [age, setAge] = useState<number | "">("");
   const [currentClub, setCurrentClub] = useState("");
+  const [pace, setPace] = useState(50);
+  const [vision, setVision] = useState(50);
+  const [finishing, setFinishing] = useState(50);
   const [orgName, setOrgName] = useState("");
   const [scoutRole, setScoutRole] = useState("Head Scout");
 
@@ -192,10 +195,8 @@ export const OnboardingFlow: React.FC = () => {
         }
       }
       if (success) {
-        const userRole = selectedOnboardingRole || "player";
-        await sendOtp(email, email.split("@")[0], userRole);
-        setOtpDigits(["", "", "", "", "", ""]);
-        setOnboardingStep(4);
+        // Sign-in goes straight into the app — no OTP needed
+        setOnboardingStep(6);
       }
     } else {
       if (!fullName || !email || !password) return;
@@ -213,6 +214,14 @@ export const OnboardingFlow: React.FC = () => {
           position,
           age: age === "" ? 18 : age,
           club: currentClub || "Unattached",
+          pace,
+          vision,
+          finishing,
+          communityRating: 0,
+          totalRatings: 0,
+          talentBadges: [],
+          votes: 0,
+          views: 0,
         }),
         ...( (selectedOnboardingRole === "scout" || selectedOnboardingRole === "club") && {
           ...(accountType === "scout" && {
@@ -726,6 +735,34 @@ export const OnboardingFlow: React.FC = () => {
                         placeholder="e.g. Soweto Owls or Unattached"
                         className="w-full bg-[#0a1a0f] border border-[#1a3825] text-white px-4 py-3 rounded-xl text-sm"
                       />
+                    </div>
+
+                    {/* Self-assessment sliders */}
+                    <div className="space-y-3 bg-[#050e08] border border-[#1a3825] rounded-xl p-4">
+                      <p className="text-[10px] font-bold text-[#5a8a6a] uppercase tracking-wider">
+                        Rate Your Own Attributes <span className="text-[#1a3825]">· scouts see these as your baseline</span>
+                      </p>
+                      {([
+                        { label: "Pace", value: pace, set: setPace, color: "#00e56b" },
+                        { label: "Vision", value: vision, set: setVision, color: "#f5c518" },
+                        { label: "Finishing", value: finishing, set: setFinishing, color: "#4da6ff" },
+                      ] as const).map(({ label, value, set, color }) => (
+                        <div key={label} className="space-y-1">
+                          <div className="flex justify-between items-center">
+                            <span className="text-[11px] font-bold text-white">{label}</span>
+                            <span className="text-[11px] font-mono font-bold" style={{ color }}>{value}</span>
+                          </div>
+                          <input
+                            type="range"
+                            min={1}
+                            max={99}
+                            value={value}
+                            onChange={e => set(parseInt(e.target.value))}
+                            className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
+                            style={{ accentColor: color }}
+                          />
+                        </div>
+                      ))}
                     </div>
                   </motion.div>
                 )}

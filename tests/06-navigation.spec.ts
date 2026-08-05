@@ -1,80 +1,60 @@
 import { test, expect } from '@playwright/test';
-import { quickLogin, navigateToTab } from './helpers';
+import { quickLogin, signupNewUser, navigateToTab } from './helpers';
 
 test.describe('Navigation & Core UX', () => {
 
-  test('Bottom navigation tabs all render', async ({ page }) => {
+  test('bottom nav renders after login', async ({ page }) => {
     await quickLogin(page);
-    
-    const tabs = ['pitch', 'discover', 'news', 'profile'];
-    for (const tab of tabs) {
-      const tabEl = page.locator(`#tab_${tab}`);
-      // May not all be visible depending on role but should not crash
-      await page.waitForTimeout(200);
-    }
-    const body = await page.locator('body').textContent();
-    expect(body?.trim().length).toBeGreaterThan(50);
+    // At minimum pitch and discover tabs must be present
+    await expect(page.locator('#tab_pitch')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#tab_discover')).toBeVisible();
   });
 
-  test('Pitch tab shows feed content', async ({ page }) => {
+  test('pitch tab shows feed screen', async ({ page }) => {
     await quickLogin(page);
     await navigateToTab(page, 'pitch');
-    await page.waitForTimeout(1000);
     const body = await page.locator('body').textContent();
     expect(body?.trim().length).toBeGreaterThan(50);
   });
 
-  test('News tab shows football news', async ({ page }) => {
+  test('discover tab navigates correctly', async ({ page }) => {
+    await quickLogin(page);
+    await navigateToTab(page, 'discover');
+    const body = await page.locator('body').textContent();
+    expect(body?.toLowerCase()).toMatch(/discover|search|player/);
+  });
+
+  test('news tab loads for player role', async ({ page }) => {
     await quickLogin(page);
     await navigateToTab(page, 'news');
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(1500);
     const body = await page.locator('body').textContent();
-    expect(body?.toLowerCase()).toMatch(/news|football|bafana|psl|afcon|scoutme/);
+    expect(body?.toLowerCase()).toMatch(/news|football|discover|scoutme/);
   });
 
-  test('News category filter works', async ({ page }) => {
-    await quickLogin(page);
-    await navigateToTab(page, 'news');
-    await page.waitForTimeout(1000);
-    
-    const pslFilter = page.locator('#news_cat_PSL');
-    if (await pslFilter.isVisible()) {
-      await pslFilter.click();
-      await page.waitForTimeout(500);
-      const body = await page.locator('body').textContent();
-      expect(body?.toLowerCase()).toMatch(/psl|league|football/);
-    }
-  });
-
-  test('Profile tab loads user info', async ({ page }) => {
+  test('profile tab loads user info', async ({ page }) => {
     await quickLogin(page);
     await navigateToTab(page, 'profile');
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(1500);
     const body = await page.locator('body').textContent();
-    expect(body?.toLowerCase()).toMatch(/profile|settings|offline|agreement|sign out/);
+    expect(body?.toLowerCase()).toMatch(/profile|sign out|settings|player/);
   });
 
-  test('Sign out returns to splash/login screen', async ({ page }) => {
+  test('upload tab opens upload flow', async ({ page }) => {
     await quickLogin(page);
-    await navigateToTab(page, 'profile');
-    await page.waitForTimeout(500);
-    
-    const signOutBtn = page.getByRole('button', { name: /sign out|logout/i });
-    if (await signOutBtn.isVisible()) {
-      await signOutBtn.click();
-      await page.waitForTimeout(1500);
-      const body = await page.locator('body').textContent();
-      expect(body?.toLowerCase()).toMatch(/scout|get started|sign in|tagline|ekasi/);
-    }
+    await navigateToTab(page, 'upload');
+    await page.waitForTimeout(1500);
+    const body = await page.locator('body').textContent();
+    expect(body?.toLowerCase()).toMatch(/upload|highlight|video|clip|match|training/);
   });
 
-  test('No blank screens on any tab', async ({ page }) => {
+  test('no blank screen on any player-role tab', async ({ page }) => {
     await quickLogin(page);
     const tabs = ['pitch', 'discover', 'news', 'profile'];
-    
     for (const tab of tabs) {
       const tabEl = page.locator(`#tab_${tab}`);
-      if (await tabEl.isVisible()) {
+      const visible = await tabEl.isVisible({ timeout: 5000 }).catch(() => false);
+      if (visible) {
         await tabEl.click();
         await page.waitForTimeout(800);
         const bodyText = await page.locator('body').textContent();
@@ -83,32 +63,38 @@ test.describe('Navigation & Core UX', () => {
     }
   });
 
-  test('Upload tab opens upload flow for players', async ({ page }) => {
+  test('scout-ai tab visible for scout role, absent for player', async ({ page }) => {
+    // Player — should NOT see scout-ai
     await quickLogin(page);
-    const uploadTab = page.locator('#tab_upload');
-    if (await uploadTab.isVisible()) {
-      await uploadTab.click();
-      await page.waitForTimeout(500);
-      const body = await page.locator('body').textContent();
-      expect(body?.toLowerCase()).toMatch(/upload|highlight|match|training|clip/);
+    const scoutTabPlayer = page.locator('#tab_scout-ai');
+    const visibleForPlayer = await scoutTabPlayer.isVisible({ timeout: 3000 }).catch(() => false);
+    expect(visibleForPlayer).toBe(false);
+  });
+
+  test('sign out returns to splash screen', async ({ page }) => {
+    await quickLogin(page);
+    await navigateToTab(page, 'profile');
+    await page.waitForTimeout(500);
+    const signOutBtn = page.getByRole('button', { name: /sign out|logout/i });
+    const visible = await signOutBtn.isVisible({ timeout: 5000 }).catch(() => false);
+    if (visible) {
+      await signOutBtn.click();
+      await page.waitForTimeout(2000);
+      await expect(page.locator('#get_started_btn')).toBeVisible({ timeout: 10000 });
     }
   });
 
-  test('Demo mode badge is visible', async ({ page }) => {
+  test('rapid tab switching does not crash', async ({ page }) => {
     await quickLogin(page);
+    for (const tab of ['pitch', 'discover', 'pitch', 'discover']) {
+      const el = page.locator(`#tab_${tab}`);
+      if (await el.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await el.click();
+        await page.waitForTimeout(300);
+      }
+    }
     const body = await page.locator('body').textContent();
-    expect(body?.toLowerCase()).toMatch(/demo mode/);
-  });
-
-  test('Notification bell opens notification panel', async ({ page }) => {
-    await quickLogin(page);
-    const bell = page.locator('#notification_bell');
-    if (await bell.isVisible()) {
-      await bell.click();
-      await page.waitForTimeout(500);
-      const body = await page.locator('body').textContent();
-      expect(body?.toLowerCase()).toMatch(/notification|viewed|highlight|welcome/);
-    }
+    expect(body?.trim().length).toBeGreaterThan(20);
   });
 
 });

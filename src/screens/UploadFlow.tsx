@@ -3,7 +3,7 @@ import { useApp } from "../context/AppContext";
 import {
   PlusCircle, Video, CheckCircle, ArrowRight,
   X, Scissors, Layers, AlertTriangle, ChevronDown, ChevronUp,
-  RefreshCw, Info
+  RefreshCw, Info, Image as ImageIcon
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { isDemoMode } from "../firebase";
@@ -25,6 +25,7 @@ const CONTENT_TYPE_LABELS: Record<string, string> = {
   match: "Match Clip",
   training: "Training Drill",
   full: "Full Match",
+  photo: "Photo / Image",
 };
 
 const CONTENT_TYPE_INFO: Record<string, string> = {
@@ -32,6 +33,7 @@ const CONTENT_TYPE_INFO: Record<string, string> = {
   match: "max 5 min · 500MB · MP4/MOV",
   training: "max 3 min · 500MB · MP4/MOV",
   full: "max 10 min · 500MB · MP4/MOV",
+  photo: "max 8MB · JPG/PNG/WEBP",
 };
 
 const ACCEPTED_VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/x-msvideo", "video/x-matroska", "video/avi"];
@@ -63,7 +65,7 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
   const { addNewPost, createPost, currentUser, users } = useApp();
   const isPlatform = currentUser?.role === "platform";
   const [step, setStep] = useState(1);
-  const [contentType, setContentType] = useState<"highlight" | "match" | "training" | "full" | null>(null);
+  const [contentType, setContentType] = useState<"highlight" | "match" | "training" | "full" | "photo" | null>(null);
 
   // File & validation
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -86,7 +88,7 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
   const [visibility, setVisibility] = useState("Public to Platform");
 
   // Thumbnail
-  const [selectedThumbnail, setSelectedThumbnail] = useState("⚡ Strike Deflection");
+  const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
 
   // Platform template state
   const [platformTemplate, setPlatformTemplate] = useState<string | null>(null);
@@ -113,7 +115,9 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
     );
   };
 
-  const handleContentTypeSelect = (type: "highlight" | "match" | "training" | "full") => {
+  const [taggedUserIds, setTaggedUserIds] = useState<string[]>([]);
+
+  const handleContentTypeSelect = (type: "highlight" | "match" | "training" | "full" | "photo") => {
     setContentType(type);
     setStep(2);
   };
@@ -202,9 +206,9 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
       position: selectedPosition,
       province,
       club: matchContext || "Local Amateur League",
-      contentType: contentType === "full" ? "match" : (contentType as any),
+      contentType: contentType === "full" ? "match" : contentType as any,
       tags: selectedHashtags.length > 0 ? selectedHashtags : ["ScoutMe", "KasiFootball"],
-      thumbnailUrl: `⚽ ${selectedThumbnail || "Match Play"}`,
+      thumbnailUrl: coverImageUrl || "",
     };
 
     if (!isDemoMode && selectedFile && currentUser) {
@@ -216,8 +220,10 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
       formData.append("upload_preset", "yeojbrl8");
       formData.append("folder", `scoutme/videos/${currentUser.userId}`);
 
+      const isImageFile = ACCEPTED_IMAGE_TYPES.includes(selectedFile.type) || selectedFile.name.match(/\.(jpg|jpeg|png|webp)$/i);
+      const cloudinaryResource = isImageFile ? "image" : "video";
       const xhr = new XMLHttpRequest();
-      xhr.open("POST", "https://api.cloudinary.com/v1_1/oqojtuol/video/upload");
+      xhr.open("POST", `https://api.cloudinary.com/v1_1/oqojtuol/${cloudinaryResource}/upload`);
 
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) {
@@ -234,13 +240,14 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
             const result = JSON.parse(xhr.responseText);
             await createPost({
               videoUrl: result.secure_url,
-              thumbnailUrl: `⚽ ${selectedThumbnail || "Match Play"}`,
+              thumbnailUrl: isImageFile ? result.secure_url : (coverImageUrl || ""),
               caption: postData.caption,
               tags: postData.tags,
               contentType: postData.contentType,
               position: postData.position,
               league: postData.club,
               province: postData.province,
+              taggedUsers: taggedUserIds.length > 0 ? taggedUserIds : undefined,
             });
           } catch (err) {
             console.error("Post save failed:", err);
@@ -361,7 +368,9 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
       <input
         ref={fileInputRef}
         type="file"
-        accept="video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,.mp4,.mov,.avi,.mkv"
+        accept={contentType === "photo"
+          ? "image/jpeg,image/jpg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+          : "video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,.mp4,.mov,.avi,.mkv,image/jpeg,image/jpg,image/png,image/webp,.jpg,.jpeg,.png,.webp"}
         className="hidden"
         onChange={handleFileChange}
       />
@@ -402,8 +411,8 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
                   <p className="text-xs text-[#5a8a6a] mt-1">What kind of footage are you publishing today?</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  {(["highlight", "match", "training", "full"] as const).map((type) => {
-                    const icons = { highlight: Layers, match: Video, training: Scissors, full: PlusCircle };
+                  {(["highlight", "match", "training", "full", "photo"] as const).map((type) => {
+                    const icons = { highlight: Layers, match: Video, training: Scissors, full: PlusCircle, photo: ImageIcon };
                     const Icon = icons[type];
                     return (
                       <button
@@ -737,6 +746,29 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
               </select>
             </div>
 
+            <div className="space-y-1.5 bg-[#050e08] p-3 rounded-lg border border-[#1a3825]">
+              <span className="block text-[10.5px] font-bold text-[#5a8a6a] uppercase font-mono">🏷️ Tag Players</span>
+              <p className="text-[10px] text-[#5a8a6a]">Tag other players who appear in this clip</p>
+              <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
+                {users.filter(u => (u.role === "player" || u.role === "club") && u.userId !== currentUser?.userId).map(u => {
+                  const isTagged = taggedUserIds.includes(u.userId);
+                  return (
+                    <button key={u.userId} type="button"
+                      onClick={() => setTaggedUserIds(prev => isTagged ? prev.filter(id => id !== u.userId) : [...prev, u.userId])}
+                      className={`flex items-center space-x-1.5 text-[10px] px-2.5 py-1 rounded-full border transition font-mono ${isTagged ? "bg-[#00e56b]/15 text-[#00e56b] border-[#00e56b]/50" : "bg-transparent border-[#1a3825] text-[#5a8a6a]"}`}>
+                      {u.avatarBase64 ? (
+                        <img src={u.avatarBase64} className="w-4 h-4 rounded-full object-cover" alt="" />
+                      ) : (
+                        <span className="w-4 h-4 rounded-full bg-[#1a3825] flex items-center justify-center text-[8px]">👤</span>
+                      )}
+                      <span>{u.name}</span>
+                      {isTagged && <span>✓</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <button onClick={() => setStep(4)}
               className="w-full py-4 bg-[#00e56b] text-[#050e08] font-bold uppercase tracking-wider rounded-xl text-xs flex items-center justify-center space-x-1.5 hover:brightness-105">
               <span>Choose Thumbnail Cover</span>
@@ -750,25 +782,38 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
           <motion.div key="upload4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-5">
             <div className="text-center">
               <h3 className="text-md font-bold text-white uppercase">Choose Cover Frame</h3>
-              <p className="text-xs text-[#5a8a6a] mt-0.5">Pick a title card for your clip.</p>
+              <p className="text-xs text-[#5a8a6a] mt-0.5">Pick an image from your gallery — or skip.</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { label: "Midfield Assist", emoji: "⚽", key: "⚡ Midfield Assist" },
-                { label: "Curved Free Kick", emoji: "🎯", key: "🎯 Curved Free Kick" },
-                { label: "Aerial Save", emoji: "🧤", key: "🧤 Aerial Save" },
-                { label: "Strike Deflection", emoji: "🏟", key: "⚡ Strike Deflection" },
-              ].map(t => (
-                <button key={t.key} type="button" onClick={() => setSelectedThumbnail(t.key)}
-                  className={`p-4 rounded-xl border-2 flex flex-col items-center space-y-2 text-center text-xs text-white transition-colors ${
-                    selectedThumbnail === t.key ? "bg-[#0f2318] border-[#00e56b]" : "bg-[#0a1a0f] border-[#1a3825]"
-                  }`}>
-                  <span className="text-2xl">{t.emoji}</span>
-                  <span className="text-[10px]">"{t.label}"</span>
+            {coverImageUrl ? (
+              <div className="relative rounded-xl overflow-hidden border border-[#00e56b]/40">
+                <img src={coverImageUrl} alt="Cover" className="w-full h-48 object-cover" />
+                <button
+                  type="button"
+                  onClick={() => { setCoverImageFile(null); setCoverImageUrl(null); }}
+                  className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded-lg"
+                >
+                  Remove
                 </button>
-              ))}
-            </div>
+              </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center gap-3 w-full h-40 rounded-xl border-2 border-dashed border-[#1a3825] bg-[#0a1a0f] cursor-pointer hover:border-[#00e56b]/50 transition-colors">
+                <span className="text-3xl">🖼️</span>
+                <span className="text-xs text-[#5a8a6a]">Tap to choose from gallery</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (ev) => setCoverImageUrl(ev.target?.result as string);
+                    reader.readAsDataURL(file);
+                  }}
+                />
+              </label>
+            )}
 
             {selectedFile && (
               <div className="flex items-center space-x-2 px-3 py-2 bg-[#0f2318] border border-[#00e56b]/30 rounded-xl">

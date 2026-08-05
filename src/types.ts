@@ -61,6 +61,7 @@ export interface UserProfile {
   followers?: string[]; // Array of userIds
   following?: string[]; // Array of userIds
   mySquad?: string[]; // Array of userIds for close friends mutual list
+  repostIds?: string[]; // postIds this user has reposted
 
   // Community Rating & Badges
   communityRating?: number;
@@ -139,7 +140,7 @@ export interface PostHighlight {
   thumbnailUrl: string;
   caption: string;
   tags: string[];
-  contentType: "highlight" | "match" | "training" | "full" | "player_of_week" | "signing" | "most_improved" | "platform_update" | "trial_challenge";
+  contentType: "highlight" | "match" | "training" | "full" | "photo" | "player_of_week" | "signing" | "most_improved" | "platform_update" | "trial_challenge";
   isOfficialPost?: boolean;
   votes: number;
   views: number;
@@ -158,6 +159,8 @@ export interface PostHighlight {
   tagPositions?: { userId: string; x: number; y: number }[]; // coordinates on media
   postFormat?: "clip" | "shot" | "carousel"; // standard reel, static photo, carousel
   carouselUrls?: string[]; // list of images for Match Shot carousel
+  savedBy?: string[]; // userIds who saved this post
+  repostedBy?: string[]; // userIds who reposted this post
 }
 
 export interface PostComment {

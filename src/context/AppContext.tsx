@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { UserProfile, PostHighlight, ScoutReport, NewsItem, UserRole, PostComment, RatingDoc, ClubPost, AppNotification, ClubPostComment, SquadMember, PitchReport, CareerMoment, LiveSession, ChallengePost, ChallengeResponse, SpotlightPost, VerificationApplication, ScoutStamp, TrialEvent, TrialEventApplication } from "../types";
 import { db, auth, isDemoMode } from "../firebase";
-import { collection, doc, setDoc, getDoc, updateDoc, onSnapshot, query, orderBy, limit, addDoc, serverTimestamp, increment, where } from "firebase/firestore";
+import { collection, doc, setDoc, getDoc, updateDoc, onSnapshot, query, orderBy, limit, addDoc, serverTimestamp, increment, where, deleteDoc } from "firebase/firestore";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
 import { triggerGlobalToast } from "../components/Toast";
 import { sendAdminSignupNotification } from "../utils/emailService";
@@ -126,6 +126,8 @@ interface AppContextType {
   updateAvatar: (avatarBase64: string) => Promise<void>;
   signDigitalAgreement: () => void;
   votePost: (postId: string) => void;
+  toggleSavePost: (postId: string) => void;
+  repostPost: (postId: string) => void;
   addComment: (postId: string, commentText: string) => void;
   toggleShortlist: (playerId: string) => void;
   generateReport: (playerId: string, scores: { pace: number; vision: number; finishing: number }) => Promise<ScoutReport | null>;
@@ -835,6 +837,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return saved ? JSON.parse(saved) : [];
   });
 
+  // One-time cleanup: delete known demo/seed accounts from Firestore
+  useEffect(() => {
+    if (!db) return;
+    const demoIds = ["player_1", "player_2", "player_3", "player_4", "player_5",
+                     "scout_1", "scout_2", "cellular_maake", "fan_1"];
+    const CLEANUP_KEY = "scoutme_demo_cleanup_v1";
+    if (localStorage.getItem(CLEANUP_KEY)) return;
+    Promise.all(demoIds.map(id => deleteDoc(doc(db!, "users", id)).catch(() => {})))
+      .then(() => {
+        // Also delete demo posts by those user IDs
+        demoIds.forEach(uid => {
+          ["post_1","post_2","post_3","post_4","post_5"].forEach(pid =>
+            deleteDoc(doc(db!, "posts", pid)).catch(() => {})
+          );
+        });
+        localStorage.setItem(CLEANUP_KEY, "done");
+      });
+  }, []);
+
   // Listen to Firestore changes if db is available
   useEffect(() => {
     if (!db) return;
@@ -1351,6 +1372,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       return p;
     }));
+  };
+
+  const toggleSavePost = (postId: string) => {
+    if (!currentUser) return;
+    setPosts(prev => prev.map(p => {
+      if (p.postId !== postId) return p;
+      const savedBy = p.savedBy || [];
+      const isSaved = savedBy.includes(currentUser.userId);
+      return { ...p, savedBy: isSaved ? savedBy.filter(id => id !== currentUser.userId) : [...savedBy, currentUser.userId] };
+    }));
+  };
+
+  const repostPost = (postId: string) => {
+    if (!currentUser) return;
+    setPosts(prev => prev.map(p => {
+      if (p.postId !== postId) return p;
+      const repostedBy = p.repostedBy || [];
+      if (repostedBy.includes(currentUser.userId)) return p;
+      return { ...p, repostedBy: [...repostedBy, currentUser.userId] };
+    }));
+    const updated = { ...currentUser, repostIds: [...(currentUser.repostIds || []).filter(id => id !== postId), postId] };
+    setCurrentUser(updated);
+    setUsers(prev => prev.map(u => u.userId === currentUser.userId ? updated : u));
   };
 
   const toggleShortlist = (playerId: string) => {
@@ -2713,6 +2757,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     featuredPlayerName?: string;
     submissionType?: "weekly_challenge" | "club_trial" | "both";
     clubTrialClubName?: string;
+    taggedUsers?: string[];
   }) => {
     if (!currentUser) return;
     if (currentUser.role !== "player" && currentUser.role !== "platform") return;
@@ -2740,6 +2785,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       comments: [],
       ...(data.submissionType && { submissionType: data.submissionType }),
       ...(data.clubTrialClubName && { clubTrialClubName: data.clubTrialClubName }),
+      ...(data.taggedUsers && data.taggedUsers.length > 0 && { taggedUsers: data.taggedUsers }),
     };
 
     setPosts(prev => [newPost, ...prev]);
@@ -2922,6 +2968,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         resendVerificationEmail,
         signDigitalAgreement,
         votePost,
+        toggleSavePost,
+        repostPost,
         addComment,
         toggleShortlist,
         generateReport,

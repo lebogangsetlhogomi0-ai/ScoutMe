@@ -1,100 +1,109 @@
-import { test, expect, Browser } from '@playwright/test';
+import { test, expect } from '@playwright/test';
+import { mockOtpEndpoints, signupNewUser } from './helpers';
 
 test.describe('Mobile Responsiveness', () => {
 
-  test('App renders correctly on iPhone 14 (390px)', async ({ browser }) => {
-    const context = await browser.newContext({
-      viewport: { width: 390, height: 844 },
-      userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15',
-    });
-    const page = await context.newPage();
+  test('splash page has no horizontal overflow (Pixel 7 viewport)', async ({ page }) => {
     await page.goto('/');
-    await page.waitForTimeout(2000);
-    
-    // No horizontal overflow
-    const scrollWidth = await page.evaluate(() => document.body.scrollWidth);
-    expect(scrollWidth).toBeLessThanOrEqual(400);
-    
-    // Content exists
-    const body = await page.locator('body').textContent();
-    expect(body?.trim().length).toBeGreaterThan(20);
-    
-    await context.close();
+    await page.waitForSelector('#get_started_btn', { timeout: 15000 });
+    const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+    const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
+    expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 2);
   });
 
-  test('App renders correctly on budget Android (360px)', async ({ browser }) => {
-    const context = await browser.newContext({
-      viewport: { width: 360, height: 800 },
-    });
-    const page = await context.newPage();
+  test('role selection screen has no horizontal overflow', async ({ page }) => {
     await page.goto('/');
-    await page.waitForTimeout(2000);
-    
-    const scrollWidth = await page.evaluate(() => document.body.scrollWidth);
-    expect(scrollWidth).toBeLessThanOrEqual(370);
-    
-    const body = await page.locator('body').textContent();
-    expect(body?.trim().length).toBeGreaterThan(20);
-    
-    await context.close();
+    await page.waitForSelector('#get_started_btn', { timeout: 15000 });
+    await page.click('#get_started_btn');
+    await page.waitForSelector('#role_player', { timeout: 10000 });
+    const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+    const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
+    expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 2);
   });
 
-  test('Buttons meet 44px minimum touch target', async ({ page }) => {
+  test('signup form has no horizontal overflow', async ({ page }) => {
     await page.goto('/');
-    await page.waitForTimeout(2000);
-    
-    const buttons = page.getByRole('button');
-    const count = await buttons.count();
-    
-    let failCount = 0;
-    for (let i = 0; i < Math.min(count, 8); i++) {
-      const btn = buttons.nth(i);
-      if (await btn.isVisible()) {
-        const box = await btn.boundingBox();
-        if (box && box.height < 36) { // 36px minimum (some tolerance)
-          failCount++;
-        }
+    await page.waitForSelector('#get_started_btn', { timeout: 15000 });
+    await page.click('#get_started_btn');
+    await page.waitForSelector('#role_player', { timeout: 10000 });
+    await page.click('#role_player');
+    await page.click('#role_continue_btn');
+    await page.waitForSelector('#signup_name', { timeout: 10000 });
+    const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+    const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
+    expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 2);
+  });
+
+  test('OTP screen has no horizontal overflow', async ({ page }) => {
+    await mockOtpEndpoints(page);
+    await page.goto('/');
+    await page.waitForSelector('#get_started_btn', { timeout: 15000 });
+    await page.click('#get_started_btn');
+    await page.waitForSelector('#role_player', { timeout: 10000 });
+    await page.click('#role_player');
+    await page.click('#role_continue_btn');
+    await page.waitForSelector('#signup_name', { timeout: 10000 });
+    await page.fill('#signup_name', 'Mobile Test');
+    await page.fill('#signup_email', `mobile_${Date.now()}@example.com`);
+    await page.fill('#signup_password', 'TestPassword123!');
+    await page.check('#signup_agreement');
+    await page.click('#signup_submit_btn');
+    await page.waitForSelector('text=CHECK YOUR EMAIL', { timeout: 15000 });
+    const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+    const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
+    expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 2);
+  });
+
+  test('main app tabs have no horizontal overflow', async ({ page }) => {
+    await signupNewUser(page, 'player');
+    const tabs = ['pitch', 'discover'];
+    for (const tab of tabs) {
+      const el = page.locator(`#tab_${tab}`);
+      if (await el.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await el.click();
+        await page.waitForTimeout(800);
+        const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+        const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
+        expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 2);
       }
     }
-    // Allow max 2 small buttons (icon-only buttons may be smaller)
-    expect(failCount).toBeLessThanOrEqual(2);
   });
 
-  test('Text inputs have 16px font to prevent iOS zoom', async ({ page }) => {
+  test('background is dark (correct brand colour)', async ({ page }) => {
     await page.goto('/');
-    await page.waitForTimeout(1000);
-    
-    const signIn = page.getByRole('button', { name: /sign in/i });
-    if (await signIn.isVisible()) {
-      await signIn.click();
-      await page.waitForTimeout(500);
-    }
-    
-    const emailInput = page.locator('input[type="email"]').first();
-    if (await emailInput.isVisible()) {
-      const fontSize = await emailInput.evaluate(el => {
-        return window.getComputedStyle(el).fontSize;
-      });
-      const size = parseFloat(fontSize);
-      expect(size).toBeGreaterThanOrEqual(14); // At least 14px (16px ideal for iOS)
-    }
-  });
-
-  test('Background is dark (correct brand colours)', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForTimeout(1500);
-    
-    const bgColor = await page.evaluate(() => {
-      return window.getComputedStyle(document.body).backgroundColor;
-    });
-    // Should be dark — rgb values should all be low
-    expect(bgColor).toMatch(/rgb\([0-9]+,\s*[0-9]+,\s*[0-9]+\)/);
-    const match = bgColor.match(/(\d+)/g);
+    await page.waitForSelector('#get_started_btn', { timeout: 15000 });
+    const bgColor = await page.evaluate(
+      () => window.getComputedStyle(document.body).backgroundColor
+    );
+    const match = bgColor.match(/\d+/g);
     if (match) {
       const [r, g, b] = match.map(Number);
       const brightness = (r + g + b) / 3;
-      expect(brightness).toBeLessThan(50); // Dark background
+      expect(brightness).toBeLessThan(50);
     }
+  });
+
+  test('buttons on splash meet minimum touch target height', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForSelector('#get_started_btn', { timeout: 15000 });
+    const btns = ['#get_started_btn', '#sign_in_splash_btn'];
+    for (const sel of btns) {
+      const box = await page.locator(sel).boundingBox();
+      if (box) {
+        expect(box.height).toBeGreaterThanOrEqual(44);
+      }
+    }
+  });
+
+  test('email input font size prevents iOS auto-zoom (≥14px)', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForSelector('#sign_in_splash_btn', { timeout: 15000 });
+    await page.click('#sign_in_splash_btn');
+    await page.waitForSelector('#signup_email', { timeout: 10000 });
+    const fontSize = await page.locator('#signup_email').evaluate(
+      (el) => parseFloat(window.getComputedStyle(el).fontSize)
+    );
+    expect(fontSize).toBeGreaterThanOrEqual(14);
   });
 
 });

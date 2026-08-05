@@ -5,7 +5,8 @@ import {
   Settings, Wifi, WifiOff, CreditCard, LogOut, Check, ToggleLeft, ToggleRight,
   Plus, Users, SwatchBook, Globe, Calendar, Medal, Trash2, Heart, MessageSquare,
   Tag, Pin, Landmark, MapPin, Eye, Trophy, Send, PlusCircle, CheckCircle, Share2,
-  FolderLock, Archive, Sparkles, Smile, Star, Shield, X, Gem, Camera
+  FolderLock, Archive, Sparkles, Smile, Star, Shield, X, Gem, Camera,
+  ThumbsUp, Bookmark, Repeat2, Image as ImageIcon, Video
 } from "lucide-react";
 import { DigitalAgreementModal } from "../components/DigitalAgreementModal";
 import { FollowListModal } from "../components/FollowListModal";
@@ -49,7 +50,11 @@ export const ProfileScreen: React.FC<{ clubId?: string; onBack?: () => void }> =
     createSpotlightPost,
     addChallengePost,
     awardScoutStamp,
-    scoutStamps
+    scoutStamps,
+    votePost,
+    toggleSavePost,
+    repostPost,
+    addComment,
   } = useApp();
   const { showToast } = useToast();
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -152,6 +157,10 @@ export const ProfileScreen: React.FC<{ clubId?: string; onBack?: () => void }> =
   // Inline comment state per post
   const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(null);
   const [commentTextState, setCommentTextState] = useState("");
+
+  // Profile post tabs
+  const [profilePostTab, setProfilePostTab] = useState<"posts" | "reposts" | "saved" | "tagged">("posts");
+  const [profilePostSubTab, setProfilePostSubTab] = useState<"all" | "highlight" | "match" | "training" | "full" | "photo">("all");
 
   if (!currentUser) return null;
 
@@ -398,7 +407,7 @@ export const ProfileScreen: React.FC<{ clubId?: string; onBack?: () => void }> =
               <div className="flex-1 flex justify-around ml-4 bg-[#0a1a0f] border border-[#1a3825] py-3.5 px-3 rounded-2xl font-sans text-center">
                 <div>
                   <span className="block text-base font-extrabold text-[#e8f5ee] font-mono leading-none">
-                    {isClub ? activeClubPosts.length : "1"}
+                    {isClub ? activeClubPosts.length : posts.filter(p => p.userId === clubUser.userId && !p.isArchived).length}
                   </span>
                   <span className="text-[10px] text-[#5a8a6a] uppercase block mt-1 tracking-wider font-semibold">Posts</span>
                 </div>
@@ -917,6 +926,171 @@ export const ProfileScreen: React.FC<{ clubId?: string; onBack?: () => void }> =
               )}
             </div>
           </div>
+
+          {/* ── PLAYER POST TABS ── */}
+          {isPlayer && (() => {
+            const myPosts = posts.filter(p => !p.isArchived && p.userId === clubUser.userId);
+            const repostedPostIds = clubUser.repostIds || [];
+            const repostedPosts = posts.filter(p => repostedPostIds.includes(p.postId));
+            const savedPosts = posts.filter(p => (p.savedBy || []).includes(clubUser.userId));
+            const taggedPosts = posts.filter(p => (p.taggedUsers || []).includes(clubUser.userId));
+
+            const postsForTab = (() => {
+              if (profilePostTab === "reposts") return repostedPosts;
+              if (profilePostTab === "saved") return savedPosts;
+              if (profilePostTab === "tagged") return taggedPosts;
+              if (profilePostSubTab === "all") return myPosts;
+              return myPosts.filter(p => p.contentType === profilePostSubTab);
+            })();
+
+            return (
+              <div className="space-y-3">
+                {/* Main tab bar */}
+                <div className="flex border-b border-[#1a3825]/50">
+                  {(["posts", "reposts", "saved", "tagged"] as const).map(tab => (
+                    <button key={tab} onClick={() => setProfilePostTab(tab)}
+                      className={`flex-1 py-2.5 text-[10px] font-bold uppercase tracking-wider transition ${
+                        profilePostTab === tab
+                          ? "text-[#00e56b] border-b-2 border-[#00e56b] -mb-px"
+                          : "text-[#5a8a6a]"
+                      }`}>
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Sub-tabs only for Posts */}
+                {profilePostTab === "posts" && (
+                  <div className="flex space-x-1.5 overflow-x-auto no-scrollbar pb-0.5">
+                    {(["all", "highlight", "match", "training", "full", "photo"] as const).map(sub => (
+                      <button key={sub} onClick={() => setProfilePostSubTab(sub)}
+                        className={`flex-shrink-0 px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider transition ${
+                          profilePostSubTab === sub
+                            ? "bg-[#00e56b]/15 text-[#00e56b] border border-[#00e56b]/40"
+                            : "bg-[#0a1a0f] text-[#5a8a6a] border border-[#1a3825]"
+                        }`}>
+                        {sub === "all" ? "All" : sub === "highlight" ? "Highlights" : sub === "match" ? "Match Clips" : sub === "training" ? "Training" : sub === "full" ? "Full Match" : "Photos"}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Post cards */}
+                {postsForTab.length === 0 ? (
+                  <div className="text-center py-10 text-[#5a8a6a] text-xs bg-[#0a1a0f]/40 rounded-2xl border border-[#1a3825]/30">
+                    {profilePostTab === "posts" ? "No posts yet. Upload a clip to get started."
+                      : profilePostTab === "reposts" ? "No reposts yet."
+                      : profilePostTab === "saved" ? "No saved posts yet."
+                      : "No tagged posts yet."}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {postsForTab.map(post => {
+                      const isVoted = false; // no per-user vote tracking yet
+                      const isSaved = (post.savedBy || []).includes(currentUser.userId);
+                      const isReposted = (post.repostedBy || []).includes(currentUser.userId);
+                      const isImage = post.contentType === "photo" || (!post.videoUrl && post.thumbnailUrl);
+                      const showComment = activeCommentPostId === post.postId;
+
+                      return (
+                        <div key={post.postId} className="bg-[#0a1a0f] border border-[#1a3825] rounded-2xl overflow-hidden">
+                          {/* Header: just avatar */}
+                          <div className="px-3 pt-3 pb-2 flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <div className="w-9 h-9 rounded-full bg-[#050e08] border-2 border-[#00e56b]/50 overflow-hidden flex items-center justify-center text-base flex-shrink-0">
+                                {clubUser.avatarBase64
+                                  ? <img src={clubUser.avatarBase64} className="w-full h-full object-cover" alt="" />
+                                  : "🙋🏾‍♂️"}
+                              </div>
+                              <div>
+                                <span className="text-[9px] text-[#5a8a6a] font-mono uppercase">{post.contentType} · {post.timestamp}</span>
+                              </div>
+                            </div>
+                            {isImage ? <ImageIcon className="w-3.5 h-3.5 text-[#5a8a6a]" /> : <Video className="w-3.5 h-3.5 text-[#5a8a6a]" />}
+                          </div>
+
+                          {/* Media */}
+                          {post.videoUrl && !isImage ? (
+                            <video
+                              src={post.videoUrl}
+                              controls
+                              playsInline
+                              className="w-full max-h-72 object-cover bg-black"
+                              poster={post.thumbnailUrl || undefined}
+                            />
+                          ) : post.thumbnailUrl ? (
+                            <img src={post.thumbnailUrl} alt="post" className="w-full max-h-72 object-cover" />
+                          ) : (
+                            <div className="w-full h-40 bg-[#050e08] flex items-center justify-center text-[#1a3825] text-3xl">⚽</div>
+                          )}
+
+                          {/* Caption */}
+                          {post.caption && (
+                            <p className="px-3 pt-2.5 text-xs text-[#c8e6c9] leading-relaxed line-clamp-2">{post.caption}</p>
+                          )}
+
+                          {/* Action bar */}
+                          <div className="flex items-center justify-between px-3 py-2.5">
+                            <div className="flex items-center space-x-4">
+                              {/* Vote */}
+                              <button onClick={() => votePost(post.postId)} className="flex items-center space-x-1 text-[#5a8a6a] hover:text-[#00e56b] transition">
+                                <ThumbsUp className="w-4 h-4" />
+                                <span className="text-[11px] font-bold">{post.votes}</span>
+                              </button>
+                              {/* Comment */}
+                              <button onClick={() => setActiveCommentPostId(showComment ? null : post.postId)} className="flex items-center space-x-1 text-[#5a8a6a] hover:text-white transition">
+                                <MessageSquare className="w-4 h-4" />
+                                <span className="text-[11px] font-bold">{post.commentsCount}</span>
+                              </button>
+                              {/* Repost */}
+                              <button onClick={() => { if (!isReposted) repostPost(post.postId); }} className={`flex items-center space-x-1 transition ${isReposted ? "text-[#00e56b]" : "text-[#5a8a6a] hover:text-[#00e56b]"}`}>
+                                <Repeat2 className="w-4 h-4" />
+                                <span className="text-[11px] font-bold">{(post.repostedBy || []).length || ""}</span>
+                              </button>
+                            </div>
+                            <div className="flex items-center space-x-3">
+                              {/* Save */}
+                              <button onClick={() => toggleSavePost(post.postId)} className={`transition ${isSaved ? "text-[#00e56b]" : "text-[#5a8a6a] hover:text-[#00e56b]"}`}>
+                                <Bookmark className={`w-4 h-4 ${isSaved ? "fill-[#00e56b]" : ""}`} />
+                              </button>
+                              {/* Share */}
+                              <button onClick={() => { navigator.clipboard.writeText(`https://scoutme.org/post/${post.postId}`).catch(() => {}); showToast("Link copied ✦", "success"); }} className="text-[#5a8a6a] hover:text-white transition">
+                                <Share2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Inline comment input */}
+                          {showComment && (
+                            <div className="px-3 pb-3 flex space-x-2 border-t border-[#1a3825]/40 pt-2">
+                              <input
+                                type="text"
+                                value={commentTextState}
+                                onChange={e => setCommentTextState(e.target.value)}
+                                placeholder="Write a comment..."
+                                className="flex-1 bg-[#050e08] border border-[#1a3825] text-white text-xs px-3 py-2 rounded-lg outline-none focus:border-[#00e56b]"
+                              />
+                              <button
+                                onClick={() => {
+                                  if (!commentTextState.trim()) return;
+                                  addComment(post.postId, commentTextState.trim());
+                                  setCommentTextState("");
+                                  setActiveCommentPostId(null);
+                                }}
+                                className="px-3 py-2 bg-[#00e56b] text-[#050e08] rounded-lg text-xs font-bold"
+                              >
+                                Post
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* ACTIVE DISCOVERY POST COMPILER MODAL / PANEL */}
           {createPostOpen && isClub && (
