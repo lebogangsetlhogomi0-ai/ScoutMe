@@ -315,6 +315,26 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
     return Math.round(remaining / rate);
   })();
 
+  // Agreement gate — must sign before posting
+  if (!currentUser?.agreementSigned) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center px-6 text-center space-y-6 pb-24">
+        <div className="w-16 h-16 rounded-full bg-[#1a0a0a] border border-[#ff4444]/40 flex items-center justify-center text-3xl">🔒</div>
+        <div className="space-y-2">
+          <h3 className="text-2xl font-extrabold font-bebas tracking-wide text-white uppercase">Agreement Required</h3>
+          <p className="text-xs text-[#5a8a6a] leading-relaxed max-w-xs">
+            You must sign the ScoutMe Digital Agreement before you can upload content. Head to your Profile to sign it.
+          </p>
+        </div>
+        <div className="bg-[#0a1a0f] border border-[#1a3825] rounded-2xl p-4 text-left w-full max-w-xs space-y-1.5">
+          <p className="text-[10px] uppercase font-mono font-bold text-[#5a8a6a]">Why this matters</p>
+          <p className="text-xs text-[#e8f5ee] leading-relaxed">The agreement protects your content rights and ensures scouts can legally assess your highlights.</p>
+        </div>
+        <p className="text-[11px] text-[#5a8a6a]">Go to <span className="text-[#00e56b] font-bold">Profile → Edit Biography</span> area to find and sign the agreement.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 pb-24 overflow-y-auto w-full no-scrollbar px-3 space-y-4">
 

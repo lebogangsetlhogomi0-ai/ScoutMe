@@ -146,6 +146,7 @@ export interface PostHighlight {
   views: number;
   commentsCount: number;
   timestamp: string;
+  createdAt?: string;
   trending?: boolean;
   comments?: PostComment[];
 

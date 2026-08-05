@@ -6,6 +6,7 @@ import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "fire
 import { triggerGlobalToast } from "../components/Toast";
 import { sendAdminSignupNotification } from "../utils/emailService";
 import { computeAiScore } from "../utils/aiScore";
+import { timeAgo } from "../utils/timeAgo";
 
 const OFFICIAL_ACCOUNT_EMAIL = "lebosetlhogomi.scoutme@gmail.com";
 
@@ -901,17 +902,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const unsubscribePosts = onSnapshot(
       query(collection(db, "posts"), orderBy("createdAt", "desc"), limit(20)),
       (snapshot) => {
-        const livePosts: PostHighlight[] = snapshot.docs.map(d => ({
-          postId: d.id,
-          votes: 0,
-          views: 0,
-          commentsCount: 0,
-          comments: [],
-          timestamp: "Recently",
-          trending: false,
-          isArchived: false,
-          ...d.data(),
-        } as PostHighlight));
+        const livePosts: PostHighlight[] = snapshot.docs.map(d => {
+          const data = d.data();
+          const createdAt = data.createdAt?.toDate?.()?.toISOString?.() ?? data.createdAt ?? null;
+          return {
+            postId: d.id,
+            votes: 0,
+            views: 0,
+            commentsCount: 0,
+            comments: [],
+            trending: false,
+            isArchived: false,
+            ...data,
+            createdAt,
+            timestamp: timeAgo(createdAt),
+          } as PostHighlight;
+        });
         setPosts(livePosts);
         setPostsLoading(false);
       },
@@ -2777,6 +2783,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       votes: 0,
       views: 0,
       commentsCount: 0,
+      createdAt: new Date().toISOString(),
       timestamp: "Just now",
       trending: false,
       isArchived: false,
