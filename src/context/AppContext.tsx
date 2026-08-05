@@ -1330,7 +1330,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (p.postId === postId) {
         targetPost = p;
         setUsers(prevUsers => prevUsers.map(u => {
-          if (u.name === p.playerName) return { ...u, votes: (u.votes || 0) + 1 };
+          if (u.userId === p.userId) return { ...u, votes: (u.votes || 0) + 1 };
           return u;
         }));
         return { ...p, votes: p.votes + 1 };
@@ -1345,14 +1345,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Notify post owner — rate-limit to once per hour per post
     setTimeout(() => {
       if (!targetPost || !currentUser) return;
-      const owner = users.find(u => u.name === targetPost!.playerName);
+      const owner = users.find(u => u.userId === targetPost!.userId);
       if (!owner || owner.userId === currentUser.userId) return;
-      const rateLimitKey = `vote_notif_${postId}`;
+      const rateLimitKey = `vote_notif_${postId}_${currentUser.userId}`;
       const lastSent = parseInt(localStorage.getItem(rateLimitKey) || "0");
       if (Date.now() - lastSent < 3600000) return;
       localStorage.setItem(rateLimitKey, String(Date.now()));
       addSystemNotification(owner.userId,
-        `▲ ${currentUser.name} voted for your highlight. Keep posting! 🔥`
+        `▲ ${currentUser.name} voted on your post. Keep posting! 🔥`,
+        { senderId: currentUser.userId, type: "vote", postId }
       );
     }, 500);
   };
@@ -1368,8 +1369,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       timestamp: "Just now"
     };
 
+    let targetPost: PostHighlight | undefined;
     setPosts(prev => prev.map(p => {
       if (p.postId === postId) {
+        targetPost = p;
         return {
           ...p,
           commentsCount: p.commentsCount + 1,
@@ -1378,6 +1381,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       return p;
     }));
+
+    // Notify post owner
+    setTimeout(() => {
+      if (!targetPost) return;
+      const owner = users.find(u => u.userId === targetPost!.userId);
+      if (!owner || owner.userId === currentUser.userId) return;
+      addSystemNotification(owner.userId,
+        `💬 ${currentUser.name} commented on your post: "${commentText.slice(0, 60)}${commentText.length > 60 ? "…" : ""}"`,
+        { senderId: currentUser.userId, type: "comment", postId }
+      );
+    }, 300);
+
+    if (!isDemoMode && db) {
+      updateDoc(doc(db, "posts", postId), { commentsCount: increment(1) }).catch(() => {});
+    }
   };
 
   const toggleSavePost = (postId: string) => {
@@ -1392,15 +1410,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const repostPost = (postId: string) => {
     if (!currentUser) return;
+    let targetPost: PostHighlight | undefined;
     setPosts(prev => prev.map(p => {
       if (p.postId !== postId) return p;
       const repostedBy = p.repostedBy || [];
       if (repostedBy.includes(currentUser.userId)) return p;
+      targetPost = p;
       return { ...p, repostedBy: [...repostedBy, currentUser.userId] };
     }));
     const updated = { ...currentUser, repostIds: [...(currentUser.repostIds || []).filter(id => id !== postId), postId] };
     setCurrentUser(updated);
     setUsers(prev => prev.map(u => u.userId === currentUser.userId ? updated : u));
+
+    // Notify post owner
+    setTimeout(() => {
+      if (!targetPost) return;
+      const owner = users.find(u => u.userId === targetPost!.userId);
+      if (!owner || owner.userId === currentUser.userId) return;
+      addSystemNotification(owner.userId,
+        `🔁 ${currentUser.name} reposted your content!`,
+        { senderId: currentUser.userId, type: "repost", postId }
+      );
+    }, 300);
   };
 
   const toggleShortlist = (playerId: string) => {
@@ -1860,13 +1891,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     n => !n.read && n.recipientId === currentUser?.userId
   ).length;
 
-  const addSystemNotification = async (recipientId: string, text: string) => {
+  const addSystemNotification = async (recipientId: string, text: string, options?: { senderId?: string; type?: string; postId?: string }) => {
     const newNotif: AppNotification = {
       notificationId: `notif_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
       recipientId,
       text,
       createdAt: new Date().toISOString(),
-      read: false
+      read: false,
+      ...(options?.senderId && { senderId: options.senderId }),
+      ...(options?.type && { type: options.type }),
+      ...(options?.postId && { postId: options.postId }),
     };
 
     setNotifications(prev => [newNotif, ...prev]);
@@ -2771,7 +2805,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     carouselUrls?: string[];
   }) => {
     if (!currentUser) return;
-    if (currentUser.role !== "player" && currentUser.role !== "platform") return;
     const isOfficial = currentUser.role === "platform";
     const newPost: PostHighlight = {
       postId: `post_${Date.now()}`,
@@ -2819,6 +2852,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     triggerGlobalToast(isOfficial ? "Official post is live ◆" : "Your pitch is live. Scouts can find you now. ✦", "success");
+
+    // Notify tagged users
+    if (data.taggedUsers && data.taggedUsers.length > 0) {
+      data.taggedUsers.forEach(taggedId => {
+        if (taggedId !== currentUser.userId) {
+          addSystemNotification(taggedId,
+            `🏷️ ${currentUser.name} tagged you in a post`,
+            { senderId: currentUser.userId, type: "tag", postId: newPost.postId }
+          );
+        }
+      });
+    }
 
     // POTW notification
     if (data.contentType === "player_of_week" && data.featuredPlayerId) {

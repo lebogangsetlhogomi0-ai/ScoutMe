@@ -928,8 +928,8 @@ export const ProfileScreen: React.FC<{ clubId?: string; onBack?: () => void }> =
             </div>
           </div>
 
-          {/* ── PLAYER POST TABS ── */}
-          {isPlayer && (() => {
+          {/* ── POST TABS (all roles) ── */}
+          {(() => {
             const myPosts = posts.filter(p => !p.isArchived && p.userId === clubUser.userId);
             const repostedPostIds = clubUser.repostIds || [];
             const repostedPosts = posts.filter(p => repostedPostIds.includes(p.postId));
