@@ -691,7 +691,7 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
             </div>
 
             <div className="space-y-1.5 bg-[#050e08] p-3 rounded-lg border border-[#1a3825]">
-              <span className="block text-[10.5px] font-bold text-[#5a8a6a] uppercase font-mono">💡 Suggested Hashtags</span>
+              <span className="block text-[10.5px] font-bold text-[#5a8a6a] uppercase font-mono">💡 Hashtags</span>
               <div className="flex flex-wrap gap-1.5">
                 {hashtagSuggestions.map(tag => {
                   const active = selectedHashtags.includes(tag);
@@ -702,7 +702,30 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
                     </button>
                   );
                 })}
+                {selectedHashtags.filter(t => !hashtagSuggestions.includes(t)).map(tag => (
+                  <button key={tag} type="button" onClick={() => handleToggleHashtag(tag)}
+                    className="text-[10px] px-2.5 py-1 rounded-full border transition font-mono bg-[#00e56b]/15 text-[#00e56b] border-[#00e56b]/50">
+                    #{tag} ×
+                  </button>
+                ))}
               </div>
+              <form onSubmit={e => {
+                e.preventDefault();
+                const input = (e.currentTarget.elements.namedItem("customTag") as HTMLInputElement);
+                const val = input.value.trim().replace(/^#+/, "").replace(/\s+/g, "");
+                if (val && !selectedHashtags.includes(val)) {
+                  setSelectedHashtags(prev => [...prev, val]);
+                }
+                input.value = "";
+              }} className="flex gap-2 mt-2">
+                <input
+                  name="customTag"
+                  type="text"
+                  placeholder="Add your own tag..."
+                  className="flex-1 bg-[#0a1a0f] border border-[#1a3825] rounded-lg text-[11px] text-white px-3 py-1.5 placeholder-[#5a8a6a] focus:border-[#00e56b] outline-none"
+                />
+                <button type="submit" className="text-[11px] px-3 py-1.5 bg-[#00e56b]/10 border border-[#00e56b]/30 text-[#00e56b] rounded-lg font-bold">Add</button>
+              </form>
             </div>
 
             <div>
