@@ -162,6 +162,10 @@ export interface PostHighlight {
   carouselUrls?: string[]; // list of images for Match Shot carousel
   savedBy?: string[]; // userIds who saved this post
   repostedBy?: string[]; // userIds who reposted this post
+  audioType?: "jamendo" | "upload" | "original" | "none";
+  audioUrl?: string;
+  audioTitle?: string;
+  audioArtist?: string;
 }
 
 export interface PostComment {

@@ -90,6 +90,18 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
   // Thumbnail
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
 
+  // Music
+  const [audioType, setAudioType] = useState<"jamendo" | "upload" | "original" | "none">("original");
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [audioTitle, setAudioTitle] = useState("");
+  const [audioArtist, setAudioArtist] = useState("");
+  const [jamendoQuery, setJamendoQuery] = useState("");
+  const [jamendoResults, setJamendoResults] = useState<{ id: string; name: string; artist_name: string; duration: number; audio: string; image: string }[]>([]);
+  const [jamendoLoading, setJamendoLoading] = useState(false);
+  const [jamendoError, setJamendoError] = useState<string | null>(null);
+  const [playingPreviewId, setPlayingPreviewId] = useState<string | null>(null);
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+
   // Platform template state
   const [platformTemplate, setPlatformTemplate] = useState<string | null>(null);
   const [platformCaption, setPlatformCaption] = useState("");
@@ -120,6 +132,43 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
   const handleContentTypeSelect = (type: "highlight" | "match" | "training" | "full" | "photo") => {
     setContentType(type);
     setStep(2);
+  };
+
+  const searchJamendo = async (query: string) => {
+    if (!query.trim()) return;
+    const clientId = import.meta.env.VITE_JAMENDO_CLIENT_ID;
+    if (!clientId) {
+      setJamendoError("Jamendo not configured — add VITE_JAMENDO_CLIENT_ID to Vercel environment variables.");
+      return;
+    }
+    setJamendoLoading(true);
+    setJamendoError(null);
+    try {
+      const res = await fetch(
+        `https://api.jamendo.com/v3.0/tracks/?client_id=${clientId}&format=json&limit=10&namesearch=${encodeURIComponent(query)}&audioformat=mp31`
+      );
+      const data = await res.json();
+      setJamendoResults(data.results || []);
+      if ((data.results || []).length === 0) setJamendoError("No tracks found. Try a different search.");
+    } catch {
+      setJamendoError("Search failed. Check your connection.");
+    } finally {
+      setJamendoLoading(false);
+    }
+  };
+
+  const togglePreview = (trackId: string, audioSrc: string) => {
+    if (playingPreviewId === trackId) {
+      previewAudioRef.current?.pause();
+      setPlayingPreviewId(null);
+    } else {
+      if (previewAudioRef.current) previewAudioRef.current.pause();
+      const audio = new Audio(audioSrc);
+      audio.play().catch(() => {});
+      previewAudioRef.current = audio;
+      setPlayingPreviewId(trackId);
+      audio.onended = () => setPlayingPreviewId(null);
+    }
   };
 
   const validateAndSetFile = useCallback((file: File) => {
@@ -199,7 +248,7 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
     setIsUploading(true);
     setUploadDone(false);
     setUploadError(null);
-    setStep(5);
+    setStep(6);
 
     const postData = {
       caption: caption || `High-performance ${contentType} play in the match setup.`,
@@ -248,6 +297,10 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
               league: postData.club,
               province: postData.province,
               taggedUsers: taggedUserIds.length > 0 ? taggedUserIds : undefined,
+              audioType: audioType !== "original" ? audioType : undefined,
+              audioUrl: audioType === "jamendo" || audioType === "upload" ? (audioUrl || undefined) : undefined,
+              audioTitle: audioTitle || undefined,
+              audioArtist: audioArtist || undefined,
             });
           } catch (err) {
             console.error("Post save failed:", err);
@@ -303,7 +356,7 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
     setIsUploading(false);
     setUploadProgress(0);
     setUploadedBytes(0);
-    setStep(4);
+    setStep(5);
   };
 
   const etaSeconds = (() => {
@@ -345,10 +398,10 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
             UPLOAD HIGHLIGHT <span className="text-[#00e56b]">✦</span>
           </h2>
           <p className="text-[11px] text-[#5a8a6a] font-medium uppercase font-mono mt-0.5">
-            Step {step} of 5 · {contentType ? CONTENT_TYPE_LABELS[contentType] : "CHOOSE TYPE"}
+            Step {step} of 6 · {contentType ? CONTENT_TYPE_LABELS[contentType] : "CHOOSE TYPE"}
           </p>
         </div>
-        {step > 1 && step < 5 && (
+        {step > 1 && step < 6 && (
           <button onClick={() => setStep(step - 1)} className="text-xs text-[#5a8a6a] hover:text-white">
             ← Back
           </button>
@@ -356,7 +409,7 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
       </div>
 
       {/* Collapsible tips card */}
-      {step < 5 && (
+      {step < 6 && (
         <div className="bg-[#0a1a0f] border border-[#1a3825] rounded-xl overflow-hidden">
           <button
             onClick={() => setTipExpanded(v => !v)}
@@ -791,14 +844,127 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
 
             <button onClick={() => setStep(4)}
               className="w-full py-4 bg-[#00e56b] text-[#050e08] font-bold uppercase tracking-wider rounded-xl text-xs flex items-center justify-center space-x-1.5 hover:brightness-105">
-              <span>Choose Thumbnail Cover</span>
+              <span>Add Music</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </motion.div>
         )}
 
-        {/* ─── STEP 4 — THUMBNAIL ─── */}
+        {/* ─── STEP 4 — MUSIC ─── */}
         {step === 4 && (
+          <motion.div key="upload4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-5">
+            <div className="text-center">
+              <h3 className="text-md font-bold text-white uppercase">Add Music</h3>
+              <p className="text-xs text-[#5a8a6a] mt-0.5">Choose a soundtrack for your clip.</p>
+            </div>
+
+            {/* 4 option cards */}
+            <div className="grid grid-cols-2 gap-3">
+              {([
+                { key: "original", label: "Original Sound", icon: "🎙️", desc: "Keep video audio" },
+                { key: "none",     label: "No Sound",       icon: "🔇", desc: "Mute everything" },
+                { key: "jamendo",  label: "Music Library",  icon: "🎵", desc: "Browse free tracks" },
+                { key: "upload",   label: "Upload Audio",   icon: "📁", desc: "Your own file" },
+              ] as const).map(opt => (
+                <button key={opt.key} type="button" onClick={() => { setAudioType(opt.key); setAudioUrl(null); setAudioTitle(""); setAudioArtist(""); setJamendoResults([]); setJamendoError(null); }}
+                  className={`p-4 rounded-xl border-2 flex flex-col items-center text-center space-y-1.5 transition ${audioType === opt.key ? "bg-[#0f2318] border-[#00e56b]" : "bg-[#0a1a0f] border-[#1a3825]"}`}>
+                  <span className="text-2xl">{opt.icon}</span>
+                  <span className="text-[10px] font-bold text-white uppercase tracking-wide">{opt.label}</span>
+                  <span className="text-[9px] text-[#5a8a6a]">{opt.desc}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Jamendo search panel */}
+            {audioType === "jamendo" && (
+              <div className="space-y-3 bg-[#050e08] border border-[#1a3825] rounded-xl p-4">
+                <form onSubmit={e => { e.preventDefault(); searchJamendo(jamendoQuery); }} className="flex gap-2">
+                  <input
+                    value={jamendoQuery}
+                    onChange={e => setJamendoQuery(e.target.value)}
+                    placeholder="Search artist, mood, genre…"
+                    className="flex-1 bg-[#0a1a0f] border border-[#1a3825] text-white text-xs px-3 py-2 rounded-lg outline-none focus:border-[#00e56b] placeholder-[#5a8a6a]"
+                  />
+                  <button type="submit" disabled={jamendoLoading}
+                    className="px-4 py-2 bg-[#00e56b] text-[#050e08] rounded-lg text-xs font-bold disabled:opacity-50">
+                    {jamendoLoading ? "…" : "Search"}
+                  </button>
+                </form>
+                {jamendoError && <p className="text-[10px] text-red-400">{jamendoError}</p>}
+                {audioUrl && audioTitle && (
+                  <div className="flex items-center space-x-2 px-3 py-2 bg-[#0f2318] border border-[#00e56b]/40 rounded-lg">
+                    <span className="text-[#00e56b] text-lg">🎵</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-white font-bold truncate">{audioTitle}</p>
+                      <p className="text-[10px] text-[#5a8a6a] truncate">{audioArtist}</p>
+                    </div>
+                    <button onClick={() => { setAudioUrl(null); setAudioTitle(""); setAudioArtist(""); }} className="text-[#5a8a6a] text-xs hover:text-red-400">✕</button>
+                  </div>
+                )}
+                <div className="space-y-2 max-h-52 overflow-y-auto no-scrollbar">
+                  {jamendoResults.map(track => {
+                    const selected = audioUrl === track.audio;
+                    const playing = playingPreviewId === track.id;
+                    return (
+                      <div key={track.id}
+                        className={`flex items-center space-x-3 p-2.5 rounded-lg border cursor-pointer transition ${selected ? "bg-[#0f2318] border-[#00e56b]/60" : "bg-[#0a1a0f] border-[#1a3825] hover:border-[#1a3825]/80"}`}
+                        onClick={() => { setAudioUrl(track.audio); setAudioTitle(track.name); setAudioArtist(track.artist_name); }}>
+                        <img src={track.image} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" alt="" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-white font-bold truncate">{track.name}</p>
+                          <p className="text-[10px] text-[#5a8a6a] truncate">{track.artist_name} · {Math.floor(track.duration / 60)}:{String(track.duration % 60).padStart(2, "0")}</p>
+                        </div>
+                        <button type="button" onClick={e => { e.stopPropagation(); togglePreview(track.id, track.audio); }}
+                          className="w-8 h-8 rounded-full bg-[#1a3825] flex items-center justify-center text-[#00e56b] text-xs flex-shrink-0 hover:bg-[#0f2318]">
+                          {playing ? "⏸" : "▶"}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Upload own audio */}
+            {audioType === "upload" && (
+              <div className="space-y-3">
+                <label className="flex flex-col items-center justify-center gap-3 w-full h-32 rounded-xl border-2 border-dashed border-[#1a3825] bg-[#0a1a0f] cursor-pointer hover:border-[#00e56b]/50 transition-colors">
+                  <span className="text-3xl">📁</span>
+                  <span className="text-xs text-[#5a8a6a]">Tap to select audio file</span>
+                  <input type="file" accept="audio/mp3,audio/mpeg,audio/wav,audio/ogg,audio/aac,.mp3,.wav,.ogg,.aac"
+                    className="hidden"
+                    onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setAudioTitle(file.name.replace(/\.[^.]+$/, ""));
+                      setAudioArtist("Your Upload");
+                      const url = URL.createObjectURL(file);
+                      setAudioUrl(url);
+                    }} />
+                </label>
+                {audioUrl && (
+                  <div className="flex items-center space-x-2 px-3 py-2 bg-[#0f2318] border border-[#00e56b]/40 rounded-lg">
+                    <span className="text-[#00e56b] text-lg">🎵</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-white font-bold truncate">{audioTitle}</p>
+                      <p className="text-[10px] text-[#5a8a6a]">Your upload</p>
+                    </div>
+                    <button onClick={() => { setAudioUrl(null); setAudioTitle(""); }} className="text-[#5a8a6a] text-xs hover:text-red-400">✕</button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <button onClick={() => setStep(5)}
+              className="w-full py-4 bg-[#00e56b] text-[#050e08] font-bold uppercase tracking-wider rounded-xl text-xs flex items-center justify-center space-x-1.5 hover:brightness-105">
+              <span>Choose Cover Frame</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </motion.div>
+        )}
+
+        {/* ─── STEP 5 — THUMBNAIL ─── */}
+        {step === 5 && (
           <motion.div key="upload4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-5">
             <div className="text-center">
               <h3 className="text-md font-bold text-white uppercase">Choose Cover Frame</h3>
@@ -810,7 +976,7 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
                 <img src={coverImageUrl} alt="Cover" className="w-full h-48 object-cover" />
                 <button
                   type="button"
-                  onClick={() => { setCoverImageFile(null); setCoverImageUrl(null); }}
+                  onClick={() => { setCoverImageUrl(null); }}
                   className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded-lg"
                 >
                   Remove
@@ -851,8 +1017,8 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
           </motion.div>
         )}
 
-        {/* ─── STEP 5 — UPLOAD PROGRESS / RESULT ─── */}
-        {step === 5 && (
+        {/* ─── STEP 6 — UPLOAD PROGRESS / RESULT ─── */}
+        {step === 6 && (
           <motion.div key="upload5" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
             className="flex flex-col items-center py-6 text-center space-y-6">
 

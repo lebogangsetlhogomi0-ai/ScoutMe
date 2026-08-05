@@ -2764,6 +2764,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     submissionType?: "weekly_challenge" | "club_trial" | "both";
     clubTrialClubName?: string;
     taggedUsers?: string[];
+    audioType?: "jamendo" | "upload" | "original" | "none";
+    audioUrl?: string;
+    audioTitle?: string;
+    audioArtist?: string;
   }) => {
     if (!currentUser) return;
     if (currentUser.role !== "player" && currentUser.role !== "platform") return;
@@ -2793,6 +2797,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...(data.submissionType && { submissionType: data.submissionType }),
       ...(data.clubTrialClubName && { clubTrialClubName: data.clubTrialClubName }),
       ...(data.taggedUsers && data.taggedUsers.length > 0 && { taggedUsers: data.taggedUsers }),
+      ...(data.audioType && { audioType: data.audioType }),
+      ...(data.audioUrl && { audioUrl: data.audioUrl }),
+      ...(data.audioTitle && { audioTitle: data.audioTitle }),
+      ...(data.audioArtist && { audioArtist: data.audioArtist }),
     };
 
     setPosts(prev => [newPost, ...prev]);
