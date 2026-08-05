@@ -22,6 +22,10 @@
     {
       "path": "/api/agent-moderation",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/agent-news",
+      "schedule": "0 0,6,12,18 * * *"
     }
   ]
 }

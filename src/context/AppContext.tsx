@@ -927,6 +927,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     );
 
+    // Listen to live news from Firestore (populated by agent-news cron)
+    const unsubscribeNews = onSnapshot(
+      query(collection(db, "news"), orderBy("timestamp", "desc"), limit(40)),
+      (snapshot) => {
+        if (snapshot.empty) return; // keep seed news until agent populates
+        const liveNews = snapshot.docs
+          .map(d => ({ newsId: d.id, ...d.data() }))
+          .filter((n: any) => !n.isArchived) as any[];
+        setNews(liveNews);
+      },
+      (err) => { console.warn("News listener failed:", err); }
+    );
+
     // Notifications are re-subscribed per-user in a separate useEffect below
     const unsubscribeNotifications = () => {};
 
@@ -936,6 +949,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubscribeClubPosts();
       unsubscribeNotifications();
       unsubscribePosts();
+      unsubscribeNews();
     };
   }, []);
 
