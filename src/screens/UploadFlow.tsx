@@ -69,6 +69,7 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
 
   // File & validation
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [videoDuration, setVideoDuration] = useState<number | null>(null);
   const [isHorizontal, setIsHorizontal] = useState(false);
   const [showOrientationTip, setShowOrientationTip] = useState(false);
@@ -237,8 +238,28 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
   }, [contentType]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) validateAndSetFile(file);
+    const files = Array.from(e.target.files || []).slice(0, 10);
+    if (files.length === 0) return;
+    if (files.length === 1) {
+      validateAndSetFile(files[0]);
+      setSelectedFiles(files);
+    } else {
+      // Multi-file carousel: validate each file quickly (size + type only)
+      const valid: File[] = [];
+      for (const file of files) {
+        const isVideo = ACCEPTED_VIDEO_TYPES.includes(file.type) || /\.(mp4|mov|avi|mkv)$/i.test(file.name);
+        const isImage = ACCEPTED_IMAGE_TYPES.includes(file.type) || /\.(jpg|jpeg|png|webp)$/i.test(file.name);
+        if (!isVideo && !isImage) continue;
+        valid.push(file);
+      }
+      if (valid.length === 0) {
+        setValidationError("None of the selected files are supported. Use MP4/MOV for video or JPG/PNG for images.");
+        return;
+      }
+      setSelectedFiles(valid);
+      setSelectedFile(valid[0]);
+      setValidationError(null);
+    }
     e.target.value = "";
   };
 
@@ -261,9 +282,54 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
     };
 
     if (!isDemoMode && selectedFile && currentUser) {
-      setTotalBytes(selectedFile.size);
+      const filesToUpload = selectedFiles.length > 1 ? selectedFiles : [selectedFile];
+      setTotalBytes(filesToUpload.reduce((sum, f) => sum + f.size, 0));
       setUploadStartTime(Date.now());
 
+      // For carousel (multi-file): upload all via fetch, collect URLs
+      if (filesToUpload.length > 1) {
+        try {
+          const urls: string[] = [];
+          for (let i = 0; i < filesToUpload.length; i++) {
+            const f = filesToUpload[i];
+            const isImg = ACCEPTED_IMAGE_TYPES.includes(f.type) || /\.(jpg|jpeg|png|webp)$/i.test(f.name);
+            const fd = new FormData();
+            fd.append("file", f);
+            fd.append("upload_preset", "yeojbrl8");
+            fd.append("folder", `scoutme/carousel/${currentUser.userId}`);
+            const res = await fetch(`https://api.cloudinary.com/v1_1/oqojtuol/${isImg ? "image" : "video"}/upload`, { method: "POST", body: fd });
+            const json = await res.json();
+            if (json.secure_url) urls.push(json.secure_url);
+            setUploadProgress(Math.round(((i + 1) / filesToUpload.length) * 100));
+          }
+          const firstIsImage = ACCEPTED_IMAGE_TYPES.includes(filesToUpload[0].type) || /\.(jpg|jpeg|png|webp)$/i.test(filesToUpload[0].name);
+          await createPost({
+            videoUrl: urls[0] || "",
+            thumbnailUrl: firstIsImage ? urls[0] : (coverImageUrl || ""),
+            caption: postData.caption,
+            tags: postData.tags,
+            contentType: postData.contentType,
+            position: postData.position,
+            league: postData.club,
+            province: postData.province,
+            taggedUsers: taggedUserIds.length > 0 ? taggedUserIds : undefined,
+            audioType: audioType !== "original" ? audioType : undefined,
+            audioUrl: audioType === "jamendo" || audioType === "upload" ? (audioUrl || undefined) : undefined,
+            audioTitle: audioTitle || undefined,
+            audioArtist: audioArtist || undefined,
+            carouselUrls: urls,
+          });
+          setIsUploading(false);
+          setUploadDone(true);
+        } catch (err) {
+          console.error("Carousel upload failed:", err);
+          setUploadError("Upload failed. Please check your connection and try again.");
+          setIsUploading(false);
+        }
+        return;
+      }
+
+      // Single file: XHR with progress
       const formData = new FormData();
       formData.append("file", selectedFile);
       formData.append("upload_preset", "yeojbrl8");
@@ -334,7 +400,7 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
           clearInterval(interval);
           setTimeout(() => {
             createPost({
-              videoUrl: postData.videoUrl || "",
+              videoUrl: "",
               thumbnailUrl: postData.thumbnailUrl,
               caption: postData.caption,
               tags: postData.tags,
@@ -441,6 +507,7 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
       <input
         ref={fileInputRef}
         type="file"
+        multiple
         accept={contentType === "photo"
           ? "image/jpeg,image/jpg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
           : "video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,.mp4,.mov,.avi,.mkv,image/jpeg,image/jpg,image/png,image/webp,.jpg,.jpeg,.png,.webp"}
@@ -632,14 +699,25 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
               {selectedFile ? (
                 <>
                   <CheckCircle className="w-12 h-12 text-[#00e56b] mb-2" />
-                  <span className="text-xs text-white font-bold">
-                    {selectedFile.name.length > 32 ? selectedFile.name.slice(0, 32) + "…" : selectedFile.name}
-                  </span>
-                  <span className="text-[10px] text-[#5a8a6a] mt-1">
-                    {formatBytes(selectedFile.size)}
-                    {videoDuration ? ` · ${formatSeconds(videoDuration)}` : ""}
-                    {" · Tap to change"}
-                  </span>
+                  {selectedFiles.length > 1 ? (
+                    <>
+                      <span className="text-xs text-white font-bold">{selectedFiles.length} files selected</span>
+                      <span className="text-[10px] text-[#5a8a6a] mt-1">
+                        {selectedFiles.map(f => f.name.split(".").pop()?.toUpperCase()).join(", ")} · Tap to change
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-xs text-white font-bold">
+                        {selectedFile.name.length > 32 ? selectedFile.name.slice(0, 32) + "…" : selectedFile.name}
+                      </span>
+                      <span className="text-[10px] text-[#5a8a6a] mt-1">
+                        {formatBytes(selectedFile.size)}
+                        {videoDuration ? ` · ${formatSeconds(videoDuration)}` : ""}
+                        {" · Tap to change"}
+                      </span>
+                    </>
+                  )}
                   <div className="absolute top-3 right-3 bg-[#0f2318] border border-[#00e56b]/40 px-2 py-0.5 rounded text-[10px] font-mono font-bold text-[#00e56b]">
                     READY
                   </div>
@@ -647,8 +725,8 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
               ) : (
                 <>
                   <Video className="w-14 h-14 text-[#5a8a6a] mb-3" />
-                  <span className="text-sm font-bold text-white uppercase tracking-wide">Tap to Select Video</span>
-                  <span className="text-[10px] text-[#5a8a6a] mt-1">Opens your gallery · MP4, MOV, AVI, MKV</span>
+                  <span className="text-sm font-bold text-white uppercase tracking-wide">Tap to Select Files</span>
+                  <span className="text-[10px] text-[#5a8a6a] mt-1">Up to 10 photos or videos · MP4, MOV, JPG, PNG</span>
                 </>
               )}
             </button>

@@ -164,7 +164,7 @@ export const TalentBadges: React.FC<TalentBadgesProps> = ({ playerId }) => {
                             ? "bg-[#102316]/30 border-[#00e56b]/20 text-white/40 cursor-not-allowed opacity-50"
                             : "bg-[#0a1a0f] border-[#1a3825]/45 hover:border-white/50 text-[#e8f5ee]"
                         }`}
-                        style={!alreadyAwarded ? { borderColor: badge.borderColour + "40", hoverBorderColor: badge.borderColour } : undefined}
+                        style={!alreadyAwarded ? { borderColor: badge.borderColour + "40" } : undefined}
                       >
                         <div className="flex items-start justify-between w-full">
                           <span className="text-2xl">{badge.emoji}</span>

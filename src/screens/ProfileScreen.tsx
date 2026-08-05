@@ -6,7 +6,7 @@ import {
   Plus, Users, SwatchBook, Globe, Calendar, Medal, Trash2, Heart, MessageSquare,
   Tag, Pin, Landmark, MapPin, Eye, Trophy, Send, PlusCircle, CheckCircle, Share2,
   FolderLock, Archive, Sparkles, Smile, Star, Shield, X, Gem, Camera,
-  ThumbsUp, Bookmark, Repeat2, Image as ImageIcon, Video
+  ThumbsUp, Bookmark, Repeat2, Image as ImageIcon, Video, Maximize, Play, ChevronLeft
 } from "lucide-react";
 import { DigitalAgreementModal } from "../components/DigitalAgreementModal";
 import { FollowListModal } from "../components/FollowListModal";
@@ -161,6 +161,7 @@ export const ProfileScreen: React.FC<{ clubId?: string; onBack?: () => void }> =
   // Profile post tabs
   const [profilePostTab, setProfilePostTab] = useState<"posts" | "reposts" | "saved" | "tagged">("posts");
   const [profilePostSubTab, setProfilePostSubTab] = useState<"all" | "highlight" | "match" | "training" | "full" | "photo">("all");
+  const [carouselIndex, setCarouselIndex] = useState<Record<string, number>>({});
 
   if (!currentUser) return null;
 
@@ -1009,19 +1010,45 @@ export const ProfileScreen: React.FC<{ clubId?: string; onBack?: () => void }> =
                             {isImage ? <ImageIcon className="w-3.5 h-3.5 text-[#5a8a6a]" /> : <Video className="w-3.5 h-3.5 text-[#5a8a6a]" />}
                           </div>
 
-                          {/* Media */}
-                          {post.videoUrl && !isImage ? (
-                            <video
-                              src={post.videoUrl}
-                              controls
-                              playsInline
-                              className="w-full max-h-72 object-cover bg-black"
-                              poster={post.thumbnailUrl || undefined}
-                            />
-                          ) : post.thumbnailUrl ? (
-                            <img src={post.thumbnailUrl} alt="post" className="w-full max-h-72 object-cover" />
-                          ) : (
-                            <div className="w-full h-40 bg-[#050e08] flex items-center justify-center text-[#1a3825] text-3xl">⚽</div>
+                          {/* Media / Carousel */}
+                          {(() => {
+                            const urls = post.carouselUrls && post.carouselUrls.length > 1 ? post.carouselUrls : null;
+                            const idx = carouselIndex[post.postId] || 0;
+                            const currentUrl = urls ? urls[idx] : (post.videoUrl || post.thumbnailUrl || "");
+                            const isCurrentImage = !currentUrl || currentUrl.match(/\.(jpg|jpeg|png|webp)/i) || (!currentUrl.match(/\.(mp4|mov|avi|mkv)/i) && isImage);
+                            if (urls) {
+                              return (
+                                <div className="relative w-full">
+                                  {isCurrentImage ? (
+                                    <img src={currentUrl} alt="slide" className="w-full max-h-72 object-cover" />
+                                  ) : (
+                                    <div className="relative">
+                                      <video src={currentUrl} controls playsInline className="w-full max-h-72 object-cover bg-black" />
+                                      <button onClick={(e) => { e.stopPropagation(); (e.currentTarget.previousElementSibling as HTMLVideoElement)?.requestFullscreen?.().catch(() => {}); }} className="absolute bottom-2 right-2 bg-black/60 rounded-md p-1.5 text-white"><Maximize className="w-3.5 h-3.5" /></button>
+                                    </div>
+                                  )}
+                                  {/* Dots */}
+                                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex space-x-1">
+                                    {urls.map((_, i) => (
+                                      <button key={i} onClick={() => setCarouselIndex(prev => ({ ...prev, [post.postId]: i }))} className={`w-1.5 h-1.5 rounded-full transition ${i === idx ? "bg-white" : "bg-white/40"}`} />
+                                    ))}
+                                  </div>
+                                  {/* Prev/Next */}
+                                  {idx > 0 && <button onClick={() => setCarouselIndex(prev => ({ ...prev, [post.postId]: idx - 1 }))} className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 rounded-full p-1 text-white"><ChevronLeft className="w-4 h-4" /></button>}
+                                  {idx < urls.length - 1 && <button onClick={() => setCarouselIndex(prev => ({ ...prev, [post.postId]: idx + 1 }))} className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 rounded-full p-1 text-white"><ChevronLeft className="w-4 h-4 rotate-180" /></button>}
+                                  <div className="absolute top-2 right-2 bg-black/60 rounded text-[10px] text-white px-1.5 py-0.5">{idx + 1}/{urls.length}</div>
+                                </div>
+                              );
+                            }
+                            return post.videoUrl && !isImage ? (
+                              <div className="relative">
+                                <video src={post.videoUrl} controls playsInline className="w-full max-h-72 object-cover bg-black" poster={post.thumbnailUrl || undefined} />
+                                <button onClick={(e) => { e.stopPropagation(); (e.currentTarget.previousElementSibling as HTMLVideoElement)?.requestFullscreen?.().catch(() => {}); }} className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-sm rounded-md p-1.5 text-white"><Maximize className="w-3.5 h-3.5" /></button>
+                              </div>
+                            ) : post.thumbnailUrl ? (
+                              <img src={post.thumbnailUrl} alt="post" className="w-full max-h-72 object-cover" />
+                            ) : (
+                              <div className="w-full h-40 bg-[#050e08] flex items-center justify-center text-[#1a3825] text-3xl">⚽</div>
                           )}
 
                           {/* Caption */}
@@ -1844,7 +1871,7 @@ export const ProfileScreen: React.FC<{ clubId?: string; onBack?: () => void }> =
                 Upgrade to Pro Subscriptions
               </span>
               <span className="text-[10px] text-[#5a8a6a] block uppercase font-mono">
-                {currentUser?.tier === "professional" || currentUser?.tier === "player_pro" || currentUser?.tier === "scout_pro"
+                {currentUser?.tier === "professional"
                   ? "⚡ Pro Subscription Active!"
                   : "R49 - R299/mo · Unlock Golden Radar, Benchmarks & PDF Cards"}
               </span>
@@ -1882,10 +1909,10 @@ export const ProfileScreen: React.FC<{ clubId?: string; onBack?: () => void }> =
             ) : (
               <div className="space-y-3 mt-1.5">
                 {verificationApplications.filter(a => a.status === "pending").map(app => (
-                  <div key={app.id} className="bg-[#050e08] border border-red-900/15 p-3.5 rounded-xl space-y-2">
+                  <div key={app.applicationId} className="bg-[#050e08] border border-red-900/15 p-3.5 rounded-xl space-y-2">
                     <div className="flex justify-between items-center text-[10px] font-bold">
                       <span className="text-white">Applicant ID: {app.name}</span>
-                      <span className="text-red-400 capitalize">{app.requestedTier.toUpperCase()} tier requested</span>
+                      <span className="text-red-400 capitalize">{app.role.toUpperCase()} tier requested</span>
                     </div>
                     <div className="text-[10.5px] text-[#dfccd5] space-y-1">
                       <p><b>Affiliation:</b> {app.organisation}</p>
@@ -1894,7 +1921,7 @@ export const ProfileScreen: React.FC<{ clubId?: string; onBack?: () => void }> =
                     <div className="flex space-x-2 pt-1 border-t border-[#1a3825]/30">
                       <button
                         onClick={() => {
-                          reviewVerification(app.id, true);
+                          reviewVerification(app.applicationId, "approved");
                           showToast(`Application validated for ${app.name} ✦`, "success");
                         }}
                         className="flex-1 bg-[#00e56b] hover:bg-[#153e19] text-[#050e08] hover:text-white py-1.5 rounded text-[10px] font-bold uppercase transition"
@@ -1903,7 +1930,7 @@ export const ProfileScreen: React.FC<{ clubId?: string; onBack?: () => void }> =
                       </button>
                       <button
                         onClick={() => {
-                          reviewVerification(app.id, false);
+                          reviewVerification(app.applicationId, "rejected");
                           showToast("Application dismissed.", "info");
                         }}
                         className="bg-red-950 text-red-400 p-1.5 rounded text-[10px] hover:bg-red-900 transition"
@@ -1998,13 +2025,13 @@ export const ProfileScreen: React.FC<{ clubId?: string; onBack?: () => void }> =
 
             <form onSubmit={(e) => {
               e.preventDefault();
-              submitVerificationApplication(
-                currentUser.name, 
-                vRole === "scout" ? "professional" : "community", 
-                vOrg, 
-                vReason, 
-                vDesc
-              );
+              submitVerificationApplication({
+                role: vRole === "scout" ? "professional" : "community",
+                organisation: vOrg,
+                socialLinks: "",
+                description: vDesc,
+                reason: vReason,
+              });
               showToast("Verification application submitted ✦", "success");
               setVerificationModalOpen(false);
             }} className="space-y-4">

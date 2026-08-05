@@ -93,7 +93,7 @@ export const StoryCreator: React.FC<StoryCreatorProps> = ({ onClose }) => {
     try {
       // Assemble pitch report
       const repData = {
-        mediaType: contentType === "text" ? "text" : simulatedMediaType,
+        mediaType: (contentType === "text" ? "text" : simulatedMediaType) as "video" | "text" | "image",
         mediaUrl: contentType === "media" ? simulatedMediaUrl : "",
         textContent: textContent,
         backgroundColour: bgStyle,

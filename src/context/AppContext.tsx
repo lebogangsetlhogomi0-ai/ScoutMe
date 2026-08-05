@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { UserProfile, PostHighlight, ScoutReport, NewsItem, UserRole, PostComment, RatingDoc, ClubPost, AppNotification, ClubPostComment, SquadMember, PitchReport, CareerMoment, LiveSession, ChallengePost, ChallengeResponse, SpotlightPost, VerificationApplication, ScoutStamp, TrialEvent, TrialEventApplication } from "../types";
 import { db, auth, isDemoMode } from "../firebase";
 import { collection, doc, setDoc, getDoc, updateDoc, onSnapshot, query, orderBy, limit, addDoc, serverTimestamp, increment, where, deleteDoc } from "firebase/firestore";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
 import { triggerGlobalToast } from "../components/Toast";
 import { sendAdminSignupNotification } from "../utils/emailService";
 import { computeAiScore } from "../utils/aiScore";
@@ -112,7 +112,7 @@ interface AppContextType {
   scoutStamps: ScoutStamp[];
   
   postsLoading: boolean;
-  createPost: (data: { videoUrl: string; thumbnailUrl?: string; caption: string; tags: string[]; contentType: string; position: string; league?: string; province: string; visibility?: string; featuredPlayerId?: string; featuredPlayerName?: string; submissionType?: "weekly_challenge" | "club_trial" | "both"; clubTrialClubName?: string; }) => Promise<void>;
+  createPost: (data: { videoUrl: string; thumbnailUrl?: string; caption: string; tags: string[]; contentType: string; position: string; league?: string; province: string; visibility?: string; featuredPlayerId?: string; featuredPlayerName?: string; submissionType?: "weekly_challenge" | "club_trial" | "both"; clubTrialClubName?: string; taggedUsers?: string[]; audioType?: "jamendo" | "upload" | "original" | "none"; audioUrl?: string; audioTitle?: string; audioArtist?: string; carouselUrls?: string[]; }) => Promise<void>;
   checkAutoPost: () => Promise<void>;
 
   // Actions
@@ -2730,7 +2730,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!currentUser) return;
     const updatedUser = {
       ...currentUser,
-      tier
+      tier: tier as "player" | "professional" | "community"
     };
     setCurrentUser(updatedUser);
     setUsers(prev => prev.map(u => u.userId === currentUser.userId ? updatedUser : u));
@@ -2768,6 +2768,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     audioUrl?: string;
     audioTitle?: string;
     audioArtist?: string;
+    carouselUrls?: string[];
   }) => {
     if (!currentUser) return;
     if (currentUser.role !== "player" && currentUser.role !== "platform") return;
@@ -2792,7 +2793,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       trending: false,
       isArchived: false,
       isOfficialPost: isOfficial,
-      country: "South Africa",
       comments: [],
       ...(data.submissionType && { submissionType: data.submissionType }),
       ...(data.clubTrialClubName && { clubTrialClubName: data.clubTrialClubName }),
@@ -2801,6 +2801,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...(data.audioUrl && { audioUrl: data.audioUrl }),
       ...(data.audioTitle && { audioTitle: data.audioTitle }),
       ...(data.audioArtist && { audioArtist: data.audioArtist }),
+      ...(data.carouselUrls && data.carouselUrls.length > 1 && { carouselUrls: data.carouselUrls }),
     };
 
     setPosts(prev => [newPost, ...prev]);

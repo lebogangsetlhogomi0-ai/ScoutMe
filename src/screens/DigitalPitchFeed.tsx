@@ -1,11 +1,11 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 import { PostHighlight, UserProfile, ChallengePost, ChallengeResponse, SpotlightPost } from "../types";
 import { 
-  Triangle, MessageSquare, Bookmark, Share2, 
-  Play, Pause, VolumeX, Volume2, Maximize, 
+  Triangle, MessageSquare, Bookmark, Share2,
+  Play, Pause, VolumeX, Volume2, Maximize,
   MoreVertical, Plus, Trophy, Award, Landmark, CornerDownRight, Archive, Sparkles, AlertTriangle,
-  User, Eye, Send, CheckCircle2, Shield, Gem, Compass, Upload, Zap, Calendar, Heart
+  User, Eye, Send, CheckCircle2, Shield, Gem, Compass, Upload, Zap, Calendar, Heart, ChevronLeft
 } from "lucide-react";
 import { CommunityRating } from "../components/CommunityRating";
 import { StoryCreator } from "../components/StoryCreator";
@@ -52,6 +52,7 @@ export const DigitalPitchFeed: React.FC<DigitalPitchFeedProps> = ({
   // Audio & playing state
   const [mutedVideos, setMutedVideos] = useState<Record<string, boolean>>({});
   const [playingPostId, setPlayingPostId] = useState<string | null>(null);
+  const [carouselIndex, setCarouselIndex] = useState<Record<string, number>>({});
   const [commentsExpanded, setCommentsExpanded] = useState<Record<string, boolean>>({});
   const [newCommentTexts, setNewCommentTexts] = useState<Record<string, string>>({});
 
@@ -67,6 +68,34 @@ export const DigitalPitchFeed: React.FC<DigitalPitchFeedProps> = ({
 
   // Video Refs
   const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
+
+  // Auto-play on scroll via IntersectionObserver
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const postId = (entry.target as HTMLElement).dataset.postid;
+          if (!postId) return;
+          const video = videoRefs.current[postId];
+          if (!video) return;
+          if (entry.isIntersecting) {
+            Object.keys(videoRefs.current).forEach(id => {
+              if (id !== postId) videoRefs.current[id]?.pause();
+            });
+            video.play().catch(() => {});
+            setPlayingPostId(postId);
+          } else {
+            video.pause();
+            setPlayingPostId(prev => prev === postId ? null : prev);
+          }
+        });
+      },
+      { threshold: 0.65 }
+    );
+    const containers = document.querySelectorAll("[data-postid]");
+    containers.forEach(el => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
 
   const handlePlayPause = (postId: string) => {
     const video = videoRefs.current[postId];
@@ -426,26 +455,66 @@ export const DigitalPitchFeed: React.FC<DigitalPitchFeedProps> = ({
                     </div>
                   </div>
 
-                  {/* 16:9 Video Player */}
-                  <div 
+                  {/* 16:9 Video Player / Carousel */}
+                  {(() => {
+                    const urls = post.carouselUrls && post.carouselUrls.length > 1 ? post.carouselUrls : null;
+                    const cIdx = carouselIndex[post.postId] || 0;
+                    const currentUrl = urls ? urls[cIdx] : post.videoUrl;
+                    const isCurrentImage = currentUrl && /\.(jpg|jpeg|png|webp)/i.test(currentUrl);
+                    return (
+                  <div
+                    data-postid={post.postId}
                     className="relative aspect-video bg-[#050e08] overflow-hidden cursor-pointer"
-                    onClick={() => handlePlayPause(post.postId)}
+                    onClick={() => !isCurrentImage && handlePlayPause(post.postId)}
                   >
-                    <video
-                      ref={el => { videoRefs.current[post.postId] = el; }}
-                      src={post.videoUrl}
-                      loop
-                      preload="metadata"
-                      playsInline
-                      className="w-full h-full object-cover"
-                    />
+                    {isCurrentImage ? (
+                      <img src={currentUrl} alt="slide" className="w-full h-full object-cover" />
+                    ) : (
+                      <video
+                        ref={el => { videoRefs.current[post.postId] = el; }}
+                        src={currentUrl}
+                        loop
+                        muted
+                        preload="metadata"
+                        playsInline
+                        className="w-full h-full object-cover"
+                      />
+                    )}
 
-                    {playingPostId !== post.postId && (
+                    {!isCurrentImage && playingPostId !== post.postId && (
                       <div className="absolute inset-0 flex items-center justify-center bg-black/40">
                         <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center shadow-2xl transition duration-200 transform active:scale-90">
                           <Play className="w-6 h-6 text-[#050e08] fill-current ml-1" />
                         </div>
                       </div>
+                    )}
+
+                    {/* Fullscreen button */}
+                    {!isCurrentImage && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const video = videoRefs.current[post.postId];
+                          if (video) video.requestFullscreen?.().catch(() => {});
+                        }}
+                        className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-sm rounded-md p-1.5 text-white hover:bg-black/80 transition"
+                      >
+                        <Maximize className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+
+                    {/* Carousel controls */}
+                    {urls && (
+                      <>
+                        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex space-x-1">
+                          {urls.map((_, i) => (
+                            <button key={i} onClick={(e) => { e.stopPropagation(); setCarouselIndex(prev => ({ ...prev, [post.postId]: i })); }} className={`w-1.5 h-1.5 rounded-full transition ${i === cIdx ? "bg-white" : "bg-white/40"}`} />
+                          ))}
+                        </div>
+                        {cIdx > 0 && <button onClick={(e) => { e.stopPropagation(); setCarouselIndex(prev => ({ ...prev, [post.postId]: cIdx - 1 })); }} className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 rounded-full p-1 text-white"><ChevronLeft className="w-4 h-4" /></button>}
+                        {cIdx < urls.length - 1 && <button onClick={(e) => { e.stopPropagation(); setCarouselIndex(prev => ({ ...prev, [post.postId]: cIdx + 1 })); }} className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 rounded-full p-1 text-white"><ChevronLeft className="w-4 h-4 rotate-180" /></button>}
+                        <div className="absolute top-2 right-2 bg-black/60 rounded text-[10px] text-white px-1.5 py-0.5">{cIdx + 1}/{urls.length}</div>
+                      </>
                     )}
 
                     {/* Left overlaid badge */}
@@ -462,6 +531,8 @@ export const DigitalPitchFeed: React.FC<DigitalPitchFeedProps> = ({
                     )}
 
                   </div>
+                  );
+                  })()}
 
                   {/* Body Info */}
                   <div className="p-4 space-y-3 bg-[#0a1a0f]">
@@ -502,7 +573,7 @@ export const DigitalPitchFeed: React.FC<DigitalPitchFeedProps> = ({
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
-                            const shareUrl = `https://scoutme.org/player/${playerObj?.userId || post.playerId || "player_1"}`;
+                            const shareUrl = `https://scoutme.org/player/${playerObj?.userId || post.userId || "player_1"}`;
                             navigator.clipboard.writeText(shareUrl).catch(() => {});
                             showToast("Highlight link copied ✦", "success");
                           }}
