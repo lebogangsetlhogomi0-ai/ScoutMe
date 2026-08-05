@@ -21,6 +21,7 @@ test.describe('Discover Screen', () => {
       .or(page.getByPlaceholder(/search/i))
       .first();
 
+    const body = await page.locator('body').textContent();
     const visible = await searchInput.isVisible({ timeout: 5000 }).catch(() => false);
     if (visible) {
       await searchInput.fill('Test');
@@ -30,7 +31,6 @@ test.describe('Discover Screen', () => {
       // Screen rendered, search may be in a different form — just confirm no crash
       expect(body?.trim().length ?? 0).toBeGreaterThan(0);
     }
-    const body = await page.locator('body').textContent();
     expect(body?.trim().length).toBeGreaterThan(20);
   });
 
