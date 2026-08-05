@@ -1146,6 +1146,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // Request FCM permission after signup (non-blocking)
       requestNotificationPermission(newProfile.userId);
 
+      // Welcome notification from ScoutMe Official
+      setTimeout(() => {
+        const roleMsg: Record<string, string> = {
+          player: "Upload your first clip and let scouts discover you. The pitch is yours. 🔥",
+          scout: "Start discovering the next generation of South African football talent.",
+          club: "Build your squad and manage your club's presence on ScoutMe.",
+          fan: "Follow your favourite players and support the grassroots movement. ⚽",
+        };
+        addSystemNotification(newProfile.userId,
+          `👋 Welcome to ScoutMe, ${newProfile.name}! ${roleMsg[newProfile.role] || "Great to have you here."}`,
+          { senderId: "scoutme_official", type: "welcome" }
+        );
+      }, 1500);
+
       // Admin notification only — welcome copy is included in the OTP email
       if (newProfile.email) {
         sendAdminSignupNotification({
@@ -1342,19 +1356,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         console.warn("[Firestore] Vote update failed:", e)
       );
     }
-    // Notify post owner — rate-limit to once per hour per post
+    // Notify post owner + check vote milestones
     setTimeout(() => {
       if (!targetPost || !currentUser) return;
       const owner = users.find(u => u.userId === targetPost!.userId);
       if (!owner || owner.userId === currentUser.userId) return;
+
+      // Vote notification (rate-limited per voter per post)
       const rateLimitKey = `vote_notif_${postId}_${currentUser.userId}`;
       const lastSent = parseInt(localStorage.getItem(rateLimitKey) || "0");
-      if (Date.now() - lastSent < 3600000) return;
-      localStorage.setItem(rateLimitKey, String(Date.now()));
-      addSystemNotification(owner.userId,
-        `▲ ${currentUser.name} voted on your post. Keep posting! 🔥`,
-        { senderId: currentUser.userId, type: "vote", postId }
-      );
+      if (Date.now() - lastSent >= 3600000) {
+        localStorage.setItem(rateLimitKey, String(Date.now()));
+        addSystemNotification(owner.userId,
+          `▲ ${currentUser.name} voted on your post. Keep posting! 🔥`,
+          { senderId: currentUser.userId, type: "vote", postId }
+        );
+      }
+
+      // Milestone notifications (50, 100, 500, 1000 votes)
+      const newTotal = (targetPost.votes || 0) + 1;
+      const milestones: Record<number, string> = {
+        50:   "🎯 50 votes! Scouts are starting to notice you. Keep it up!",
+        100:  "💥 100 votes! You're on the radar. Scouts are watching your every move.",
+        500:  "🚀 500 votes! You're one of the most watched players on ScoutMe. Incredible!",
+        1000: "👑 1000 votes! You're a ScoutMe legend. The football world is watching.",
+      };
+      const milestoneMsg = milestones[newTotal];
+      if (milestoneMsg) {
+        const mKey = `milestone_${postId}_${newTotal}`;
+        if (!localStorage.getItem(mKey)) {
+          localStorage.setItem(mKey, "1");
+          addSystemNotification(owner.userId, milestoneMsg, { type: "milestone", postId });
+        }
+      }
     }, 500);
   };
 
