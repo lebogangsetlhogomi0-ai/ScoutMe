@@ -709,8 +709,7 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
               <label className="block text-xs font-bold text-[#5a8a6a] uppercase mb-1">Visibility</label>
               <select value={visibility} onChange={e => setVisibility(e.target.value)}
                 className="w-full bg-[#0a1a0f] border border-[#1a3825] rounded-xl text-xs text-white p-2.5">
-                <option value="Public to Platform">Public — Scouts &amp; Supporters</option>
-                <option value="Public to All Scouts">Verified scouts only</option>
+                <option value="Public to Platform">Public — Everyone</option>
                 <option value="Private">Private</option>
               </select>
             </div>
