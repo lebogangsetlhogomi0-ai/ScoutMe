@@ -2805,6 +2805,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     carouselUrls?: string[];
   }) => {
     if (!currentUser) return;
+    if (currentUser.role === "fan") return;
     const isOfficial = currentUser.role === "platform";
     const newPost: PostHighlight = {
       postId: `post_${Date.now()}`,
