@@ -76,19 +76,21 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab })
         {/* Left: PITCH, DISCOVER */}
         {leftTabs.map(renderTab)}
 
-        {/* Center: UPLOAD FAB */}
-        <button
-          id="tab_upload"
-          onClick={() => setActiveTab("upload")}
-          className="flex flex-col items-center justify-center -mt-6 relative z-10 group"
-        >
-          <div className="w-14 h-14 rounded-full bg-[#00e56b] flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-300 border-4 border-[#050e08]">
-            <PlusCircle className="w-8 h-8 text-[#050e08]" />
-          </div>
-          <span className="text-[9px] uppercase tracking-wider text-[#5a8a6a] font-sans mt-1">
-            UPLOAD
-          </span>
-        </button>
+        {/* Center: UPLOAD FAB — hidden for fans */}
+        {role !== "fan" && (
+          <button
+            id="tab_upload"
+            onClick={() => setActiveTab("upload")}
+            className="flex flex-col items-center justify-center -mt-6 relative z-10 group"
+          >
+            <div className="w-14 h-14 rounded-full bg-[#00e56b] flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-300 border-4 border-[#050e08]">
+              <PlusCircle className="w-8 h-8 text-[#050e08]" />
+            </div>
+            <span className="text-[9px] uppercase tracking-wider text-[#5a8a6a] font-sans mt-1">
+              UPLOAD
+            </span>
+          </button>
+        )}
 
         {/* Right: SCOUT AI + NEWS (scout/club) or just NEWS (player/fan) */}
         {rightTabs.map(renderTab)}

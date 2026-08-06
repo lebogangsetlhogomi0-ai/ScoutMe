@@ -16,8 +16,9 @@ export const Discover: React.FC<DiscoverProps> = ({ onOpenPlayerProfile }) => {
   // Filter positions
   const filterPills = ["ALL", "GK", "LB", "CB", "RB", "CDM", "CM", "CAM", "LW", "RW", "ST"];
 
-  // Fetch only players from users list
+  // Players for the browse grid; all non-scout/club accounts for name search
   const players = users.filter(u => u.role === "player");
+  const allSearchable = users.filter(u => u.userId !== currentUser?.userId);
 
   const renderMiniStars = (rating: number) => {
     const stars = [];
@@ -44,22 +45,19 @@ export const Discover: React.FC<DiscoverProps> = ({ onOpenPlayerProfile }) => {
   };
 
   // Dynamic filter and search logic
-  const filteredPlayers = players.filter(pl => {
-    // 1. Position match
-    if (activeFilter !== "ALL" && pl.position !== activeFilter) {
-      return false;
-    }
-    // 2. Query match (name, club, province, position)
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return true;
-
-    return (
-      pl.name.toLowerCase().includes(q) ||
-      (pl.position || "").toLowerCase().includes(q) ||
-      (pl.club || "").toLowerCase().includes(q) ||
-      pl.province.toLowerCase().includes(q)
-    );
-  });
+  const q = searchQuery.toLowerCase().trim();
+  const filteredPlayers = q
+    ? allSearchable.filter(u =>
+        u.name.toLowerCase().includes(q) ||
+        (u.position || "").toLowerCase().includes(q) ||
+        (u.club || "").toLowerCase().includes(q) ||
+        (u.province || "").toLowerCase().includes(q) ||
+        (u.role || "").toLowerCase().includes(q)
+      )
+    : players.filter(pl => {
+        if (activeFilter !== "ALL" && pl.position !== activeFilter) return false;
+        return true;
+      });
 
   const getRoleColorBg = () => {
     if (!currentUser) return "bg-[#00e56b]";
@@ -274,56 +272,34 @@ export const Discover: React.FC<DiscoverProps> = ({ onOpenPlayerProfile }) => {
                     {pl.name}
                   </h4>
 
-                  {(() => {
-                    const ranking = (pl.pace && pl.vision && pl.finishing) ? getOverallRanking(pl, pl.position || "ST") : null;
-                    if (ranking) {
-                      return (
-                        <div className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-sans font-black uppercase" style={{ backgroundColor: `${ranking.color}15`, color: ranking.color, border: `1px solid ${ranking.color}35` }}>
-                          {ranking.badge}
-                        </div>
-                      );
-                    }
-                    return null;
-                  })()}
-
-                  <div className="flex justify-between items-center text-[10.5px] font-sans font-semibold font-bold">
-                    <span className={`${getRoleTextColor()} bg-[#0f2318] px-1.5 py-0.5 rounded uppercase`}>
-                      {pl.position}
-                    </span>
-                    <span className="text-[#5a8a6a]">Age {pl.age}</span>
-                  </div>
-
-                  {renderMiniStars(pl.communityRating || 0)}
-
-                  {(() => {
-                    const matchedClub = users.find(u => (u.role === "club" || u.accountType === "club") && (
-                      u.clubName?.toLowerCase() === pl.club?.toLowerCase() ||
-                      u.name?.toLowerCase() === pl.club?.toLowerCase()
-                    ));
-                    if (matchedClub) {
-                      return (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onOpenPlayerProfile(matchedClub.userId);
-                          }}
-                          className="text-[10px] text-[#4da6ff] hover:underline hover:text-white truncate font-bold text-left block cursor-pointer"
-                        >
-                          🛡️ {pl.club || "Unattached"}
-                        </button>
-                      );
-                    }
-                    return (
-                      <p className="text-[10px] text-[#5a8a6a]/90 truncate font-light">
-                        {pl.club || "Unattached"}
-                      </p>
-                    );
-                  })()}
-
-                  <div className="pt-2 border-t border-[#1a3825]/40 flex justify-between text-[9px] text-[#5a8a6a] font-mono">
-                    <span>🔺 {pl.votes} votes</span>
-                    <span>👁️ {pl.views} views</span>
-                  </div>
+                  {pl.role === "player" ? (
+                    <>
+                      {(() => {
+                        const ranking = (pl.pace && pl.vision && pl.finishing) ? getOverallRanking(pl, pl.position || "ST") : null;
+                        return ranking ? (
+                          <div className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-sans font-black uppercase" style={{ backgroundColor: `${ranking.color}15`, color: ranking.color, border: `1px solid ${ranking.color}35` }}>
+                            {ranking.badge}
+                          </div>
+                        ) : null;
+                      })()}
+                      <div className="flex justify-between items-center text-[10.5px] font-sans font-semibold font-bold">
+                        <span className={`${getRoleTextColor()} bg-[#0f2318] px-1.5 py-0.5 rounded uppercase`}>{pl.position}</span>
+                        <span className="text-[#5a8a6a]">Age {pl.age}</span>
+                      </div>
+                      {renderMiniStars(pl.communityRating || 0)}
+                      <div className="pt-2 border-t border-[#1a3825]/40 flex justify-between text-[9px] text-[#5a8a6a] font-mono">
+                        <span>🔺 {pl.votes} votes</span>
+                        <span>👁️ {pl.views} views</span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="space-y-1">
+                      <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-[#0f2318] text-[#5a8a6a]">
+                        {pl.role === "platform" ? "⭐ Official" : pl.role === "fan" ? "👤 Fan" : pl.role === "scout" ? "🔍 Scout" : pl.role}
+                      </span>
+                      <p className="text-[10px] text-[#5a8a6a] truncate">{pl.province}</p>
+                    </div>
+                  )}
                 </div>
 
               </div>

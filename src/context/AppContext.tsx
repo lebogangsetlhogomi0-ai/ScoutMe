@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { UserProfile, PostHighlight, ScoutReport, NewsItem, UserRole, PostComment, RatingDoc, ClubPost, AppNotification, ClubPostComment, SquadMember, PitchReport, CareerMoment, LiveSession, ChallengePost, ChallengeResponse, SpotlightPost, VerificationApplication, ScoutStamp, TrialEvent, TrialEventApplication } from "../types";
 import { db, auth, isDemoMode } from "../firebase";
 import { collection, doc, setDoc, getDoc, updateDoc, onSnapshot, query, orderBy, limit, addDoc, serverTimestamp, increment, where, deleteDoc } from "firebase/firestore";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification, onAuthStateChanged } from "firebase/auth";
 import { triggerGlobalToast } from "../components/Toast";
 import { sendAdminSignupNotification } from "../utils/emailService";
 import { computeAiScore } from "../utils/aiScore";
@@ -838,6 +838,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return saved ? JSON.parse(saved) : [];
   });
 
+  // Sync Firebase Auth session on load — handles returning users where
+  // the localStorage profile exists but Firebase Auth hasn't restored yet
+  useEffect(() => {
+    if (!auth) return;
+    const unsub = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser && !currentUser) {
+        // Auth restored but no local profile — try to load from Firestore
+        if (db) {
+          import("firebase/firestore").then(({ getDoc, doc: fsDoc }) => {
+            getDoc(fsDoc(db!, "users", firebaseUser.uid)).then(snap => {
+              if (snap.exists()) {
+                const profile = { userId: snap.id, ...snap.data() } as UserProfile;
+                setCurrentUser(profile);
+                setOnboardingStep(5);
+              }
+            }).catch(() => {});
+          });
+        }
+      }
+    });
+    return () => unsub();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // One-time cleanup: delete known demo/seed accounts from Firestore
   useEffect(() => {
     if (!db) return;
@@ -881,6 +905,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
       // Replace state entirely with Firestore data — never merge seed/local accounts into real data
       setUsers(liveUsers);
+      // Keep currentUser in sync with Firestore data
+      setCurrentUser(prev => {
+        if (!prev) return prev;
+        const freshProfile = liveUsers.find(u => u.userId === prev.userId);
+        return freshProfile ? freshProfile : prev;
+      });
       // Clear any seed data that was persisted to localStorage
       localStorage.setItem("scoutme_users", JSON.stringify(liveUsers));
     }, (err) => {
