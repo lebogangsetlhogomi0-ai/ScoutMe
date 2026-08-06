@@ -2,6 +2,13 @@
   "buildCommand": "vite build",
   "outputDirectory": "dist",
   "framework": "vite",
+  "functions": {
+    "api/agent-news.ts": { "runtime": "nodejs20.x" },
+    "api/agent-potw.ts": { "runtime": "nodejs20.x" },
+    "api/agent-challenge.ts": { "runtime": "nodejs20.x" },
+    "api/agent-trending.ts": { "runtime": "nodejs20.x" },
+    "api/agent-moderation.ts": { "runtime": "nodejs20.x" }
+  },
   "rewrites": [
     { "source": "/landing", "destination": "/landing.html" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
