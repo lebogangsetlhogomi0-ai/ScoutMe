@@ -22,17 +22,18 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({ playerId, onBack, 
   const { users, currentUser, posts, toggleShortlist, shortlist, toggleFollow, updateBio, addSystemNotification } = useApp();
   const { showToast } = useToast();
   const [showTrialConfirmModal, setShowTrialConfirmModal] = useState(false);
-  const [selectedGridTab, setSelectedGridTab] = useState<"HIGHLIGHTS" | "MATCH CLIPS" | "TRAINING">("HIGHLIGHTS");
+  const [selectedGridTab, setSelectedGridTab] = useState<string>("HIGHLIGHTS");
   const [animateProgress, setAnimateProgress] = useState(false);
   const [isGeneratingCard, setIsGeneratingCard] = useState(false);
 
-  // Trigger progress animations on mount
+  // Trigger progress animations on mount; reset grid tab when switching profiles
   useEffect(() => {
     const timer = setTimeout(() => {
       setAnimateProgress(true);
     }, 150);
+    setSelectedGridTab(player?.role === "platform" ? "P.O.T.W" : "HIGHLIGHTS");
     return () => clearTimeout(timer);
-  }, [playerId]);
+  }, [playerId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Notify player when a scout or club views their profile
   useEffect(() => {
@@ -103,16 +104,33 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({ playerId, onBack, 
     );
   }
 
-  // Filter videos uploaded by this player
-  const playerPosts = posts.filter(p => p.playerName === player.name);
+  // Filter posts by this profile's userId
+  const playerPosts = posts.filter(p => p.userId === player.userId);
 
-  // Filter items matching the grid tab
-  const filteredGridPosts = playerPosts.filter(p => {
-    if (selectedGridTab === "HIGHLIGHTS") return p.contentType === "highlight";
-    if (selectedGridTab === "MATCH CLIPS") return p.contentType === "match" || p.contentType === "full";
-    if (selectedGridTab === "TRAINING") return p.contentType === "training";
-    return true;
-  });
+  // Grid tabs differ by role
+  const isPlatformProfile = player.role === "platform";
+  const PLATFORM_TABS = [
+    { key: "P.O.T.W",     label: "P.O.T.W",     full: "Player of the Week", types: ["player_of_week"] },
+    { key: "SIGNING",     label: "SIGNING",      full: "Signing Announcements", types: ["signing"] },
+    { key: "MOST IMP.",   label: "MOST IMP.",    full: "Most Improved", types: ["most_improved"] },
+    { key: "CHALLENGE",   label: "CHALLENGE",    full: "Virtual Trial Challenge", types: ["trial_challenge"] },
+    { key: "UPDATE",      label: "UPDATE",       full: "Platform Update", types: ["platform_update"] },
+  ] as const;
+
+  const PLAYER_TABS = [
+    { key: "HIGHLIGHTS",  label: "HIGHLIGHTS",  full: "Highlights",  types: ["highlight"] },
+    { key: "MATCH CLIPS", label: "CLIPS",       full: "Match Clips", types: ["match", "full"] },
+    { key: "TRAINING",    label: "TRAINING",    full: "Training",    types: ["training"] },
+  ] as const;
+
+  const gridTabs = isPlatformProfile ? PLATFORM_TABS : PLAYER_TABS;
+  type GridTabKey = (typeof gridTabs)[number]["key"];
+
+  const activeTab = gridTabs.find(t => t.key === selectedGridTab) ?? gridTabs[0];
+
+  const filteredGridPosts = playerPosts.filter(p =>
+    (activeTab.types as readonly string[]).includes(p.contentType || "")
+  );
 
   const isOwnProfile = currentUser?.userId === player.userId;
   const isPlayerShortlisted = shortlist.includes(player.userId);
@@ -718,18 +736,19 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({ playerId, onBack, 
         </div>
       </div>
 
-      {/* 5. PLAYER VIDEO CLIPS CONTENT GRID */}
+      {/* 5. POSTS CONTENT GRID */}
       <div className="space-y-3">
-        {/* Tabs switcher header */}
-        <div className="flex border-b border-[#1a3825]/50 text-xs font-bold">
-          {["HIGHLIGHTS", "MATCH CLIPS", "TRAINING"].map(tab => (
+        {/* Tabs — scrollable row for platform (5 tabs), fixed for players (3 tabs) */}
+        <div className={`flex border-b border-[#1a3825]/50 text-[10px] font-bold ${isPlatformProfile ? "overflow-x-auto no-scrollbar" : ""}`}>
+          {gridTabs.map(tab => (
             <button
-              key={tab}
-              id={`grid_tab_${tab}`}
-              onClick={() => setSelectedGridTab(tab as any)}
-              className={`flex-1 text-center py-3 select-none transition ${selectedGridTab === tab ? "text-[#00e56b] border-b-2 border-[#00e56b] font-extrabold" : "text-[#5a8a6a] hover:text-[#e8f5ee]"}`}
+              key={tab.key}
+              id={`grid_tab_${tab.key}`}
+              title={tab.full}
+              onClick={() => setSelectedGridTab(tab.key)}
+              className={`flex-shrink-0 flex-1 text-center py-3 px-2 select-none transition whitespace-nowrap ${selectedGridTab === tab.key ? "text-[#00e56b] border-b-2 border-[#00e56b] font-extrabold" : "text-[#5a8a6a] hover:text-[#e8f5ee]"}`}
             >
-              {tab}
+              {tab.label}
             </button>
           ))}
         </div>
@@ -737,7 +756,7 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({ playerId, onBack, 
         {/* 3-column Grid Display */}
         {filteredGridPosts.length === 0 ? (
           <div className="bg-[#0a1a0f] border border-[#1a3825] rounded-xl p-8 text-center text-xs text-[#5a8a6a] italic">
-            No uploaded videos recorded under '{selectedGridTab.toLowerCase()}'.
+            No posts under '{activeTab.full}'.
           </div>
         ) : (
           <div className="grid grid-cols-3 gap-2">
