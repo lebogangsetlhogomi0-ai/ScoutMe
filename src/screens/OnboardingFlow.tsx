@@ -195,8 +195,20 @@ export const OnboardingFlow: React.FC = () => {
         }
       }
       if (success) {
-        // Sign-in goes straight into the app — no OTP needed
-        setOnboardingStep(6);
+        // If user hasn't signed the agreement yet, show it before entering the app
+        // currentUser is set synchronously by signInUser, so we can read it via the ref below
+        // We use a short timeout to let React flush the state update first
+        setTimeout(() => {
+          // Re-read from localStorage since state may not have updated in this closure
+          const savedUser = localStorage.getItem("scoutme_current_user");
+          const profile = savedUser ? JSON.parse(savedUser) : null;
+          if (profile && !profile.agreementSigned) {
+            setAgreementModalOpen(true);
+            // onSignedSuccess will mark the agreement and we proceed to app after signing
+          } else {
+            setOnboardingStep(6);
+          }
+        }, 100);
       }
     } else {
       if (!fullName || !email || !password) return;
@@ -209,6 +221,8 @@ export const OnboardingFlow: React.FC = () => {
         email: email,
         role: isClubSelected ? "club" : (selectedOnboardingRole || "player"),
         province,
+        agreementSigned: true,
+        agreementSignedAt: new Date().toISOString(),
         accountType: (selectedOnboardingRole === "scout" || selectedOnboardingRole === "club") ? accountType : "scout",
         ...(selectedOnboardingRole === "player" && {
           position,
@@ -968,20 +982,28 @@ export const OnboardingFlow: React.FC = () => {
                   </motion.div>
                 )}
 
-                {/* Digital Agreement Checkbox (required for sign up) */}
+                {/* Digital Agreement — required for sign up */}
                 {!isSignInMode && (
-                  <div className="flex items-start space-x-2.5 p-3.5 bg-[#0f2318]/40 border border-[#1a3825] rounded-xl text-xs text-[#5a8a6a] leading-relaxed select-none">
-                    <input
-                      id="signup_agreement"
-                      type="checkbox"
-                      checked={agreementChecked}
-                      onChange={(e) => setAgreementChecked(e.target.checked)}
-                      className="mt-0.5 w-4 h-4 accent-[#00e56b] cursor-pointer"
-                    />
-                    <label htmlFor="signup_agreement" className="cursor-pointer">
-                      I agree to the <span onClick={(e) => { e.preventDefault(); setAgreementModalOpen(true); }} className="text-[#00e56b] font-semibold underline hover:text-[#00ff77] transition-all">ScoutMe Digital Agreement</span>. All club negotiations originating from player discovery on this platform must be declared within 24 months of first contact.
-                    </label>
-                  </div>
+                  hasSignedAgreement ? (
+                    <div className="flex items-center space-x-2.5 p-3.5 bg-[#0a2010]/80 border border-[#00e56b]/40 rounded-xl text-xs text-[#00e56b]">
+                      <span className="text-base">✔</span>
+                      <span className="font-bold">ScoutMe Digital Agreement signed. You're cleared to join.</span>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <button
+                        type="button"
+                        id="open_agreement_btn"
+                        onClick={() => setAgreementModalOpen(true)}
+                        className="w-full py-3 border border-[#1a3825] bg-[#0f2318]/40 text-[#00e56b] text-xs font-bold uppercase tracking-widest rounded-xl hover:border-[#00e56b] hover:bg-[#0f2318] transition"
+                      >
+                        📋 Read & Sign the ScoutMe Agreement (Required)
+                      </button>
+                      <p className="text-[10px] text-[#5a8a6a] text-center leading-relaxed">
+                        You must read the full agreement and tap "I AGREE AND SIGN" before you can join.
+                      </p>
+                    </div>
+                  )
                 )}
 
                 <button
@@ -1215,10 +1237,19 @@ export const OnboardingFlow: React.FC = () => {
       {/* Digital Agreement Modal */}
       <DigitalAgreementModal
         isOpen={agreementModalOpen}
-        onClose={() => setAgreementModalOpen(false)}
+        onClose={() => {
+          // Block closing if this was triggered from login (user must sign before entering)
+          if (isSignInMode && !hasSignedAgreement) return;
+          setAgreementModalOpen(false);
+        }}
         onSignedSuccess={() => {
           setAgreementChecked(true);
           setHasSignedAgreement(true);
+          setAgreementModalOpen(false);
+          // If triggered during login flow, advance to app now
+          if (isSignInMode) {
+            setOnboardingStep(6);
+          }
         }}
       />
     </div>

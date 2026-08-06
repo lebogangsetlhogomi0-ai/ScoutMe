@@ -1141,11 +1141,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         followers: [],
         following: [],
         bio: profile.bio || "Grassroots football enthusiast.",
+        agreementSigned: profile.agreementSigned ?? false,
+        ...(profile.agreementSignedAt && { agreementSignedAt: profile.agreementSignedAt }),
         ...(profile.role === "player" && {
           position: profile.position || "CAM",
           age: profile.age || 18,
           club: profile.club || "Unattached",
-          agreementSigned: false,
           votes: 0,
           views: 0,
           endorsed: false,
@@ -1373,13 +1374,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const signDigitalAgreement = () => {
     if (!currentUser) return;
+    const now = new Date().toISOString();
     const updated: UserProfile = {
       ...currentUser,
       agreementSigned: true,
-      agreementSignedAt: new Date().toISOString()
+      agreementSignedAt: now
     };
     setCurrentUser(updated);
     setUsers(prev => prev.map(u => u.userId === currentUser.userId ? updated : u));
+    if (db) {
+      updateDoc(doc(db, "users", currentUser.userId), {
+        agreementSigned: true,
+        agreementSignedAt: now
+      }).catch(err => console.warn("[Firestore] Agreement sign failed:", err));
+    }
   };
 
   const votePost = (postId: string) => {
