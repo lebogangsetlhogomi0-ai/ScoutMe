@@ -146,8 +146,11 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({ playerId, onBack, 
 
   const isFollowing = player.followers?.includes(currentUser?.userId || "") || false;
 
+  // Scouts/clubs use trial+shortlist only for actual players, not for Official or fan accounts
+  const viewingPlayerAccount = player.role === "player";
+
   const handleActionClick = () => {
-    if (currentUser?.role === "scout" || currentUser?.role === "club") {
+    if ((currentUser?.role === "scout" || currentUser?.role === "club") && viewingPlayerAccount) {
       const willAdd = !shortlist.includes(player.userId);
       toggleShortlist(player.userId);
       showToast(willAdd ? "Added to shortlist ✦" : "Removed from shortlist ✦", willAdd ? "success" : "info");
@@ -197,24 +200,49 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({ playerId, onBack, 
           </div>
 
           <div className="flex-1 flex justify-around ml-4 bg-[#0a1a0f] border border-[#1a3825] py-2 px-3 rounded-2xl">
-            <div className="text-center">
-              <span className="block text-sm font-bold text-white font-mono">
-                {(player.views || 4500).toLocaleString()}
-              </span>
-              <span className="text-[9.5px] uppercase text-[#5a8a6a] tracking-tight">Views</span>
-            </div>
-            <div className="text-center border-x border-[#1a3825]/60 px-4">
-              <span className="block text-sm font-bold text-white font-mono">
-                {(player.votes || 234).toLocaleString()}
-              </span>
-              <span className="text-[9.5px] uppercase text-[#5a8a6a] tracking-tight">Votes</span>
-            </div>
-            <div className="text-center">
-              <span className="block text-sm font-extrabold text-[#00e56b] font-mono">
-                {computeAiScore(player)}
-              </span>
-              <span className="text-[9.5px] uppercase text-[#5a8a6a] tracking-tight">AI Score</span>
-            </div>
+            {viewingPlayerAccount ? (
+              <>
+                <div className="text-center">
+                  <span className="block text-sm font-bold text-white font-mono">
+                    {(player.views || 0).toLocaleString()}
+                  </span>
+                  <span className="text-[9.5px] uppercase text-[#5a8a6a] tracking-tight">Views</span>
+                </div>
+                <div className="text-center border-x border-[#1a3825]/60 px-4">
+                  <span className="block text-sm font-bold text-white font-mono">
+                    {(player.votes || 0).toLocaleString()}
+                  </span>
+                  <span className="text-[9.5px] uppercase text-[#5a8a6a] tracking-tight">Votes</span>
+                </div>
+                <div className="text-center">
+                  <span className="block text-sm font-extrabold text-[#00e56b] font-mono">
+                    {computeAiScore(player)}
+                  </span>
+                  <span className="text-[9.5px] uppercase text-[#5a8a6a] tracking-tight">AI Score</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-center">
+                  <span className="block text-sm font-bold text-[#00e56b] font-mono">
+                    {(player.followers || []).length}
+                  </span>
+                  <span className="text-[9.5px] uppercase text-[#5a8a6a] tracking-tight">Followers</span>
+                </div>
+                <div className="text-center border-x border-[#1a3825]/60 px-4">
+                  <span className="block text-sm font-bold text-white font-mono">
+                    {(player.following || []).length}
+                  </span>
+                  <span className="text-[9.5px] uppercase text-[#5a8a6a] tracking-tight">Following</span>
+                </div>
+                <div className="text-center">
+                  <span className="block text-sm font-extrabold text-white font-mono uppercase text-[9px]">
+                    {player.role === "platform" ? "Official" : player.role}
+                  </span>
+                  <span className="text-[9.5px] uppercase text-[#5a8a6a] tracking-tight">Account</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -341,7 +369,7 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({ playerId, onBack, 
                 Share Profile
               </button>
             </>
-          ) : (currentUser?.role === "scout" || currentUser?.role === "club") ? (
+          ) : ((currentUser?.role === "scout" || currentUser?.role === "club") && viewingPlayerAccount) ? (
             <>
               <button
                 id="scout_trial_request"
