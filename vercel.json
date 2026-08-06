@@ -11,26 +11,5 @@
     { "source": "/landing", "destination": "/landing.html" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
-  "crons": [
-    {
-      "path": "/api/agent-potw",
-      "schedule": "0 7 * * 1"
-    },
-    {
-      "path": "/api/agent-challenge",
-      "schedule": "0 10 * * 5"
-    },
-    {
-      "path": "/api/agent-trending",
-      "schedule": "0 16 * * *"
-    },
-    {
-      "path": "/api/agent-moderation",
-      "schedule": "0 6 * * *"
-    },
-    {
-      "path": "/api/agent-news",
-      "schedule": "0 0,6,12,18 * * *"
-    }
-  ]
+  "crons": []
 }
