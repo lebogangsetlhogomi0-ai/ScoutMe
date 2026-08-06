@@ -1,5 +1,5 @@
 
-import { getPlatformToken, firestoreQuery, firestoreAdd, callGemini } from "../lib/agent-utils";
+import { getPlatformToken, firestoreQuery, firestoreAdd, callGemini } from "./_agent-utils";
 
 // Runs every Friday at 12:00 PM SAST (10:00 AM UTC)
 export default async function handler(_req: any, res: any) {

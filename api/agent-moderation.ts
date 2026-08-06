@@ -1,5 +1,5 @@
 
-import { getPlatformToken, firestoreQuery, firestorePatch, firestoreAdd } from "../lib/agent-utils";
+import { getPlatformToken, firestoreQuery, firestorePatch, firestoreAdd } from "./_agent-utils";
 
 // Runs every day at 8:00 AM SAST (6:00 AM UTC)
 export default async function handler(_req: any, res: any) {
