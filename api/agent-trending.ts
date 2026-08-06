@@ -1,8 +1,8 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
+
 import { getPlatformToken, firestoreQuery, firestoreAdd, callGemini } from "./_agent-utils";
 
 // Runs every day at 6:00 PM SAST (4:00 PM UTC)
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: any, res: any) {
   try {
     const token = await getPlatformToken();
     const now = new Date().toISOString();

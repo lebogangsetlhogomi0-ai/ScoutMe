@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
+
 import { getPlatformToken, firestoreAdd, firestorePatch, firestoreQuery } from "./_agent-utils";
 
 // Runs every 6 hours: 0 0,6,12,18 * * *
@@ -34,7 +34,7 @@ function detectTag(title: string, description: string): { tag: string; category:
   return { tag: "Football", category: "Football", hot: false };
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: any, res: any) {
   if (!GNEWS_API_KEY) {
     res.status(500).json({ error: "GNEWS_API_KEY not configured" });
     return;
