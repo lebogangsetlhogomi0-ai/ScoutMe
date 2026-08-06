@@ -1,105 +1,145 @@
 
-import { getPlatformToken, firestoreAdd, firestorePatch, firestoreQuery } from "../lib/agent-utils";
-
-// Runs every 6 hours: 0 0,6,12,18 * * *
-// Fetches global football news from NewsAPI and stores in Firestore
-
+const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || process.env.VITE_FIREBASE_API_KEY || "";
+const FIREBASE_PROJECT_ID = "scoutme-10";
+const GEMINI_API_KEY = process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || "";
+const PLATFORM_EMAIL = process.env.PLATFORM_AGENT_EMAIL || "";
+const PLATFORM_PASSWORD = process.env.PLATFORM_AGENT_PASSWORD || "";
 const GNEWS_API_KEY = process.env.GNEWS_API_KEY || "";
+const FIRESTORE_BASE = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents`;
 
-function detectTag(title: string, description: string): { tag: string; category: string; hot: boolean } {
-  const text = `${title} ${description}`.toLowerCase();
-  const ageMs = 0; // determined by caller
+async function getToken(): Promise<string> {
+  const res = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY}`,
+    { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: PLATFORM_EMAIL, password: PLATFORM_PASSWORD, returnSecureToken: true }) }
+  );
+  const data = await res.json();
+  if (!data.idToken) throw new Error(`Auth failed: ${JSON.stringify(data)}`);
+  return data.idToken;
+}
 
-  const rules: [string[], string][] = [
-    [["premier league", "epl", "man united", "man city", "arsenal", "chelsea", "liverpool", "tottenham"], "Premier League"],
-    [["champions league", "ucl", "europa league", "conference league"], "Champions League"],
-    [["world cup", "fifa world"], "World Cup"],
-    [["afcon", "africa cup", "caf", "bafana", "south africa", "psl", "premier soccer league", "cosafa", "safa"], "PSL & Africa"],
-    [["transfer", "signing", "sign", "sold", "loan", "fee", "deal", "bid"], "Transfer"],
-    [["la liga", "real madrid", "barcelona", "atletico"], "La Liga"],
-    [["serie a", "juventus", "inter milan", "ac milan", "napoli"], "Serie A"],
-    [["bundesliga", "bayern", "dortmund", "rb leipzig"], "Bundesliga"],
-    [["ligue 1", "psg", "paris saint"], "Ligue 1"],
-    [["mls", "major league soccer"], "MLS"],
-    [["injury", "injured", "ruled out", "return"], "Injury"],
-    [["manager", "sacked", "appointed", "coach", "resigned"], "Management"],
-  ];
-
-  for (const [keywords, category] of rules) {
-    if (keywords.some(kw => text.includes(kw))) {
-      return { tag: category, category, hot: false };
-    }
+function toFields(obj: any): any {
+  const f: any = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (v === null || v === undefined) continue;
+    if (typeof v === "string") f[k] = { stringValue: v };
+    else if (typeof v === "boolean") f[k] = { booleanValue: v };
+    else if (typeof v === "number") f[k] = Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v };
+    else if (Array.isArray(v)) f[k] = { arrayValue: { values: v.map((i: any) => typeof i === "string" ? { stringValue: i } : { integerValue: String(i) }) } };
   }
+  return f;
+}
 
-  return { tag: "Football", category: "Football", hot: false };
+function fromFields(fields: any): any {
+  const obj: any = {};
+  for (const [k, v] of Object.entries(fields) as any[]) {
+    if (v.stringValue !== undefined) obj[k] = v.stringValue;
+    else if (v.integerValue !== undefined) obj[k] = parseInt(v.integerValue);
+    else if (v.doubleValue !== undefined) obj[k] = v.doubleValue;
+    else if (v.booleanValue !== undefined) obj[k] = v.booleanValue;
+    else if (v.arrayValue) obj[k] = (v.arrayValue.values || []).map((i: any) => i.stringValue ?? parseInt(i.integerValue ?? "0"));
+  }
+  return obj;
+}
+
+async function fsQuery(col: string, token: string): Promise<any[]> {
+  const res = await fetch(`${FIRESTORE_BASE}:runQuery`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ structuredQuery: { from: [{ collectionId: col }] } }),
+  });
+  const rows = await res.json();
+  if (!Array.isArray(rows)) return [];
+  return rows.filter((r: any) => r.document).map((r: any) => ({ _id: r.document.name?.split("/").pop(), ...fromFields(r.document.fields || {}) }));
+}
+
+async function fsAdd(col: string, data: any, token: string): Promise<void> {
+  await fetch(`${FIRESTORE_BASE}/${col}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ fields: toFields(data) }),
+  });
+}
+
+async function fsPatch(col: string, id: string, data: any, token: string): Promise<void> {
+  const mask = Object.keys(data).map(k => `updateMask.fieldPaths=${encodeURIComponent(k)}`).join("&");
+  await fetch(`${FIRESTORE_BASE}/${col}/${id}?${mask}`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ fields: toFields(data) }),
+  });
+}
+
+function detectTag(title: string, desc: string): string {
+  const text = `${title} ${desc}`.toLowerCase();
+  const rules: [string[], string][] = [
+    [["premier league","epl","man united","man city","arsenal","chelsea","liverpool","tottenham"], "Premier League"],
+    [["champions league","ucl","europa league"], "Champions League"],
+    [["world cup","fifa world"], "World Cup"],
+    [["afcon","africa cup","caf","bafana","south africa","psl","premier soccer league","cosafa","safa"], "PSL & Africa"],
+    [["transfer","signing","sign","sold","loan","fee","deal","bid"], "Transfer"],
+    [["la liga","real madrid","barcelona","atletico"], "La Liga"],
+    [["serie a","juventus","inter milan","ac milan","napoli"], "Serie A"],
+    [["bundesliga","bayern","dortmund"], "Bundesliga"],
+    [["ligue 1","psg","paris saint"], "Ligue 1"],
+    [["mls","major league soccer"], "MLS"],
+    [["injury","injured","ruled out"], "Injury"],
+    [["manager","sacked","appointed","coach","resigned"], "Management"],
+  ];
+  for (const [kws, cat] of rules) if (kws.some(kw => text.includes(kw))) return cat;
+  return "Football";
 }
 
 export default async function handler(_req: any, res: any) {
   if (!GNEWS_API_KEY) {
-    res.status(500).json({ error: "GNEWS_API_KEY not configured" });
-    return;
+    return res.status(500).json({ error: "GNEWS_API_KEY not configured" });
   }
-
   try {
-    // Fetch top football headlines globally via GNews
     const apiRes = await fetch(
       `https://gnews.io/api/v4/search?q=football+OR+soccer&lang=en&sortby=publishedAt&max=30&apikey=${GNEWS_API_KEY}`
     );
     const data = await apiRes.json();
-
     if (!Array.isArray(data.articles)) {
-      res.status(500).json({ error: "GNews error", detail: data });
-      return;
+      return res.status(500).json({ error: "GNews error", detail: data });
     }
 
-    const token = await getPlatformToken();
+    const token = await getToken();
     const now = new Date();
     const twoHoursAgo = new Date(Date.now() - 2 * 3600000);
-
-    // Get existing news IDs to avoid duplicates
-    const existing = await firestoreQuery("news", token);
+    const existing = await fsQuery("news", token);
     const existingUrls = new Set(existing.map((n: any) => n.sourceUrl));
 
     let added = 0;
     for (const article of data.articles) {
-      if (!article.title) continue;
-      if (existingUrls.has(article.url)) continue;
-
+      if (!article.title || existingUrls.has(article.url)) continue;
       const publishedAt = new Date(article.publishedAt || now);
-      const { tag, category } = detectTag(article.title, article.description || "");
-      const hot = publishedAt > twoHoursAgo;
-
+      const tag = detectTag(article.title, article.description || "");
       const newsId = `news_live_${Date.now()}_${added}`;
-      await firestoreAdd("news", {
-        newsId,
-        tag,
+      await fsAdd("news", {
+        newsId, tag, category: tag,
         headline: article.title.replace(/ - [^-]+$/, "").trim(),
         subtitle: article.description || "",
-        category,
         timestamp: publishedAt.toISOString(),
-        hot,
+        hot: publishedAt > twoHoursAgo,
         sourceUrl: article.url || "",
         sourceImage: article.image || "",
         sourceName: article.source?.name || "Football News",
         createdAt: now.toISOString(),
       }, token);
-
       added++;
     }
 
-    // Clean up old news (keep only last 60 articles)
-    const allNews = await firestoreQuery("news", token);
+    const allNews = await fsQuery("news", token);
     if (allNews.length > 60) {
       const sorted = allNews.sort((a: any, b: any) => (b.timestamp || "").localeCompare(a.timestamp || ""));
-      const toDelete = sorted.slice(60);
-      for (const old of toDelete) {
-        await firestorePatch("news", old._id || old.newsId, { isArchived: true }, token);
+      for (const old of sorted.slice(60)) {
+        await fsPatch("news", old._id || old.newsId, { isArchived: true }, token);
       }
     }
 
-    res.status(200).json({ message: `Added ${added} new articles` });
+    return res.status(200).json({ message: `Added ${added} new articles` });
   } catch (err: any) {
     console.error("[agent-news]", err);
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message });
   }
 }
