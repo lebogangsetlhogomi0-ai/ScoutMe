@@ -119,7 +119,7 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({ playerId, onBack, 
 
   const PLAYER_TABS = [
     { key: "HIGHLIGHTS",  label: "HIGHLIGHTS",  full: "Highlights",  types: ["highlight"] },
-    { key: "MATCH CLIPS", label: "CLIPS",       full: "Match Clips", types: ["match", "full"] },
+    { key: "MATCH CLIPS", label: "MATCH CLIPS",  full: "Match Clips", types: ["match", "full"] },
     { key: "TRAINING",    label: "TRAINING",    full: "Training",    types: ["training"] },
   ] as const;
 
