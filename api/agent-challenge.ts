@@ -2,7 +2,7 @@
 import { getPlatformToken, firestoreQuery, firestoreAdd, callGemini } from "./_agent-utils";
 
 // Runs every Friday at 12:00 PM SAST (10:00 AM UTC)
-export default async function handler(req: any, res: any) {
+export default async function handler(_req: any, res: any) {
   try {
     const token = await getPlatformToken();
     const now = new Date().toISOString();

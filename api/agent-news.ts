@@ -34,7 +34,7 @@ function detectTag(title: string, description: string): { tag: string; category:
   return { tag: "Football", category: "Football", hot: false };
 }
 
-export default async function handler(req: any, res: any) {
+export default async function handler(_req: any, res: any) {
   if (!GNEWS_API_KEY) {
     res.status(500).json({ error: "GNEWS_API_KEY not configured" });
     return;
