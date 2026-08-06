@@ -1,5 +1,5 @@
 
-import { getPlatformToken, firestoreAdd, firestorePatch, firestoreQuery } from "./_agent-utils";
+import { getPlatformToken, firestoreAdd, firestorePatch, firestoreQuery } from "../lib/agent-utils";
 
 // Runs every 6 hours: 0 0,6,12,18 * * *
 // Fetches global football news from NewsAPI and stores in Firestore
