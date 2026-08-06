@@ -31,7 +31,7 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({ playerId, onBack, 
     const timer = setTimeout(() => {
       setAnimateProgress(true);
     }, 150);
-    setSelectedGridTab(player?.role === "platform" ? "P.O.T.W" : "HIGHLIGHTS");
+    setSelectedGridTab((player?.role === "platform" || (player as any)?.isOfficialAccount) ? "P.O.T.W" : "HIGHLIGHTS");
     return () => clearTimeout(timer);
   }, [playerId]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -108,7 +108,7 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({ playerId, onBack, 
   const playerPosts = posts.filter(p => p.userId === player.userId);
 
   // Grid tabs differ by role
-  const isPlatformProfile = player.role === "platform";
+  const isPlatformProfile = player.role === "platform" || (player as any).isOfficialAccount === true;
   const PLATFORM_TABS = [
     { key: "P.O.T.W",     label: "P.O.T.W",     full: "Player of the Week", types: ["player_of_week"] },
     { key: "SIGNING",     label: "SIGNING",      full: "Signing Announcements", types: ["signing"] },
