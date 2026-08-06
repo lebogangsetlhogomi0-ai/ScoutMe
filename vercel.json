@@ -3,7 +3,7 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "functions": {
-    "api/agent-news.ts": { "runtime": "nodejs20.x" },
+    "api/fetch-news.ts": { "runtime": "nodejs20.x" },
     "api/agent-potw.ts": { "runtime": "nodejs20.x" },
     "api/agent-challenge.ts": { "runtime": "nodejs20.x" },
     "api/agent-trending.ts": { "runtime": "nodejs20.x" },
