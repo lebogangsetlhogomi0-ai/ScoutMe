@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { mockOtpEndpoints, signupNewUser } from './helpers';
+import { mockOtpEndpoints, signupNewUser, signAgreementModal } from './helpers';
 
 test.describe('Mobile Responsiveness', () => {
 
@@ -46,7 +46,7 @@ test.describe('Mobile Responsiveness', () => {
     await page.fill('#signup_name', 'Mobile Test');
     await page.fill('#signup_email', `mobile_${Date.now()}@example.com`);
     await page.fill('#signup_password', 'TestPassword123!');
-    await page.check('#signup_agreement');
+    await signAgreementModal(page);
     await page.click('#signup_submit_btn');
     await page.waitForSelector('text=CHECK YOUR EMAIL', { timeout: 15000 });
     const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);

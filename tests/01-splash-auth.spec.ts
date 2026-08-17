@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { mockOtpEndpoints, fillAndVerifyOtp, completeWelcomeStep } from './helpers';
+import { mockOtpEndpoints, fillAndVerifyOtp, completeWelcomeStep, signAgreementModal } from './helpers';
 
 test.describe('Splash Screen & Authentication', () => {
 
@@ -92,7 +92,7 @@ test.describe('Splash Screen & Authentication', () => {
     await page.fill('#signup_name', 'OTP Test User');
     await page.fill('#signup_email', `otp_test_${Date.now()}@example.com`);
     await page.fill('#signup_password', 'TestPassword123!');
-    await page.check('#signup_agreement');
+    await signAgreementModal(page);
     await page.click('#signup_submit_btn');
 
     await expect(page.locator('text=CHECK YOUR EMAIL')).toBeVisible({ timeout: 15000 });
@@ -114,7 +114,7 @@ test.describe('Splash Screen & Authentication', () => {
     await page.fill('#signup_name', 'Flow Test User');
     await page.fill('#signup_email', `flow_${Date.now()}@example.com`);
     await page.fill('#signup_password', 'TestPassword123!');
-    await page.check('#signup_agreement');
+    await signAgreementModal(page);
     await page.click('#signup_submit_btn');
 
     await fillAndVerifyOtp(page);

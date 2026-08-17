@@ -12,7 +12,6 @@ export async function mockOtpEndpoints(page: Page) {
 
 /** Fill the 6 OTP digit boxes with 1–6 and click Verify. */
 export async function fillAndVerifyOtp(page: Page) {
-  // Wait for OTP step to appear (step 4 shows "CHECK YOUR EMAIL")
   await page.waitForSelector('text=CHECK YOUR EMAIL', { timeout: 15000 });
   const digits = page.locator('input[inputmode="numeric"]');
   await digits.nth(0).fill('1');
@@ -28,6 +27,32 @@ export async function fillAndVerifyOtp(page: Page) {
 export async function completeWelcomeStep(page: Page) {
   await page.waitForSelector('#lets_go_btn', { timeout: 15000 });
   await page.click('#lets_go_btn');
+}
+
+/**
+ * Sign the digital agreement via the modal flow.
+ * Clicks the "Read & Sign" button, scrolls the modal to bottom,
+ * ticks both checkboxes, and clicks "I AGREE AND SIGN".
+ * Waits for the modal to close (2s animation).
+ */
+export async function signAgreementModal(page: Page) {
+  await page.click('#open_agreement_btn');
+  await page.waitForSelector('#agreement_scroll_container', { timeout: 10000 });
+  // Scroll the modal document to bottom to unlock checkboxes
+  await page.evaluate(() => {
+    const el = document.getElementById('agreement_scroll_container');
+    if (el) {
+      el.scrollTop = el.scrollHeight;
+      el.dispatchEvent(new Event('scroll'));
+    }
+  });
+  await page.waitForTimeout(600);
+  // Checkboxes should now be enabled
+  await page.check('#checkbox_modal_verify');
+  await page.check('#checkbox_modal_consent');
+  await page.click('#sign_agreement_modal_submit');
+  // Modal closes after 2s setTimeout in handleSign
+  await page.waitForTimeout(2500);
 }
 
 /**
@@ -71,8 +96,9 @@ export async function signupNewUser(
     }
   }
 
-  // Agreement checkbox required for signup
-  await page.check('#signup_agreement');
+  // Sign the digital agreement via modal (replaces old checkbox)
+  await signAgreementModal(page);
+
   await page.click('#signup_submit_btn');
 
   // OTP step

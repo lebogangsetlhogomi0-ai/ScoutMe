@@ -131,7 +131,8 @@ export const DigitalAgreementModal: React.FC<DigitalAgreementModalProps> = ({ is
           </div>
 
           {/* Scrollable Document Body */}
-          <div 
+          <div
+            id="agreement_scroll_container"
             ref={textRef}
             onScroll={handleScroll}
             className="p-6 overflow-y-auto text-sm text-[#e8f5ee]/95 space-y-5 flex-1 max-h-[45vh] leading-relaxed font-sans scroll-smooth"

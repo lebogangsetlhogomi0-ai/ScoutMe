@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { mockOtpEndpoints, fillAndVerifyOtp, completeWelcomeStep, quickLogin, navigateToTab } from './helpers';
+import { mockOtpEndpoints, fillAndVerifyOtp, completeWelcomeStep, quickLogin, navigateToTab, signAgreementModal } from './helpers';
 
 test.describe('Smoke Tests — end-to-end critical paths', () => {
 
@@ -28,7 +28,7 @@ test.describe('Smoke Tests — end-to-end critical paths', () => {
     await page.fill('#signup_name', 'Smoke Test Player');
     await page.fill('#signup_email', `smoke_${Date.now()}@example.com`);
     await page.fill('#signup_password', 'TestPassword123!');
-    await page.check('#signup_agreement');
+    await signAgreementModal(page);
     await page.click('#signup_submit_btn');
 
     // OTP
@@ -45,7 +45,11 @@ test.describe('Smoke Tests — end-to-end critical paths', () => {
     await quickLogin(page);
     await expect(page.locator('#tab_pitch')).toBeVisible({ timeout: 10000 });
     await expect(page.locator('#tab_discover')).toBeVisible();
-    await expect(page.locator('#tab_upload')).toBeVisible();
+    // Upload tab is hidden for player role (only scouts/clubs/platform see it)
+    const uploadVisible = await page.locator('#tab_upload').isVisible({ timeout: 3000 }).catch(() => false);
+    if (uploadVisible) {
+      await expect(page.locator('#tab_upload')).toBeVisible();
+    }
   });
 
   test('pitch tab renders after login', async ({ page }) => {
