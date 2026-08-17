@@ -1,7 +1,7 @@
 import { createHash } from "crypto";
 
 // ── Firestore REST helpers (same pattern as agents) ────────────────────────
-const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || process.env.VITE_FIREBASE_API_KEY || "";
+const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || "";
 const FIREBASE_PROJECT_ID = "scoutme-10";
 const PLATFORM_EMAIL = process.env.PLATFORM_AGENT_EMAIL || "";
 const PLATFORM_PASSWORD = process.env.PLATFORM_AGENT_PASSWORD || "";

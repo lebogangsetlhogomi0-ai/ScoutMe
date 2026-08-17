@@ -1,8 +1,8 @@
 
 // --- inlined from _agent-utils (Vercel does not bundle local relative imports) ---
-const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || process.env.VITE_FIREBASE_API_KEY || "";
+const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || "";
 const FIREBASE_PROJECT_ID = "scoutme-10";
-const GEMINI_API_KEY = process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || "";
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 const PLATFORM_EMAIL = process.env.PLATFORM_AGENT_EMAIL || "";
 const PLATFORM_PASSWORD = process.env.PLATFORM_AGENT_PASSWORD || "";
 const FIRESTORE_BASE = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents`;

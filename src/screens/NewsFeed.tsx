@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { db } from "../firebase";
 import { collection, query, orderBy, limit, onSnapshot, where } from "firebase/firestore";
 import { RefreshCw, ExternalLink } from "lucide-react";
+import { formatSATimeAgo } from "../utils/saTime";
 
 // ── Category config ────────────────────────────────────────────────────────
 const CATEGORIES = [
@@ -25,16 +26,6 @@ function getCategoryColor(cat: string): string {
   return CATEGORIES.find(c => c.id === cat)?.color ?? "#5a8a6a";
 }
 
-function timeAgo(dateStr: string): string {
-  if (!dateStr) return "";
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
-}
 
 interface NewsArticle {
   newsId: string;
@@ -244,7 +235,7 @@ export const NewsFeed: React.FC = () => {
                   >
                     {contentTypeLabel(post.contentType)}
                   </span>
-                  <span className="text-[9px] text-[#5a8a6a] font-mono">{timeAgo(post.createdAt)}</span>
+                  <span className="text-[9px] text-[#5a8a6a] font-mono">{formatSATimeAgo(post.createdAt)}</span>
                 </div>
                 <p className="text-white text-xs font-bold leading-snug line-clamp-3">{post.caption}</p>
                 {post.playerName && (
@@ -308,7 +299,7 @@ export const NewsFeed: React.FC = () => {
                     </p>
                   )}
                   <div className="flex items-center justify-between text-[9.5px] text-[#5a8a6a]/70 font-mono">
-                    <span>{item.source} · {timeAgo(item.publishedAt)}</span>
+                    <span>{item.source} · {formatSATimeAgo(item.publishedAt)}</span>
                     <ExternalLink className="w-3 h-3 text-[#5a8a6a]/50" />
                   </div>
                 </div>

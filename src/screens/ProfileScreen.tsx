@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import { formatSATimeAgo } from "../utils/saTime";
 import { useApp } from "../context/AppContext";
 import {
   ShieldCheck, AlertTriangle, ChevronRight, HelpCircle,
@@ -1404,7 +1405,7 @@ export const ProfileScreen: React.FC<{ clubId?: string; onBack?: () => void }> =
                                 {currentUser.clubName || currentUser.name}
                               </span>
                               <span className="text-[10px] font-mono text-[#5a8a6a] uppercase">
-                                {post.postType} · {new Date(post.timestamp).toLocaleDateString()}
+                                {post.postType} · {formatSATimeAgo(post.timestamp)}
                               </span>
                             </div>
                           </div>

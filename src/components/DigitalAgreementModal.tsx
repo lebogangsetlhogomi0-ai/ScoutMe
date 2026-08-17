@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { formatSATime } from "../utils/saTime";
 import { useApp } from "../context/AppContext";
 import { X, Check, Shield } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
@@ -342,7 +343,7 @@ export const DigitalAgreementModal: React.FC<DigitalAgreementModalProps> = ({ is
                 </div>
 
                 <div className="text-[10px] text-[#5a8a6a] space-y-1">
-                  <p>Timestamp: <span className="text-white font-mono">{new Date(signedStamp).toLocaleString()}</span></p>
+                  <p>Timestamp: <span className="text-white font-mono">{formatSATime(signedStamp)}</span></p>
                   <p className="leading-relaxed">Your signing has been logged and is legally enforceable under ECTA, South Africa.</p>
                 </div>
               </motion.div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { formatSATime } from "../utils/saTime";
 import { useApp } from "../context/AppContext";
 import { useToast } from "../components/Toast";
 import { UserProfile, ScoutReport, VirtualTrialResult } from "../types";
@@ -265,7 +266,7 @@ export const NeuralScoutAI: React.FC<NeuralScoutAIProps> = ({ initialPlayerId, o
         finishingScore: pFinishing,
         ranking: rankingText,
         assessment: data.assessment,
-        completedAt: new Date().toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" })
+        completedAt: formatSATime(new Date())
       });
     } catch (err) {
       console.error("Failed to generate virtual trial assessment", err);
@@ -279,7 +280,7 @@ export const NeuralScoutAI: React.FC<NeuralScoutAIProps> = ({ initialPlayerId, o
         finishingScore: pFinishing,
         ranking: rankingText,
         assessment: `During the ${selectedDrill?.name || "Cone Slalom"}, ${playerToScore.name} displayed excellent positional footwork and high mechanical efficiency. Their score of ${calculatedTrialOverall}/100 exceeds peer group benchmarks, with a highly competitive pace metric of ${pPace}/100. Continued technical drills will further solidify their prospects for professional recruitment within elite league setups.`,
-        completedAt: new Date().toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" })
+        completedAt: formatSATime(new Date())
       });
     }
   };

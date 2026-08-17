@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 import { useToast } from "./Toast";
+import { formatSATimeAgo } from "../utils/saTime";
 import { Bell, Trophy, ShieldAlert, Award, User, BarChart2, Settings, LogOut, ChevronRight, CheckCheck } from "lucide-react";
 
 interface HeaderProps {
@@ -56,15 +57,7 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick
     .filter(n => n.recipientId === currentUser?.userId)
     .slice(0, 20);
 
-  const formatTime = (createdAt: string) => {
-    const diff = Date.now() - new Date(createdAt).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return "Just now";
-    if (mins < 60) return `${mins}m ago`;
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}h ago`;
-    return `${Math.floor(hrs / 24)}d ago`;
-  };
+  const formatTime = formatSATimeAgo;
 
 
   return (

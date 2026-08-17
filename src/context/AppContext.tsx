@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { formatSATime } from "../utils/saTime";
 import { UserProfile, PostHighlight, ScoutReport, NewsItem, UserRole, PostComment, RatingDoc, ClubPost, AppNotification, ClubPostComment, SquadMember, PitchReport, CareerMoment, LiveSession, ChallengePost, ChallengeResponse, SpotlightPost, VerificationApplication, ScoutStamp, TrialEvent, TrialEventApplication } from "../types";
 import { db, auth, isDemoMode } from "../firebase";
 import { collection, doc, setDoc, getDoc, updateDoc, onSnapshot, query, orderBy, limit, addDoc, serverTimestamp, increment, where, deleteDoc } from "firebase/firestore";
@@ -1577,7 +1578,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         overallScore: overall,
         confidence: confLevel as any,
         recommendation: rec as any,
-        createdAt: new Date().toLocaleDateString() + " · " + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        createdAt: formatSATime(new Date())
       };
 
       setScoutReports(prev => [newReport, ...prev]);
@@ -1603,7 +1604,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         overallScore: overall,
         confidence: confLevel as any,
         recommendation: rec as any,
-        createdAt: new Date().toLocaleDateString()
+        createdAt: formatSATime(new Date())
       };
 
       setScoutReports(prev => [newReport, ...prev]);
