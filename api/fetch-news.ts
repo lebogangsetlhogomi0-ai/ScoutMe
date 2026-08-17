@@ -47,9 +47,9 @@ const RSS_FEEDS = [
   { url: "https://www.kickoff.com/rss",                        category: "sa",        source: "Kickoff" },
   { url: "https://www.theguardian.com/football/rss",           category: "global",    source: "The Guardian" },
   { url: "https://www.espn.com/espn/rss/soccer/news",          category: "global",    source: "ESPN" },
-  { url: "https://africanfootball.com/feed",                   category: "africa",    source: "African Football" },
-  { url: "https://www.goal.com/feeds/en/news/1/index.xml",     category: "global",    source: "Goal.com" },
-  { url: "https://supersport.com/rss/football",                category: "sa",        source: "SuperSport" },
+  { url: "https://www.skysports.com/rss/12040",                 category: "global",    source: "Sky Sports" },
+  { url: "https://talksport.com/feed/",                        category: "global",    source: "talkSPORT" },
+  { url: "https://www.90min.com/feed",                         category: "global",    source: "90min" },
 ];
 
 // ── XML parsing helpers ────────────────────────────────────────────────────
