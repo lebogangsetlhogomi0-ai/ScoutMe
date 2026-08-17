@@ -43,13 +43,13 @@ async function fsUpsert(docId: string, data: Record<string, any>, token: string)
 
 // ── RSS feeds ──────────────────────────────────────────────────────────────
 const RSS_FEEDS = [
-  { url: "https://www.goal.com/feeds/en/news",             category: "global",    source: "Goal.com" },
-  { url: "https://www.bbc.co.uk/sport/football/rss.xml",  category: "global",    source: "BBC Sport" },
-  { url: "https://feeds.skysports.com/skysports/football", category: "global",    source: "Sky Sports" },
-  { url: "https://www.goal.com/feeds/en/transfers",        category: "transfers", source: "Goal.com Transfers" },
-  { url: "https://www.cafonline.com/rss",                  category: "africa",    source: "CAF Online" },
-  { url: "https://www.kickoff.com/rss",                    category: "sa",        source: "Kickoff" },
-  { url: "https://www.soccer-laduma.co.za/feed",           category: "sa",        source: "Soccer Laduma" },
+  { url: "https://feeds.bbci.co.uk/sport/football/rss.xml",   category: "global",    source: "BBC Sport" },
+  { url: "https://www.kickoff.com/rss",                        category: "sa",        source: "Kickoff" },
+  { url: "https://www.theguardian.com/football/rss",           category: "global",    source: "The Guardian" },
+  { url: "https://www.espn.com/espn/rss/soccer/news",          category: "global",    source: "ESPN" },
+  { url: "https://africanfootball.com/feed",                   category: "africa",    source: "African Football" },
+  { url: "https://www.goal.com/feeds/en/news/1/index.xml",     category: "global",    source: "Goal.com" },
+  { url: "https://supersport.com/rss/football",                category: "sa",        source: "SuperSport" },
 ];
 
 // ── XML parsing helpers ────────────────────────────────────────────────────
