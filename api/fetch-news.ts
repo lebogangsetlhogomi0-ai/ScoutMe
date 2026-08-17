@@ -112,6 +112,17 @@ function categorize(title: string, defaultCat: string): string {
   return defaultCat;
 }
 
+// ── Safe date parser ───────────────────────────────────────────────────────
+function parseDate(dateStr: string): string {
+  try {
+    const parsed = new Date(dateStr);
+    if (isNaN(parsed.getTime())) return new Date().toISOString();
+    return parsed.toISOString();
+  } catch {
+    return new Date().toISOString();
+  }
+}
+
 // ── Handler ────────────────────────────────────────────────────────────────
 export default async function handler(req: any, res: any) {
   // Accept GET (Vercel cron) or POST (manual trigger)
@@ -151,7 +162,7 @@ export default async function handler(req: any, res: any) {
 
           const docId = createHash("md5").update(item.link).digest("hex");
           const category = categorize(item.title, feed.category);
-          const publishedAt = item.pubDate ? new Date(item.pubDate).toISOString() : new Date().toISOString();
+          const publishedAt = item.pubDate ? parseDate(item.pubDate) : new Date().toISOString();
 
           await fsUpsert(docId, {
             newsId: docId,
