@@ -34,7 +34,7 @@ const CATEGORIES = [
   { id: "transfers",        label: "TRANSFERS",         color: "#f5c518" },
   { id: "afcon",            label: "AFCON",             color: "#f5c518" },
   { id: "world-cup",        label: "WORLD CUP",         color: "#f5c518" },
-  { id: "motsepe",          label: "ABC MOTSEPE",       color: "#00e56b" },
+  { id: "ddc",              label: "DDC",               color: "#00e56b" },
   { id: "scoutme",          label: "SCOUTME",           color: "#00e56b" },
 ] as const;
 
