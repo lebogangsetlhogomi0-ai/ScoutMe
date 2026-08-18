@@ -36,7 +36,8 @@ export async function completeWelcomeStep(page: Page) {
  * Waits for the modal to close (2s animation).
  */
 export async function signAgreementModal(page: Page) {
-  await page.click('#open_agreement_btn', { force: true });
+  await page.waitForSelector('#open_agreement_btn:not([disabled])', { timeout: 10000 });
+  await page.click('#open_agreement_btn');
   await page.waitForSelector('#agreement_scroll_container', { timeout: 10000 });
   // Scroll the modal document to bottom to unlock checkboxes
   await page.evaluate(() => {
