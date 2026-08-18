@@ -43,14 +43,20 @@ async function fsUpsert(docId: string, data: Record<string, any>, token: string)
 
 // ── RSS feeds (football-only endpoints) ───────────────────────────────────
 const RSS_FEEDS = [
+  // International
   { url: "https://feeds.bbci.co.uk/sport/football/rss.xml",        category: "premier-league", source: "BBC Sport" },
-  { url: "https://www.kickoff.com/rss",                             category: "sa",             source: "Kickoff" },
   { url: "https://www.theguardian.com/football/rss",                category: "premier-league", source: "The Guardian" },
   { url: "https://www.espn.com/espn/rss/soccer/news",               category: "premier-league", source: "ESPN FC" },
   { url: "https://www.skysports.com/rss/12040",                     category: "premier-league", source: "Sky Sports Football" },
   { url: "https://talksport.com/football/feed/",                    category: "premier-league", source: "talkSPORT Football" },
   { url: "https://www.90min.com/feed",                              category: "premier-league", source: "90min" },
   { url: "https://fabrizioromano.substack.com/feed",                category: "transfers",      source: "Fabrizio Romano" },
+  // South Africa football
+  { url: "https://idiskitimes.co.za/feed/",                         category: "psl",            source: "iDiski Times" },
+  { url: "https://www.soccer-laduma.co.za/feed/",                   category: "psl",            source: "Soccer Laduma" },
+  { url: "https://www.kickoff.com/feed/",                           category: "sa",             source: "Kickoff.com" },
+  { url: "https://www.thesouthafrican.com/sport/football/feed/",    category: "sa",             source: "The South African" },
+  { url: "https://supersport.com/rss/football/south-africa",        category: "psl",            source: "SuperSport SA" },
 ];
 
 // ── Non-football sport keywords to reject ─────────────────────────────────
@@ -265,7 +271,8 @@ export default async function handler(req: any, res: any) {
         const xml = await feedRes.text();
         const items = parseItems(xml);
 
-        for (const item of items.slice(0, 15)) {
+        const perFeed = feed.category === "psl" || feed.category === "sa" ? 20 : 15;
+        for (const item of items.slice(0, perFeed)) {
           if (!item.title || !item.link) continue;
           if (!isFootball(item.title, item.description)) continue;
 
