@@ -53,7 +53,7 @@ const RSS_FEEDS = [
   { url: "https://fabrizioromano.substack.com/feed",                category: "transfers",      source: "Fabrizio Romano" },
   // South Africa — Google News RSS (targeted per category, reliable)
   { url: "https://news.google.com/rss/search?q=PSL+%22premier+soccer+league%22+OR+%22Kaizer+Chiefs%22+OR+%22Orlando+Pirates%22+OR+%22Mamelodi+Sundowns%22+OR+%22SuperSport+United%22+OR+%22Cape+Town+City%22&hl=en-ZA&gl=ZA&ceid=ZA:en", category: "psl", source: "Google News PSL" },
-  { url: "https://news.google.com/rss/search?q=Bafana+Bafana+OR+SAFA+%22south+africa+national+team%22+football&hl=en-ZA&gl=ZA&ceid=ZA:en", category: "bafana", source: "Google News Bafana" },
+  { url: "https://news.google.com/rss/search?q=Bafana+Bafana+OR+Banyana+Banyana+OR+SAFA+%22south+africa+national+team%22+football&hl=en-ZA&gl=ZA&ceid=ZA:en", category: "bafana", source: "Google News Bafana & Banyana" },
   { url: "https://news.google.com/rss/search?q=%22south+africa%22+soccer+football+%22PSL%22+OR+%22NFD%22+OR+%22SAFA%22+OR+%22Nedbank+Cup%22+OR+%22MTN8%22&hl=en-ZA&gl=ZA&ceid=ZA:en", category: "sa", source: "Google News SA Football" },
   { url: "https://news.google.com/rss/search?q=AFCON+OR+%22Africa+Cup+of+Nations%22+OR+%22CHAN+2024%22+OR+%22COSAFA%22+football&hl=en&gl=ZA&ceid=ZA:en", category: "afcon", source: "Google News AFCON" },
   { url: "https://news.google.com/rss/search?q=%22Diski+Challenge%22+OR+%22DDC%22+%22south+africa%22+football&hl=en-ZA&gl=ZA&ceid=ZA:en", category: "ddc", source: "Google News DDC" },
@@ -128,7 +128,7 @@ function categorize(title: string, desc: string, defaultCat: string): string {
   const t = (title + " " + desc).toLowerCase();
 
   // SA / Bafana (check before PSL so national team takes priority)
-  if (t.includes("bafana") || t.includes("south africa national") || t.includes("safa ") || t.includes("south african football association")) return "bafana";
+  if (t.includes("bafana") || t.includes("banyana") || t.includes("south africa national") || t.includes("safa ") || t.includes("south african football association")) return "bafana";
 
   // PSL / SA club football
   if (
