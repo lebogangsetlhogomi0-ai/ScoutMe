@@ -13,13 +13,29 @@ export async function mockOtpEndpoints(page: Page) {
 /** Fill the 6 OTP digit boxes with 1–6 and click Verify. */
 export async function fillAndVerifyOtp(page: Page) {
   await page.waitForSelector('text=CHECK YOUR EMAIL', { timeout: 30000 });
-  // Click first input then type all 6 digits — focus auto-advances between inputs,
-  // so keyboard.type is more reliable than filling each locator individually.
-  const firstInput = page.locator('input[inputmode="numeric"]').first();
-  await firstInput.waitFor({ state: 'visible', timeout: 10000 });
-  await firstInput.click({ force: true });
-  await page.keyboard.type('123456', { delay: 150 });
-  await page.getByRole('button', { name: /verify code/i }).click({ force: true });
+  // Wait for OTP inputs to stabilize after screen transition
+  await page.waitForTimeout(800);
+  // Use evaluate to focus first input — avoids DOM-detach race during re-render
+  await page.evaluate(() => {
+    const input = document.querySelector('input[inputmode="numeric"]') as HTMLElement;
+    if (input) input.focus();
+  });
+  await page.keyboard.type('123456', { delay: 200 });
+  // Wait for VERIFY button to become enabled (disabled until all 6 digits registered)
+  await page.waitForFunction(
+    () => {
+      const btns = Array.from(document.querySelectorAll('button'));
+      const btn = btns.find(b => /verify code/i.test(b.textContent || ''));
+      return btn && !btn.disabled;
+    },
+    { timeout: 10000 }
+  ).catch(() => null); // if button never enables, OTP may have auto-submitted
+  await page.waitForTimeout(300);
+  const verifyBtn = page.getByRole('button', { name: /verify code/i });
+  const isVisible = await verifyBtn.isVisible().catch(() => false);
+  if (isVisible) {
+    await verifyBtn.click({ force: true });
+  }
 }
 
 /** Complete the welcome step (step 5 → step 6). */
