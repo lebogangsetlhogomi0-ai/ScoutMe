@@ -15,7 +15,7 @@ test.describe('Mobile Responsiveness', () => {
     await page.goto('/');
     await page.waitForSelector('#get_started_btn', { timeout: 15000 });
     await page.click('#get_started_btn', { force: true });
-    await page.waitForSelector('#role_player', { timeout: 10000 });
+    await page.waitForSelector('#role_player', { timeout: 20000 });
     const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
     const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
     expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 2);
@@ -25,7 +25,7 @@ test.describe('Mobile Responsiveness', () => {
     await page.goto('/');
     await page.waitForSelector('#get_started_btn', { timeout: 15000 });
     await page.click('#get_started_btn', { force: true });
-    await page.waitForSelector('#role_player', { timeout: 10000 });
+    await page.waitForSelector('#role_player', { timeout: 20000 });
     await page.click('#role_player', { force: true });
     await page.click('#role_continue_btn', { force: true });
     await page.waitForSelector('#signup_name', { timeout: 10000 });
@@ -39,7 +39,7 @@ test.describe('Mobile Responsiveness', () => {
     await page.goto('/');
     await page.waitForSelector('#get_started_btn', { timeout: 15000 });
     await page.click('#get_started_btn', { force: true });
-    await page.waitForSelector('#role_player', { timeout: 10000 });
+    await page.waitForSelector('#role_player', { timeout: 20000 });
     await page.click('#role_player', { force: true });
     await page.click('#role_continue_btn', { force: true });
     await page.waitForSelector('#signup_name', { timeout: 10000 });

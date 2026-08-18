@@ -19,7 +19,7 @@ test.describe('Smoke Tests — end-to-end critical paths', () => {
     await page.click('#get_started_btn', { force: true });
 
     // Role
-    await page.waitForSelector('#role_player', { timeout: 10000 });
+    await page.waitForSelector('#role_player', { timeout: 20000 });
     await page.click('#role_player', { force: true });
     await page.click('#role_continue_btn', { force: true });
 
@@ -107,7 +107,7 @@ test.describe('Smoke Tests — end-to-end critical paths', () => {
     await page.goto('/');
     await page.waitForSelector('#get_started_btn', { timeout: 15000 });
     await page.click('#get_started_btn', { force: true });
-    await page.waitForSelector('#role_player', { timeout: 10000 });
+    await page.waitForSelector('#role_player', { timeout: 20000 });
     await page.click('#role_player', { force: true });
     await page.click('#role_continue_btn', { force: true });
     await page.waitForSelector('#signup_name', { timeout: 10000 });

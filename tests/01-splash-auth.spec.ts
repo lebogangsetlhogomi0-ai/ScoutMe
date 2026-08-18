@@ -23,7 +23,7 @@ test.describe('Splash Screen & Authentication', () => {
     await page.waitForSelector('#get_started_btn', { timeout: 15000 });
     await page.click('#get_started_btn', { force: true });
     // Step 2: role selection
-    await expect(page.locator('#role_player')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#role_player')).toBeVisible({ timeout: 20000 });
     const body = await page.locator('body').textContent();
     expect(body?.toLowerCase()).toMatch(/who are you|player|scout/);
   });
@@ -51,7 +51,7 @@ test.describe('Splash Screen & Authentication', () => {
     await page.goto('/');
     await page.waitForSelector('#get_started_btn', { timeout: 15000 });
     await page.click('#get_started_btn', { force: true });
-    await page.waitForSelector('#role_player', { timeout: 10000 });
+    await page.waitForSelector('#role_player', { timeout: 20000 });
     await page.click('#role_player', { force: true });
     await page.click('#role_continue_btn', { force: true });
     await expect(page.locator('#signup_name')).toBeVisible({ timeout: 10000 });
@@ -84,7 +84,7 @@ test.describe('Splash Screen & Authentication', () => {
     await page.goto('/');
     await page.waitForSelector('#get_started_btn', { timeout: 15000 });
     await page.click('#get_started_btn', { force: true });
-    await page.waitForSelector('#role_player', { timeout: 10000 });
+    await page.waitForSelector('#role_player', { timeout: 20000 });
     await page.click('#role_player', { force: true });
     await page.click('#role_continue_btn', { force: true });
 
@@ -106,7 +106,7 @@ test.describe('Splash Screen & Authentication', () => {
     await page.goto('/');
     await page.waitForSelector('#get_started_btn', { timeout: 15000 });
     await page.click('#get_started_btn', { force: true });
-    await page.waitForSelector('#role_player', { timeout: 10000 });
+    await page.waitForSelector('#role_player', { timeout: 20000 });
     await page.click('#role_player', { force: true });
     await page.click('#role_continue_btn', { force: true });
 

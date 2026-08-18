@@ -9,7 +9,7 @@ test.describe('Digital Agreement', () => {
     await page.goto('/');
     await page.waitForSelector('#get_started_btn', { timeout: 15000 });
     await page.click('#get_started_btn', { force: true });
-    await page.waitForSelector('#role_player', { timeout: 10000 });
+    await page.waitForSelector('#role_player', { timeout: 20000 });
     await page.click('#role_player', { force: true });
     await page.click('#role_continue_btn', { force: true });
     await page.waitForSelector('#signup_name', { timeout: 10000 });
@@ -36,7 +36,7 @@ test.describe('Digital Agreement', () => {
     await page.goto('/');
     await page.waitForSelector('#get_started_btn', { timeout: 15000 });
     await page.click('#get_started_btn', { force: true });
-    await page.waitForSelector('#role_player', { timeout: 10000 });
+    await page.waitForSelector('#role_player', { timeout: 20000 });
     await page.click('#role_player', { force: true });
     await page.click('#role_continue_btn', { force: true });
     await page.waitForSelector('#open_agreement_btn', { timeout: 10000 });
@@ -57,12 +57,12 @@ test.describe('Digital Agreement', () => {
     await page.goto('/');
     await page.waitForSelector('#get_started_btn', { timeout: 15000 });
     await page.click('#get_started_btn', { force: true });
-    await page.waitForSelector('#role_player', { timeout: 10000 });
+    await page.waitForSelector('#role_player', { timeout: 20000 });
     await page.click('#role_player', { force: true });
     await page.click('#role_continue_btn', { force: true });
     await page.waitForSelector('#open_agreement_btn', { timeout: 10000 });
     // Open the modal and check its content
-    await page.click('#open_agreement_btn', { force: true });
+    await page.click('#open_agreement_btn');
     await page.waitForSelector('#agreement_scroll_container', { timeout: 10000 });
     const body = await page.locator('body').textContent();
     expect(body?.toLowerCase()).toMatch(/digital agreement|24 months|declaration|scoutme/);

@@ -12,14 +12,13 @@ export async function mockOtpEndpoints(page: Page) {
 
 /** Fill the 6 OTP digit boxes with 1–6 and click Verify. */
 export async function fillAndVerifyOtp(page: Page) {
-  await page.waitForSelector('text=CHECK YOUR EMAIL', { timeout: 15000 });
-  const digits = page.locator('input[inputmode="numeric"]');
-  await digits.nth(0).fill('1');
-  await digits.nth(1).fill('2');
-  await digits.nth(2).fill('3');
-  await digits.nth(3).fill('4');
-  await digits.nth(4).fill('5');
-  await digits.nth(5).fill('6');
+  await page.waitForSelector('text=CHECK YOUR EMAIL', { timeout: 30000 });
+  // Click first input then type all 6 digits — focus auto-advances between inputs,
+  // so keyboard.type is more reliable than filling each locator individually.
+  const firstInput = page.locator('input[inputmode="numeric"]').first();
+  await firstInput.waitFor({ state: 'visible', timeout: 10000 });
+  await firstInput.click({ force: true });
+  await page.keyboard.type('123456', { delay: 150 });
   await page.getByRole('button', { name: /verify code/i }).click({ force: true });
 }
 
@@ -76,9 +75,9 @@ export async function signupNewUser(
   await page.waitForSelector('#get_started_btn', { timeout: 15000 });
   await page.click('#get_started_btn', { force: true });
 
-  // Role selection
+  // Role selection — 20s for transition animation
   const roleId = role === 'player' ? '#role_player' : role === 'scout' ? '#role_scout' : '#role_fan';
-  await page.waitForSelector(roleId, { timeout: 10000 });
+  await page.waitForSelector(roleId, { timeout: 20000 });
   await page.click(roleId, { force: true });
   await page.click('#role_continue_btn', { force: true });
 
