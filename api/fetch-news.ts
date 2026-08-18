@@ -50,6 +50,7 @@ const RSS_FEEDS = [
   { url: "https://www.skysports.com/rss/12040",                category: "premier-league", source: "Sky Sports" },
   { url: "https://talksport.com/feed/",                        category: "premier-league", source: "talkSPORT" },
   { url: "https://www.90min.com/feed",                         category: "premier-league", source: "90min" },
+  { url: "https://fabrizioromano.substack.com/feed",           category: "transfers",      source: "Fabrizio Romano" },
 ];
 
 // ── XML parsing helpers ────────────────────────────────────────────────────
