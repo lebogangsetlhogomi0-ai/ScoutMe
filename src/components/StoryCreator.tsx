@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useApp } from "../context/AppContext";
 import { X, Check, Eye, Heart, Shield, Plus, Sparkles, Smile } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
@@ -57,15 +57,22 @@ export const StoryCreator: React.FC<StoryCreatorProps> = ({ onClose }) => {
     setStep(2);
   };
 
-  const handleChoosePlaceholder = (category: string) => {
-    // Elegant sport imagery fallback for simulation
-    const images: Record<string, string> = {
-      match: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=800&auto=format&fit=cover&q=60",
-      training: "https://images.unsplash.com/photo-1517466787929-bc90951d0974?w=800&auto=format&fit=cover&q=60",
-      skill: "https://images.unsplash.com/photo-1543351611-58f69d7c1781?w=800&auto=format&fit=cover&q=60",
-      bts: "https://images.unsplash.com/photo-1516259762381-22954d7d3ad2?w=800&auto=format&fit=cover&q=60"
+  const photoInputRef = useRef<HTMLInputElement>(null);
+
+  const handleChoosePlaceholder = () => {
+    photoInputRef.current?.click();
+  };
+
+  const handlePhotoInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const url = ev.target?.result as string;
+      handleMediaPick("image", url);
     };
-    handleMediaPick("image", images[category] || images.match);
+    reader.readAsDataURL(file);
+    e.target.value = "";
   };
 
   const addStickerToBoard = (emoji: string) => {
@@ -235,14 +242,21 @@ export const StoryCreator: React.FC<StoryCreatorProps> = ({ onClose }) => {
                   <span className="block text-[9px] text-[#5a8a6a] uppercase mt-0.5">Use palettes</span>
                 </button>
                 <button
-                  onClick={() => handleChoosePlaceholder(reportType)}
+                  onClick={handleChoosePlaceholder}
                   className="p-4 bg-[#0a140d]/80 border border-[#1a3825] rounded-2xl text-[#00e56b] hover:bg-[#122b19]/40 hover:border-[#00e56b]/40 text-center transition"
                 >
                   <Plus className="w-5 h-5 mx-auto mb-1.5 text-white" />
-                  <span className="block text-xs font-bold">Simulate Photo</span>
-                  <span className="block text-[9px] text-[#5a8a6a] uppercase mt-0.5">Import media</span>
+                  <span className="block text-xs font-bold">Add Photo</span>
+                  <span className="block text-[9px] text-[#5a8a6a] uppercase mt-0.5">From gallery</span>
                 </button>
               </div>
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handlePhotoInputChange}
+              />
             </div>
           )}
 

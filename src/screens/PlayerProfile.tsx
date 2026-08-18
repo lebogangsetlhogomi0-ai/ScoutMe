@@ -437,6 +437,8 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({ playerId, onBack, 
 
       </div>
 
+      {!isPlatformProfile && (<>
+
       {/* 3. NEURAL SCOUT INTELLIGENCE PANEL */}
       <div className="bg-[#0a1a0f] border border-[#1a3825] rounded-2xl overflow-hidden shadow-lg border-t-4 border-t-[#00e56b]">
         {/* Header row */}
@@ -726,6 +728,8 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({ playerId, onBack, 
         <CommunityRating playerId={player.userId} />
         <TalentBadges playerId={player.userId} />
       </motion.div>
+
+      </>)}
 
       {/* 4. SCOUT AGREEMENT DISCLOSURE ACTIVE NOTICE */}
       <div className="bg-[#231e0f] border border-[#f5c518]/50 text-[#f5c518] p-4.5 rounded-2xl flex items-start space-x-3 shadow-lg">
