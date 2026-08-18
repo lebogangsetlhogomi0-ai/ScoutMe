@@ -41,17 +41,37 @@ async function fsUpsert(docId: string, data: Record<string, any>, token: string)
   });
 }
 
-// ── RSS feeds ──────────────────────────────────────────────────────────────
+// ── RSS feeds (football-only endpoints) ───────────────────────────────────
 const RSS_FEEDS = [
-  { url: "https://feeds.bbci.co.uk/sport/football/rss.xml",   category: "premier-league", source: "BBC Sport" },
-  { url: "https://www.kickoff.com/rss",                        category: "sa",             source: "Kickoff" },
-  { url: "https://www.theguardian.com/football/rss",           category: "premier-league", source: "The Guardian" },
-  { url: "https://www.espn.com/espn/rss/soccer/news",          category: "premier-league", source: "ESPN" },
-  { url: "https://www.skysports.com/rss/12040",                category: "premier-league", source: "Sky Sports" },
-  { url: "https://talksport.com/feed/",                        category: "premier-league", source: "talkSPORT" },
-  { url: "https://www.90min.com/feed",                         category: "premier-league", source: "90min" },
-  { url: "https://fabrizioromano.substack.com/feed",           category: "transfers",      source: "Fabrizio Romano" },
+  { url: "https://feeds.bbci.co.uk/sport/football/rss.xml",        category: "premier-league", source: "BBC Sport" },
+  { url: "https://www.kickoff.com/rss",                             category: "sa",             source: "Kickoff" },
+  { url: "https://www.theguardian.com/football/rss",                category: "premier-league", source: "The Guardian" },
+  { url: "https://www.espn.com/espn/rss/soccer/news",               category: "premier-league", source: "ESPN FC" },
+  { url: "https://www.skysports.com/rss/12040",                     category: "premier-league", source: "Sky Sports Football" },
+  { url: "https://talksport.com/football/feed/",                    category: "premier-league", source: "talkSPORT Football" },
+  { url: "https://www.90min.com/feed",                              category: "premier-league", source: "90min" },
+  { url: "https://fabrizioromano.substack.com/feed",                category: "transfers",      source: "Fabrizio Romano" },
 ];
+
+// ── Non-football sport keywords to reject ─────────────────────────────────
+const NON_FOOTBALL_TERMS = [
+  "boxing", "tyson fury", "anthony joshua", "canelo", "ufc", "mma", "wwe",
+  "nba", "lebron james", "stephen curry", "nfl", "super bowl", "american football",
+  "tennis", "wimbledon", "us open", "australian open", "french open", "rafael nadal", "novak djokovic",
+  "golf", "masters ", "pga tour", "ryder cup", "tiger woods",
+  "cricket", "test match", "ashes", "ipl", "t20 world cup",
+  "rugby union", "six nations", "rugby world cup", "rugby league",
+  "formula 1", "f1 ", "grand prix", "motogp",
+  "cycling", "tour de france",
+  "swimming", "athletics", "olympics",
+  "snooker", "darts",
+  "horse racing", "cheltenham",
+];
+
+function isFootball(title: string, desc: string): boolean {
+  const t = (title + " " + desc).toLowerCase();
+  return !NON_FOOTBALL_TERMS.some(term => t.includes(term));
+}
 
 // ── XML parsing helpers ────────────────────────────────────────────────────
 function extractText(xml: string, tag: string): string {
@@ -247,6 +267,7 @@ export default async function handler(req: any, res: any) {
 
         for (const item of items.slice(0, 15)) {
           if (!item.title || !item.link) continue;
+          if (!isFootball(item.title, item.description)) continue;
 
           const docId = createHash("md5").update(item.link).digest("hex");
           const category = categorize(item.title, item.description, feed.category);
