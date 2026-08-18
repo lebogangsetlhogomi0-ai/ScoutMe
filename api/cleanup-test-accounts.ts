@@ -1,11 +1,10 @@
 /**
- * One-shot cleanup: deletes all @example.com test accounts from Firestore
- * and Firebase Auth. Secured by CRON_SECRET.
- *
- * Call once from Vercel dashboard or:
- *   curl -X POST https://scoutme-mu.vercel.app/api/cleanup-test-accounts \
- *     -H "Authorization: Bearer <CRON_SECRET>"
+ * Deletes all @example.com test accounts from Firebase Auth AND Firestore.
+ * Requires FIREBASE_SERVICE_ACCOUNT_KEY env var (JSON string from Firebase console).
+ * Secured by CRON_SECRET.
  */
+
+import * as adminPkg from "firebase-admin";
 
 const FIREBASE_API_KEY    = process.env.FIREBASE_API_KEY    || "";
 const FIREBASE_PROJECT_ID = "scoutme-10";
@@ -13,7 +12,19 @@ const PLATFORM_EMAIL      = process.env.PLATFORM_AGENT_EMAIL    || "";
 const PLATFORM_PASSWORD   = process.env.PLATFORM_AGENT_PASSWORD || "";
 const FIRESTORE_BASE      = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents`;
 
-async function getToken(): Promise<string> {
+// ── Firebase Admin init (for Auth deletion) ────────────────────────────────
+function getAdminApp(): adminPkg.app.App {
+  if (adminPkg.apps.length > 0) return adminPkg.apps[0]!;
+  const serviceAccountRaw = process.env.FIREBASE_SERVICE_ACCOUNT_KEY || "";
+  if (!serviceAccountRaw) throw new Error("FIREBASE_SERVICE_ACCOUNT_KEY not set");
+  const serviceAccount = JSON.parse(serviceAccountRaw);
+  return adminPkg.initializeApp({
+    credential: adminPkg.credential.cert(serviceAccount),
+  });
+}
+
+// ── REST helpers (for Firestore reads/deletes using platform agent token) ──
+async function getPlatformToken(): Promise<string> {
   const res = await fetch(
     `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY}`,
     {
@@ -27,45 +38,45 @@ async function getToken(): Promise<string> {
   return data.idToken;
 }
 
-async function listAllUsers(token: string): Promise<Array<{ id: string; email: string }>> {
+async function deleteFirestoreDoc(path: string, token: string): Promise<void> {
+  await fetch(
+    `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/${path}`,
+    { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }
+  );
+}
+
+async function listFirestoreUsers(token: string): Promise<Array<{ id: string; email: string }>> {
   const users: Array<{ id: string; email: string }> = [];
   let pageToken: string | undefined;
-
   do {
     const url = `${FIRESTORE_BASE}/users?pageSize=300${pageToken ? `&pageToken=${pageToken}` : ""}`;
     const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
     const data = await res.json();
-
     for (const doc of data.documents || []) {
       const email = doc.fields?.email?.stringValue || "";
       const id = doc.name.split("/").pop();
       if (email) users.push({ id, email });
     }
-
     pageToken = data.nextPageToken;
   } while (pageToken);
-
   return users;
 }
 
-async function deleteFirestoreDoc(path: string, token: string): Promise<void> {
-  await fetch(`https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/${path}`, {
-    method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` },
-  });
-}
-
-async function deleteAuthUser(localId: string, token: string): Promise<void> {
-  await fetch(
-    `https://identitytoolkit.googleapis.com/v1/accounts:delete?key=${FIREBASE_API_KEY}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      // Note: this only works for the currently signed-in user.
-      // For other users you need Admin SDK. We delete the Firestore doc instead.
-      body: JSON.stringify({ idToken: token }),
+async function listFirestorePosts(token: string): Promise<Array<{ id: string; userId: string }>> {
+  const posts: Array<{ id: string; userId: string }> = [];
+  let pageToken: string | undefined;
+  do {
+    const url = `${FIRESTORE_BASE}/posts?pageSize=300${pageToken ? `&pageToken=${pageToken}` : ""}`;
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    for (const doc of data.documents || []) {
+      const userId = doc.fields?.userId?.stringValue || "";
+      const id = doc.name.split("/").pop();
+      if (userId) posts.push({ id, userId });
     }
-  );
+    pageToken = data.nextPageToken;
+  } while (pageToken);
+  return posts;
 }
 
 export default async function handler(req: any, res: any) {
@@ -79,52 +90,71 @@ export default async function handler(req: any, res: any) {
     }
   }
 
+  const results = {
+    authDeleted: 0,
+    firestoreUsersDeleted: 0,
+    firestorePostsDeleted: 0,
+    errors: [] as string[],
+  };
+
   try {
-    const token = await getToken();
+    // ── 1. Delete from Firebase Auth via Admin SDK ─────────────────────────
+    const app = getAdminApp();
+    const auth = app.auth();
 
-    // List all users from Firestore
-    const allUsers = await listAllUsers(token);
-    const testUsers = allUsers.filter(u => u.email.endsWith("@example.com"));
+    // List all Auth users in batches of 1000
+    const testUids: string[] = [];
+    let nextPageToken: string | undefined;
+    do {
+      const listResult = await auth.listUsers(1000, nextPageToken);
+      for (const user of listResult.users) {
+        if (user.email?.endsWith("@example.com")) {
+          testUids.push(user.uid);
+        }
+      }
+      nextPageToken = listResult.pageToken;
+    } while (nextPageToken);
 
-    if (testUsers.length === 0) {
-      return res.status(200).json({ success: true, deleted: 0, message: "No test accounts found." });
+    // Delete in batches of 1000 (Auth API limit)
+    for (let i = 0; i < testUids.length; i += 1000) {
+      const batch = testUids.slice(i, i + 1000);
+      const deleteResult = await auth.deleteUsers(batch);
+      results.authDeleted += deleteResult.successCount;
+      if (deleteResult.errors.length > 0) {
+        results.errors.push(...deleteResult.errors.map(e => `Auth ${e.index}: ${e.error.message}`));
+      }
     }
+  } catch (err: any) {
+    results.errors.push(`Auth deletion failed: ${err.message}`);
+  }
 
-    // Delete Firestore user docs
-    const deleteResults = await Promise.allSettled(
-      testUsers.map(u => deleteFirestoreDoc(`users/${u.id}`, token))
-    );
-
-    // Also delete their posts
-    const postsRes = await fetch(
-      `${FIRESTORE_BASE}/posts?pageSize=300`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    const postsData = await postsRes.json();
+  try {
+    // ── 2. Delete Firestore user docs and posts via platform agent ─────────
+    const token = await getPlatformToken();
+    const allUsers = await listFirestoreUsers(token);
+    const testUsers = allUsers.filter(u => u.email.endsWith("@example.com"));
     const testUserIds = new Set(testUsers.map(u => u.id));
 
-    const testPosts = (postsData.documents || []).filter((doc: any) => {
-      const uid = doc.fields?.userId?.stringValue || "";
-      return testUserIds.has(uid);
-    });
-
-    await Promise.allSettled(
-      testPosts.map((doc: any) => {
-        const id = doc.name.split("/").pop();
-        return deleteFirestoreDoc(`posts/${id}`, token);
-      })
+    // Delete user docs
+    const userDeletes = await Promise.allSettled(
+      testUsers.map(u => deleteFirestoreDoc(`users/${u.id}`, token))
     );
+    results.firestoreUsersDeleted = userDeletes.filter(r => r.status === "fulfilled").length;
 
-    const succeeded = deleteResults.filter(r => r.status === "fulfilled").length;
-
-    return res.status(200).json({
-      success: true,
-      deleted: succeeded,
-      postsDeleted: testPosts.length,
-      message: `Deleted ${succeeded} test accounts and ${testPosts.length} associated posts.`,
-    });
+    // Delete posts belonging to test users
+    const allPosts = await listFirestorePosts(token);
+    const testPosts = allPosts.filter(p => testUserIds.has(p.userId));
+    const postDeletes = await Promise.allSettled(
+      testPosts.map(p => deleteFirestoreDoc(`posts/${p.id}`, token))
+    );
+    results.firestorePostsDeleted = postDeletes.filter(r => r.status === "fulfilled").length;
   } catch (err: any) {
-    console.error("[cleanup-test-accounts]", err);
-    return res.status(500).json({ error: err.message });
+    results.errors.push(`Firestore deletion failed: ${err.message}`);
   }
+
+  return res.status(200).json({
+    success: results.errors.length === 0,
+    ...results,
+    message: `Auth: ${results.authDeleted} accounts deleted. Firestore: ${results.firestoreUsersDeleted} user docs, ${results.firestorePostsDeleted} posts deleted.`,
+  });
 }
