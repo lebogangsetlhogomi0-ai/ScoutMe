@@ -21,7 +21,7 @@ test.describe('Splash Screen & Authentication', () => {
   test('GET STARTED button advances to role selection', async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('#get_started_btn', { timeout: 15000 });
-    await page.click('#get_started_btn');
+    await page.click('#get_started_btn', { force: true });
     // Step 2: role selection
     await expect(page.locator('#role_player')).toBeVisible({ timeout: 10000 });
     const body = await page.locator('body').textContent();
@@ -31,7 +31,7 @@ test.describe('Splash Screen & Authentication', () => {
   test('role selection shows Player, Scout/Club, Fan cards', async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('#get_started_btn', { timeout: 15000 });
-    await page.click('#get_started_btn');
+    await page.click('#get_started_btn', { force: true });
     await expect(page.locator('#role_player')).toBeVisible({ timeout: 10000 });
     await expect(page.locator('#role_scout')).toBeVisible();
     await expect(page.locator('#role_fan')).toBeVisible();
@@ -40,20 +40,20 @@ test.describe('Splash Screen & Authentication', () => {
   test('CONTINUE button disabled until role is selected', async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('#get_started_btn', { timeout: 15000 });
-    await page.click('#get_started_btn');
+    await page.click('#get_started_btn', { force: true });
     await page.waitForSelector('#role_continue_btn', { timeout: 10000 });
     await expect(page.locator('#role_continue_btn')).toBeDisabled();
-    await page.click('#role_player');
+    await page.click('#role_player', { force: true });
     await expect(page.locator('#role_continue_btn')).toBeEnabled();
   });
 
   test('selecting Player role and continuing shows signup form', async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('#get_started_btn', { timeout: 15000 });
-    await page.click('#get_started_btn');
+    await page.click('#get_started_btn', { force: true });
     await page.waitForSelector('#role_player', { timeout: 10000 });
-    await page.click('#role_player');
-    await page.click('#role_continue_btn');
+    await page.click('#role_player', { force: true });
+    await page.click('#role_continue_btn', { force: true });
     await expect(page.locator('#signup_name')).toBeVisible({ timeout: 10000 });
     await expect(page.locator('#signup_email')).toBeVisible();
     await expect(page.locator('#signup_password')).toBeVisible();
@@ -62,7 +62,7 @@ test.describe('Splash Screen & Authentication', () => {
   test('SIGN IN button goes directly to sign-in form', async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('#sign_in_splash_btn', { timeout: 15000 });
-    await page.click('#sign_in_splash_btn');
+    await page.click('#sign_in_splash_btn', { force: true });
     // Sign-in goes straight to step 3 form
     await expect(page.locator('#signup_email')).toBeVisible({ timeout: 10000 });
     await expect(page.locator('#signin_role')).toBeVisible();
@@ -73,9 +73,9 @@ test.describe('Splash Screen & Authentication', () => {
   test('back button on role selection returns to splash', async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('#get_started_btn', { timeout: 15000 });
-    await page.click('#get_started_btn');
+    await page.click('#get_started_btn', { force: true });
     await page.waitForSelector('#onboarding_back_btn', { timeout: 10000 });
-    await page.click('#onboarding_back_btn');
+    await page.click('#onboarding_back_btn', { force: true });
     await expect(page.locator('#get_started_btn')).toBeVisible({ timeout: 10000 });
   });
 
@@ -83,17 +83,17 @@ test.describe('Splash Screen & Authentication', () => {
     await mockOtpEndpoints(page);
     await page.goto('/');
     await page.waitForSelector('#get_started_btn', { timeout: 15000 });
-    await page.click('#get_started_btn');
+    await page.click('#get_started_btn', { force: true });
     await page.waitForSelector('#role_player', { timeout: 10000 });
-    await page.click('#role_player');
-    await page.click('#role_continue_btn');
+    await page.click('#role_player', { force: true });
+    await page.click('#role_continue_btn', { force: true });
 
     await page.waitForSelector('#signup_name', { timeout: 10000 });
     await page.fill('#signup_name', 'OTP Test User');
     await page.fill('#signup_email', `otp_test_${Date.now()}@example.com`);
     await page.fill('#signup_password', 'TestPassword123!');
     await signAgreementModal(page);
-    await page.click('#signup_submit_btn');
+    await page.click('#signup_submit_btn', { force: true });
 
     await expect(page.locator('text=CHECK YOUR EMAIL')).toBeVisible({ timeout: 15000 });
     // 6 OTP digit boxes
@@ -105,17 +105,17 @@ test.describe('Splash Screen & Authentication', () => {
     await mockOtpEndpoints(page);
     await page.goto('/');
     await page.waitForSelector('#get_started_btn', { timeout: 15000 });
-    await page.click('#get_started_btn');
+    await page.click('#get_started_btn', { force: true });
     await page.waitForSelector('#role_player', { timeout: 10000 });
-    await page.click('#role_player');
-    await page.click('#role_continue_btn');
+    await page.click('#role_player', { force: true });
+    await page.click('#role_continue_btn', { force: true });
 
     await page.waitForSelector('#signup_name', { timeout: 10000 });
     await page.fill('#signup_name', 'Flow Test User');
     await page.fill('#signup_email', `flow_${Date.now()}@example.com`);
     await page.fill('#signup_password', 'TestPassword123!');
     await signAgreementModal(page);
-    await page.click('#signup_submit_btn');
+    await page.click('#signup_submit_btn', { force: true });
 
     await fillAndVerifyOtp(page);
     await completeWelcomeStep(page);

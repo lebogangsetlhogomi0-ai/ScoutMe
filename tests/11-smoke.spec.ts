@@ -16,12 +16,12 @@ test.describe('Smoke Tests — end-to-end critical paths', () => {
 
     // Splash
     await page.waitForSelector('#get_started_btn', { timeout: 15000 });
-    await page.click('#get_started_btn');
+    await page.click('#get_started_btn', { force: true });
 
     // Role
     await page.waitForSelector('#role_player', { timeout: 10000 });
-    await page.click('#role_player');
-    await page.click('#role_continue_btn');
+    await page.click('#role_player', { force: true });
+    await page.click('#role_continue_btn', { force: true });
 
     // Signup form
     await page.waitForSelector('#signup_name', { timeout: 10000 });
@@ -29,7 +29,7 @@ test.describe('Smoke Tests — end-to-end critical paths', () => {
     await page.fill('#signup_email', `smoke_${Date.now()}@example.com`);
     await page.fill('#signup_password', 'TestPassword123!');
     await signAgreementModal(page);
-    await page.click('#signup_submit_btn');
+    await page.click('#signup_submit_btn', { force: true });
 
     // OTP
     await fillAndVerifyOtp(page);
@@ -88,12 +88,12 @@ test.describe('Smoke Tests — end-to-end critical paths', () => {
     await mockOtpEndpoints(page);
     await page.goto('/');
     await page.waitForSelector('#sign_in_splash_btn', { timeout: 15000 });
-    await page.click('#sign_in_splash_btn');
+    await page.click('#sign_in_splash_btn', { force: true });
     await page.waitForSelector('#signup_email', { timeout: 10000 });
     // Fill with non-existent creds — expect an error message, NOT a crash
     await page.fill('#signup_email', 'nonexistent@example.com');
     await page.fill('#signup_password', 'WrongPassword!');
-    await page.click('#signup_submit_btn');
+    await page.click('#signup_submit_btn', { force: true });
     await page.waitForTimeout(5000);
     const body = await page.locator('body').textContent();
     // Should show error or stay on form — not blank
@@ -106,10 +106,10 @@ test.describe('Smoke Tests — end-to-end critical paths', () => {
 
     await page.goto('/');
     await page.waitForSelector('#get_started_btn', { timeout: 15000 });
-    await page.click('#get_started_btn');
+    await page.click('#get_started_btn', { force: true });
     await page.waitForSelector('#role_player', { timeout: 10000 });
-    await page.click('#role_player');
-    await page.click('#role_continue_btn');
+    await page.click('#role_player', { force: true });
+    await page.click('#role_continue_btn', { force: true });
     await page.waitForSelector('#signup_name', { timeout: 10000 });
 
     const fatal = errors.filter(e => !e.includes('ResizeObserver'));

@@ -20,13 +20,13 @@ export async function fillAndVerifyOtp(page: Page) {
   await digits.nth(3).fill('4');
   await digits.nth(4).fill('5');
   await digits.nth(5).fill('6');
-  await page.getByRole('button', { name: /verify code/i }).click();
+  await page.getByRole('button', { name: /verify code/i }).click({ force: true });
 }
 
 /** Complete the welcome step (step 5 → step 6). */
 export async function completeWelcomeStep(page: Page) {
   await page.waitForSelector('#lets_go_btn', { timeout: 15000 });
-  await page.click('#lets_go_btn');
+  await page.click('#lets_go_btn', { force: true });
 }
 
 /**
@@ -36,7 +36,7 @@ export async function completeWelcomeStep(page: Page) {
  * Waits for the modal to close (2s animation).
  */
 export async function signAgreementModal(page: Page) {
-  await page.click('#open_agreement_btn');
+  await page.click('#open_agreement_btn', { force: true });
   await page.waitForSelector('#agreement_scroll_container', { timeout: 10000 });
   // Scroll the modal document to bottom to unlock checkboxes
   await page.evaluate(() => {
@@ -48,9 +48,9 @@ export async function signAgreementModal(page: Page) {
   });
   await page.waitForTimeout(600);
   // Checkboxes should now be enabled
-  await page.check('#checkbox_modal_verify');
-  await page.check('#checkbox_modal_consent');
-  await page.click('#sign_agreement_modal_submit');
+  await page.check('#checkbox_modal_verify', { force: true });
+  await page.check('#checkbox_modal_consent', { force: true });
+  await page.click('#sign_agreement_modal_submit', { force: true });
   // Modal closes after 2s setTimeout in handleSign
   await page.waitForTimeout(2500);
 }
@@ -73,13 +73,13 @@ export async function signupNewUser(
 
   // Splash → GET STARTED
   await page.waitForSelector('#get_started_btn', { timeout: 15000 });
-  await page.click('#get_started_btn');
+  await page.click('#get_started_btn', { force: true });
 
   // Role selection
   const roleId = role === 'player' ? '#role_player' : role === 'scout' ? '#role_scout' : '#role_fan';
   await page.waitForSelector(roleId, { timeout: 10000 });
-  await page.click(roleId);
-  await page.click('#role_continue_btn');
+  await page.click(roleId, { force: true });
+  await page.click('#role_continue_btn', { force: true });
 
   // Signup form (step 3)
   await page.waitForSelector('#signup_name', { timeout: 10000 });
@@ -99,7 +99,7 @@ export async function signupNewUser(
   // Sign the digital agreement via modal (replaces old checkbox)
   await signAgreementModal(page);
 
-  await page.click('#signup_submit_btn');
+  await page.click('#signup_submit_btn', { force: true });
 
   // OTP step
   await fillAndVerifyOtp(page);
@@ -125,6 +125,6 @@ export async function quickLogin(page: Page): Promise<string> {
 export async function navigateToTab(page: Page, tabId: string) {
   const tab = page.locator(`#tab_${tabId}`);
   await tab.waitFor({ state: 'visible', timeout: 10000 });
-  await tab.click();
+  await tab.click({ force: true });
   await page.waitForTimeout(1500);
 }

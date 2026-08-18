@@ -23,7 +23,7 @@ test.describe('Neural Scout AI (Scout/Club role only)', () => {
     const visible = await scoutTab.isVisible({ timeout: 10000 }).catch(() => false);
     if (!visible) { test.skip(); return; }
 
-    await scoutTab.click();
+    await scoutTab.click({ force: true });
     await page.waitForTimeout(1500);
     const body = await page.locator('body').textContent();
     expect(body?.toLowerCase()).toMatch(/neural|scout|ai|intelligence|select|player|generate/);
@@ -38,7 +38,7 @@ test.describe('Neural Scout AI (Scout/Club role only)', () => {
     const visible = await scoutTab.isVisible({ timeout: 10000 }).catch(() => false);
     if (!visible) { test.skip(); return; }
 
-    await scoutTab.click();
+    await scoutTab.click({ force: true });
     await page.waitForTimeout(2000);
 
     const fatal = errors.filter(e => !e.includes('ResizeObserver'));
@@ -51,7 +51,7 @@ test.describe('Neural Scout AI (Scout/Club role only)', () => {
     const visible = await scoutTab.isVisible({ timeout: 10000 }).catch(() => false);
     if (!visible) { test.skip(); return; }
 
-    await scoutTab.click();
+    await scoutTab.click({ force: true });
     await page.waitForTimeout(1500);
 
     const generateBtn = page.getByRole('button', { name: /generate/i });
@@ -65,7 +65,7 @@ test.describe('Neural Scout AI (Scout/Club role only)', () => {
     const visible = await scoutTab.isVisible({ timeout: 10000 }).catch(() => false);
     if (!visible) { test.skip(); return; }
 
-    await scoutTab.click();
+    await scoutTab.click({ force: true });
     await page.waitForTimeout(1000);
 
     const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);

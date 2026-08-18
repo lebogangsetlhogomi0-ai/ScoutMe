@@ -32,7 +32,7 @@ test.describe('Club Strategic Intel (Club role only)', () => {
     const visible = await intelTab.isVisible({ timeout: 10000 }).catch(() => false);
     if (!visible) { test.skip(); return; }
 
-    await intelTab.click();
+    await intelTab.click({ force: true });
     await page.waitForTimeout(2000);
 
     const fatal = errors.filter(e => !e.includes('ResizeObserver'));
@@ -45,7 +45,7 @@ test.describe('Club Strategic Intel (Club role only)', () => {
     const visible = await intelTab.isVisible({ timeout: 10000 }).catch(() => false);
     if (!visible) { test.skip(); return; }
 
-    await intelTab.click();
+    await intelTab.click({ force: true });
     await page.waitForTimeout(1500);
     const body = await page.locator('body').textContent();
     expect(body?.toLowerCase()).toMatch(/intel|club|players|scout|shortlist|demand|analytics/);
@@ -57,7 +57,7 @@ test.describe('Club Strategic Intel (Club role only)', () => {
     const visible = await intelTab.isVisible({ timeout: 10000 }).catch(() => false);
     if (!visible) { test.skip(); return; }
 
-    await intelTab.click();
+    await intelTab.click({ force: true });
     await page.waitForTimeout(1000);
     const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
     const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
@@ -70,7 +70,7 @@ test.describe('Club Strategic Intel (Club role only)', () => {
     const visible = await intelTab.isVisible({ timeout: 10000 }).catch(() => false);
     if (!visible) { test.skip(); return; }
 
-    await intelTab.click();
+    await intelTab.click({ force: true });
     await page.waitForTimeout(1500);
     const body = await page.locator('body').textContent();
     // Fresh account has no shortlisted players

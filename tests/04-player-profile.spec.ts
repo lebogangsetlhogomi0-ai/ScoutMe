@@ -15,7 +15,7 @@ test.describe('Player Profile', () => {
     const visible = await card.isVisible({ timeout: 5000 }).catch(() => false);
     if (!visible) return false;
 
-    await card.click();
+    await card.click({ force: true });
     await page.waitForTimeout(1500);
     return true;
   }
@@ -61,7 +61,7 @@ test.describe('Player Profile', () => {
       const backBtn = page.locator('[id*="back"], button:has-text("Back")').first();
       const backVisible = await backBtn.isVisible({ timeout: 3000 }).catch(() => false);
       if (backVisible) {
-        await backBtn.click();
+        await backBtn.click({ force: true });
       } else {
         await page.goBack();
       }

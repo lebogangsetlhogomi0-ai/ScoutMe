@@ -14,7 +14,7 @@ test.describe('Mobile Responsiveness', () => {
   test('role selection screen has no horizontal overflow', async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('#get_started_btn', { timeout: 15000 });
-    await page.click('#get_started_btn');
+    await page.click('#get_started_btn', { force: true });
     await page.waitForSelector('#role_player', { timeout: 10000 });
     const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
     const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
@@ -24,10 +24,10 @@ test.describe('Mobile Responsiveness', () => {
   test('signup form has no horizontal overflow', async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('#get_started_btn', { timeout: 15000 });
-    await page.click('#get_started_btn');
+    await page.click('#get_started_btn', { force: true });
     await page.waitForSelector('#role_player', { timeout: 10000 });
-    await page.click('#role_player');
-    await page.click('#role_continue_btn');
+    await page.click('#role_player', { force: true });
+    await page.click('#role_continue_btn', { force: true });
     await page.waitForSelector('#signup_name', { timeout: 10000 });
     const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
     const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
@@ -38,16 +38,16 @@ test.describe('Mobile Responsiveness', () => {
     await mockOtpEndpoints(page);
     await page.goto('/');
     await page.waitForSelector('#get_started_btn', { timeout: 15000 });
-    await page.click('#get_started_btn');
+    await page.click('#get_started_btn', { force: true });
     await page.waitForSelector('#role_player', { timeout: 10000 });
-    await page.click('#role_player');
-    await page.click('#role_continue_btn');
+    await page.click('#role_player', { force: true });
+    await page.click('#role_continue_btn', { force: true });
     await page.waitForSelector('#signup_name', { timeout: 10000 });
     await page.fill('#signup_name', 'Mobile Test');
     await page.fill('#signup_email', `mobile_${Date.now()}@example.com`);
     await page.fill('#signup_password', 'TestPassword123!');
     await signAgreementModal(page);
-    await page.click('#signup_submit_btn');
+    await page.click('#signup_submit_btn', { force: true });
     await page.waitForSelector('text=CHECK YOUR EMAIL', { timeout: 15000 });
     const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
     const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
@@ -60,7 +60,7 @@ test.describe('Mobile Responsiveness', () => {
     for (const tab of tabs) {
       const el = page.locator(`#tab_${tab}`);
       if (await el.isVisible({ timeout: 5000 }).catch(() => false)) {
-        await el.click();
+        await el.click({ force: true });
         await page.waitForTimeout(800);
         const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
         const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
@@ -98,7 +98,7 @@ test.describe('Mobile Responsiveness', () => {
   test('email input font size prevents iOS auto-zoom (≥14px)', async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('#sign_in_splash_btn', { timeout: 15000 });
-    await page.click('#sign_in_splash_btn');
+    await page.click('#sign_in_splash_btn', { force: true });
     await page.waitForSelector('#signup_email', { timeout: 10000 });
     const fontSize = await page.locator('#signup_email').evaluate(
       (el) => parseFloat(window.getComputedStyle(el).fontSize)

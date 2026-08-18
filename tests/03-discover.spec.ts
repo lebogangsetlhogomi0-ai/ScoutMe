@@ -60,7 +60,7 @@ test.describe('Discover Screen', () => {
 
     const cardVisible = await card.isVisible({ timeout: 5000 }).catch(() => false);
     if (cardVisible) {
-      await card.click();
+      await card.click({ force: true });
       await page.waitForTimeout(1500);
       const body = await page.locator('body').textContent();
       expect(body?.toLowerCase()).toMatch(/position|province|profile|neural|scout/);

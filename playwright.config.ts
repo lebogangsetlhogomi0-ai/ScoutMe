@@ -10,11 +10,18 @@ export default defineConfig({
   reporter: [['html', { open: 'never' }], ['list']],
   use: {
     baseURL: 'https://scoutme-mu.vercel.app',
-    trace: 'on-first-retry',
+    trace: 'off',
     screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    video: 'off',
     actionTimeout: 30000,
     navigationTimeout: 60000,
+    launchOptions: {
+      args: [
+        '--disable-smooth-scrolling',
+        '--disable-gpu',
+        '--no-sandbox',
+      ],
+    },
   },
   projects: [
     {

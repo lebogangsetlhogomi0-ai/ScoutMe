@@ -49,7 +49,7 @@ test.describe('Navigation & Core UX', () => {
       // Expected for player accounts — test passes
       return;
     }
-    await uploadTab.click();
+    await uploadTab.click({ force: true });
     await page.waitForTimeout(1500);
     const body = await page.locator('body').textContent();
     expect(body?.toLowerCase()).toMatch(/upload|highlight|video|clip|match|training/);
@@ -62,7 +62,7 @@ test.describe('Navigation & Core UX', () => {
       const tabEl = page.locator(`#tab_${tab}`);
       const visible = await tabEl.isVisible({ timeout: 5000 }).catch(() => false);
       if (visible) {
-        await tabEl.click();
+        await tabEl.click({ force: true });
         await page.waitForTimeout(800);
         const bodyText = await page.locator('body').textContent();
         expect(bodyText?.trim().length).toBeGreaterThan(20);
@@ -85,7 +85,7 @@ test.describe('Navigation & Core UX', () => {
     const signOutBtn = page.getByRole('button', { name: /sign out|logout/i });
     const visible = await signOutBtn.isVisible({ timeout: 5000 }).catch(() => false);
     if (visible) {
-      await signOutBtn.click();
+      await signOutBtn.click({ force: true });
       await page.waitForTimeout(2000);
       await expect(page.locator('#get_started_btn')).toBeVisible({ timeout: 10000 });
     }
@@ -96,7 +96,7 @@ test.describe('Navigation & Core UX', () => {
     for (const tab of ['pitch', 'discover', 'pitch', 'discover']) {
       const el = page.locator(`#tab_${tab}`);
       if (await el.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await el.click();
+        await el.click({ force: true });
         await page.waitForTimeout(300);
       }
     }

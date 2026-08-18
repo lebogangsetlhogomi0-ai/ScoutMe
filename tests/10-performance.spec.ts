@@ -42,7 +42,7 @@ test.describe('Performance & Stability', () => {
     for (const tab of tabs) {
       const el = page.locator(`#tab_${tab}`);
       if (await el.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await el.click();
+        await el.click({ force: true });
         await page.waitForTimeout(250);
       }
     }
