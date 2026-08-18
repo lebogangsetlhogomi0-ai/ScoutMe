@@ -902,7 +902,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const unsubscribeUsers = onSnapshot(collection(db, "users"), (snapshot) => {
       const liveUsers: UserProfile[] = [];
       snapshot.forEach(doc => {
-        liveUsers.push({ userId: doc.id, ...doc.data() } as UserProfile);
+        const data = doc.data() as UserProfile;
+        // Exclude E2E test accounts created by Playwright
+        const email = (data as any).email || "";
+        if (email.endsWith("@example.com")) return;
+        liveUsers.push({ userId: doc.id, ...data });
       });
       // Replace state entirely with Firestore data — never merge seed/local accounts into real data
       setUsers(liveUsers);
