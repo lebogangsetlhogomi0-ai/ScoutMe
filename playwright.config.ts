@@ -4,7 +4,7 @@ export default defineConfig({
   testDir: './tests',
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
-  retries: 1,
+  retries: 0,
   workers: 1,
   timeout: 180000,        // 3 min per test — signup flow alone takes ~70s
   reporter: [['html', { open: 'never' }], ['list']],

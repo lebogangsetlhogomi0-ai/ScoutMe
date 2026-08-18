@@ -50,7 +50,7 @@ export async function signAgreementModal(page: Page) {
   // Checkboxes should now be enabled
   await page.check('#checkbox_modal_verify', { force: true });
   await page.check('#checkbox_modal_consent', { force: true });
-  await page.click('#sign_agreement_modal_submit', { force: true });
+  await page.click('#sign_agreement_modal_submit', { force: true, noWaitAfter: true });
   // Modal closes after 2s setTimeout in handleSign
   await page.waitForTimeout(2500);
 }
@@ -108,7 +108,7 @@ export async function signupNewUser(
   await completeWelcomeStep(page);
 
   // Wait for the main app shell to appear
-  await page.waitForSelector('#tab_pitch, #tab_discover', { timeout: 20000 });
+  await page.waitForSelector('#tab_pitch', { timeout: 20000 });
 
   return email;
 }

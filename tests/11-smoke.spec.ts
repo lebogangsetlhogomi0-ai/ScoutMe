@@ -38,7 +38,7 @@ test.describe('Smoke Tests — end-to-end critical paths', () => {
     await completeWelcomeStep(page);
 
     // Inside app
-    await expect(page.locator('#tab_pitch, #tab_discover')).toBeVisible({ timeout: 20000 });
+    await expect(page.locator('#tab_pitch')).toBeVisible({ timeout: 20000 });
   });
 
   test('main nav tabs present after login', async ({ page }) => {
