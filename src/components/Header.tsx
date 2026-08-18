@@ -85,6 +85,7 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick
         {currentUser && (currentUser.role === "scout" || currentUser.role === "club") && (
           <div className="relative" ref={profileMenuRef}>
             <button
+              id="header_profile_btn"
               onClick={() => setShowProfileMenu(!showProfileMenu)}
               className="p-1.5 rounded-full text-[#5a8a6a] hover:text-[#00e56b] hover:bg-[#0a1a0f]/85 transition-all duration-300 focus:outline-none"
               title="Profile menu"
@@ -112,6 +113,7 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick
 
                 {isScoutOrClub && (
                   <button
+                    id="header_club_intel_btn"
                     onClick={() => { setShowProfileMenu(false); onClubIntelClick?.(); }}
                     className="w-full flex items-center justify-between px-4 py-3 bg-[#00e56b]/5 hover:bg-[#00e56b]/10 transition-colors duration-150 group border-l-2 border-[#00e56b]/60"
                   >
