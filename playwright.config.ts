@@ -6,14 +6,15 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: 1,
   workers: 1,
+  timeout: 180000,        // 3 min per test — signup flow alone takes ~70s
   reporter: [['html', { open: 'never' }], ['list']],
   use: {
     baseURL: 'https://scoutme-mu.vercel.app',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
-    actionTimeout: 20000,
-    navigationTimeout: 45000,
+    actionTimeout: 30000,
+    navigationTimeout: 60000,
   },
   projects: [
     {

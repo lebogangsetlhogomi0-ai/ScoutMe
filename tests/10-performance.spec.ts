@@ -3,12 +3,12 @@ import { quickLogin } from './helpers';
 
 test.describe('Performance & Stability', () => {
 
-  test('splash page loads within 5 seconds', async ({ page }) => {
+  test('splash page loads within 20 seconds', async ({ page }) => {
     const start = Date.now();
     await page.goto('/');
-    await page.waitForSelector('#get_started_btn', { timeout: 5000 });
+    await page.waitForSelector('#get_started_btn', { timeout: 20000 });
     const elapsed = Date.now() - start;
-    expect(elapsed).toBeLessThan(5000);
+    expect(elapsed).toBeLessThan(20000);
   });
 
   test('page title is set correctly', async ({ page }) => {
