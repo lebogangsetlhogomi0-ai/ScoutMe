@@ -43,13 +43,13 @@ async function fsUpsert(docId: string, data: Record<string, any>, token: string)
 
 // ── RSS feeds ──────────────────────────────────────────────────────────────
 const RSS_FEEDS = [
-  { url: "https://feeds.bbci.co.uk/sport/football/rss.xml",   category: "global",    source: "BBC Sport" },
-  { url: "https://www.kickoff.com/rss",                        category: "sa",        source: "Kickoff" },
-  { url: "https://www.theguardian.com/football/rss",           category: "global",    source: "The Guardian" },
-  { url: "https://www.espn.com/espn/rss/soccer/news",          category: "global",    source: "ESPN" },
-  { url: "https://www.skysports.com/rss/12040",                 category: "global",    source: "Sky Sports" },
-  { url: "https://talksport.com/feed/",                        category: "global",    source: "talkSPORT" },
-  { url: "https://www.90min.com/feed",                         category: "global",    source: "90min" },
+  { url: "https://feeds.bbci.co.uk/sport/football/rss.xml",   category: "premier-league", source: "BBC Sport" },
+  { url: "https://www.kickoff.com/rss",                        category: "sa",             source: "Kickoff" },
+  { url: "https://www.theguardian.com/football/rss",           category: "premier-league", source: "The Guardian" },
+  { url: "https://www.espn.com/espn/rss/soccer/news",          category: "premier-league", source: "ESPN" },
+  { url: "https://www.skysports.com/rss/12040",                category: "premier-league", source: "Sky Sports" },
+  { url: "https://talksport.com/feed/",                        category: "premier-league", source: "talkSPORT" },
+  { url: "https://www.90min.com/feed",                         category: "premier-league", source: "90min" },
 ];
 
 // ── XML parsing helpers ────────────────────────────────────────────────────
@@ -97,18 +97,104 @@ function parseItems(xml: string): Array<{ title: string; description: string; li
 }
 
 // ── Auto-categorise by keywords ────────────────────────────────────────────
-function categorize(title: string, defaultCat: string): string {
-  const t = title.toLowerCase();
-  if (t.includes("bafana") || t.includes("south africa national")) return "bafana";
-  if (t.includes("psl") || t.includes("premier soccer league") || t.includes("kaizer chiefs") || t.includes("orlando pirates") || t.includes("mamelodi sundowns")) return "psl";
-  if (t.includes("champions league") || t.includes(" ucl ") || t.includes("ucl:")) return "champions-league";
-  if (t.includes("premier league") || t.includes(" epl ")) return "premier-league";
-  if (t.includes("la liga") || t.includes("real madrid") || t.includes("barcelona")) return "laliga";
-  if (t.includes("afcon") || t.includes("africa cup")) return "afcon";
-  if (t.includes("world cup") || t.includes("fifa 2026") || t.includes("world cup 2026")) return "world-cup";
-  if (t.includes("transfer") || t.includes(" signs ") || t.includes(" joins ") || t.includes(" signed ") || t.includes("new deal")) return "transfers";
-  if (t.includes("abc motsepe") || t.includes("sab league") || t.includes("grassroots")) return "motsepe";
-  if (t.includes("south africa") || t.includes("soweto") || t.includes("limpopo") || t.includes("gauteng")) return "sa";
+function categorize(title: string, desc: string, defaultCat: string): string {
+  const t = (title + " " + desc).toLowerCase();
+
+  // SA / Bafana (check before PSL so national team takes priority)
+  if (t.includes("bafana") || t.includes("south africa national") || t.includes("safa ") || t.includes("south african football association")) return "bafana";
+
+  // PSL / SA club football
+  if (
+    t.includes("psl") || t.includes("premier soccer league") ||
+    t.includes("kaizer chiefs") || t.includes("orlando pirates") ||
+    t.includes("mamelodi sundowns") || t.includes("supersport united") ||
+    t.includes("cape town city") || t.includes("stellenbosch fc") ||
+    t.includes("amazulu") || t.includes("chippa united") ||
+    t.includes("sekhukhune") || t.includes("golden arrows") ||
+    t.includes("ts galaxy") || t.includes("moroka swallows") ||
+    t.includes("nedbank cup") || t.includes("mtn8") ||
+    t.includes("absa premiership") || t.includes("dstv premiership")
+  ) return "psl";
+
+  // AFCON / African football (before generic SA check)
+  if (
+    t.includes("afcon") || t.includes("africa cup") ||
+    t.includes("chan ") || t.includes("wafu") ||
+    t.includes("cosafa") || t.includes("caf ") ||
+    t.includes("nations cup")
+  ) return "afcon";
+
+  // World Cup
+  if (
+    t.includes("world cup") || t.includes("fifa 2026") ||
+    t.includes("2026 world cup") || t.includes("2030 world cup") ||
+    t.includes("world cup 2026") || t.includes("world cup qualifier") ||
+    t.includes("wc qualifier")
+  ) return "world-cup";
+
+  // Champions League (before Premier League / La Liga so UCL stories aren't misclassified)
+  if (
+    t.includes("champions league") || t.includes(" ucl ") ||
+    t.includes("ucl:") || t.includes("europa league") ||
+    t.includes("conference league") || t.includes("club world cup")
+  ) return "champions-league";
+
+  // La Liga
+  if (
+    t.includes("la liga") || t.includes("laliga") ||
+    t.includes("real madrid") || t.includes("barcelona") ||
+    t.includes("atletico madrid") || t.includes("atlético") ||
+    t.includes("sevilla") || t.includes("villarreal") ||
+    t.includes("athletic bilbao") || t.includes("real sociedad") ||
+    t.includes("valencia cf") || t.includes("osasuna") ||
+    t.includes("betis") || t.includes("celta vigo")
+  ) return "laliga";
+
+  // Premier League (English clubs)
+  if (
+    t.includes("premier league") || t.includes(" epl ") ||
+    t.includes("man city") || t.includes("manchester city") ||
+    t.includes("man united") || t.includes("manchester united") ||
+    t.includes("arsenal") || t.includes("chelsea") ||
+    t.includes("liverpool") || t.includes("tottenham") || t.includes("spurs") ||
+    t.includes("newcastle") || t.includes("aston villa") ||
+    t.includes("west ham") || t.includes("brighton") ||
+    t.includes("everton") || t.includes("fulham") ||
+    t.includes("brentford") || t.includes("wolves") ||
+    t.includes("wolverhampton") || t.includes("nottingham forest") ||
+    t.includes("crystal palace") || t.includes("bournemouth") ||
+    t.includes("leicester") || t.includes("southampton") ||
+    t.includes("ipswich") || t.includes("fa cup") || t.includes("carabao cup") ||
+    t.includes("league cup")
+  ) return "premier-league";
+
+  // Transfers (check after league-specific so a "signs for Man City" goes to transfers)
+  if (
+    t.includes("transfer") || t.includes(" signs ") || t.includes(" joins ") ||
+    t.includes(" signed ") || t.includes("new deal") || t.includes("loan deal") ||
+    t.includes("fee agreed") || t.includes("unveiled") || t.includes("on loan") ||
+    t.includes("contract extension") || t.includes("released by") ||
+    t.includes("free agent") || t.includes("bid accepted") ||
+    t.includes("medical") || t.includes("official: ") || t.includes("confirmed:")
+  ) return "transfers";
+
+  // ABC Motsepe / grassroots SA
+  if (
+    t.includes("abc motsepe") || t.includes("sab league") ||
+    t.includes("grassroots") || t.includes("nfdk") ||
+    t.includes("national first division") || t.includes("glad africa") ||
+    t.includes("abc league")
+  ) return "motsepe";
+
+  // Generic South Africa football
+  if (
+    t.includes("south africa") || t.includes("soweto") ||
+    t.includes("limpopo") || t.includes("gauteng") ||
+    t.includes("cape town") || t.includes("durban") ||
+    t.includes("johannesburg") || t.includes("pretoria") ||
+    t.includes("mzansi") || t.includes("sa football")
+  ) return "sa";
+
   return defaultCat;
 }
 
@@ -162,7 +248,7 @@ export default async function handler(req: any, res: any) {
           if (!item.title || !item.link) continue;
 
           const docId = createHash("md5").update(item.link).digest("hex");
-          const category = categorize(item.title, feed.category);
+          const category = categorize(item.title, item.description, feed.category);
           const publishedAt = item.pubDate ? parseDate(item.pubDate) : new Date().toISOString();
 
           await fsUpsert(docId, {
