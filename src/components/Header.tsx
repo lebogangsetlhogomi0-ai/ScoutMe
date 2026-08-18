@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 import { useToast } from "./Toast";
 import { formatSATimeAgo } from "../utils/saTime";
-import { Bell, Trophy, ShieldAlert, Award, User, BarChart2, Settings, LogOut, ChevronRight, CheckCheck } from "lucide-react";
+import { Bell, Trophy, ShieldAlert, Award, User, BarChart2, Settings, LogOut, ChevronRight, CheckCheck, ArrowLeft } from "lucide-react";
 
 interface HeaderProps {
   onNotificationClick?: () => void;
@@ -16,7 +16,6 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
-  const notifPanelRef = useRef<HTMLDivElement>(null);
 
   const isScoutOrClub = currentUser?.role === "scout" || currentUser?.role === "club";
 
@@ -25,9 +24,6 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick
     const handleClickOutside = (e: MouseEvent) => {
       if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
         setShowProfileMenu(false);
-      }
-      if (notifPanelRef.current && !notifPanelRef.current.contains(e.target as Node)) {
-        setShowNotifications(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -152,10 +148,10 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick
         )}
 
         {/* Notification Bell */}
-        <div className="relative" ref={notifPanelRef}>
+        <div className="relative">
           <button
             id="notification_bell"
-            onClick={() => setShowNotifications(!showNotifications)}
+            onClick={() => setShowNotifications(true)}
             className="p-1.5 rounded-full text-[#5a8a6a] hover:text-[#00e56b] hover:bg-[#0a1a0f]/85 transition-all duration-300 relative focus:outline-none"
           >
             <Bell className="w-5 h-5" />
@@ -170,75 +166,74 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick
               <span className="absolute top-1 right-1 w-2 h-2 bg-[#1a3825] rounded-full border border-[#050e08]" />
             )}
           </button>
+        </div>
 
-          {showNotifications && (
-            <div className="absolute right-0 mt-2 w-80 bg-[#0a1a0f] border border-[#1a3825] rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-3 duration-200">
-              {/* Header */}
-              <div className="px-4 py-2.5 bg-[#0f2318] flex items-center justify-between">
-                <span className="text-xs font-bold font-bebas tracking-wide uppercase text-[#00e56b]">
-                  Notifications
-                </span>
-                <div className="flex items-center space-x-2">
-                  {unreadNotificationsCount > 0 && (
-                    <span className="text-[9px] text-[#ff4444] bg-[#050e08] px-1.5 py-0.5 rounded font-black">
-                      {unreadNotificationsCount} UNREAD
-                    </span>
-                  )}
-                  {myNotifications.some(n => !n.read) && (
-                    <button
-                      onClick={() => markAllNotificationsRead()}
-                      className="flex items-center space-x-1 text-[9px] text-[#5a8a6a] hover:text-[#00e56b] transition"
-                      title="Mark all as read"
-                    >
-                      <CheckCheck className="w-3 h-3" />
-                      <span>All read</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* List */}
-              <div className="max-h-72 overflow-y-auto divide-y divide-[#1a3825]/50">
-                {myNotifications.length === 0 ? (
-                  <div className="p-6 text-center text-xs text-[#5a8a6a] italic">
-                    No notifications yet. Actions you take and receive will appear here.
-                  </div>
-                ) : (
-                  myNotifications.map(notif => (
-                    <button
-                      key={notif.notificationId}
-                      onClick={() => markNotificationRead(notif.notificationId)}
-                      className={`w-full text-left p-3.5 hover:bg-[#0f2318]/60 transition duration-150 ${
-                        notif.read ? "opacity-60" : "bg-[#0f2318]/30"
-                      }`}
-                    >
-                      <div className="flex items-start space-x-2.5">
-                        {!notif.read && (
-                          <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#00e56b] flex-shrink-0" />
-                        )}
-                        <div className={!notif.read ? "" : "ml-4"}>
-                          <p className="text-xs text-[#e8f5ee]/90 leading-relaxed">{notif.text}</p>
-                          <span className="block mt-1 text-[9px] text-[#5a8a6a]/80 font-mono">
-                            {formatTime(notif.createdAt)}
-                          </span>
-                        </div>
-                      </div>
-                    </button>
-                  ))
-                )}
-              </div>
-
-              <div className="p-2 text-center bg-[#050e08]">
+        {/* Full-screen notifications overlay */}
+        {showNotifications && (
+          <div className="fixed inset-0 z-50 bg-[#050e08] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 pt-safe-top pt-4 pb-3 border-b border-[#1a3825] bg-[#050e08]">
+              <div className="flex items-center gap-3">
                 <button
                   onClick={() => setShowNotifications(false)}
-                  className="text-[10px] font-bold text-[#5a8a6a] hover:text-[#00e56b] uppercase tracking-wider transition"
+                  className="p-2 -ml-2 text-[#5a8a6a] hover:text-white transition"
+                  aria-label="Back"
                 >
-                  Close
+                  <ArrowLeft className="w-5 h-5" />
                 </button>
+                <span className="text-sm font-bold text-[#e8f5ee]">Notifications</span>
+                {unreadNotificationsCount > 0 && (
+                  <span className="text-[9px] text-[#ff4444] bg-[#1a0f0f] px-1.5 py-0.5 rounded font-black">
+                    {unreadNotificationsCount} UNREAD
+                  </span>
+                )}
               </div>
+              {myNotifications.some(n => !n.read) && (
+                <button
+                  onClick={() => markAllNotificationsRead()}
+                  className="flex items-center gap-1 text-[10px] text-[#5a8a6a] hover:text-[#00e56b] transition"
+                >
+                  <CheckCheck className="w-3.5 h-3.5" />
+                  <span>Mark all read</span>
+                </button>
+              )}
             </div>
-          )}
-        </div>
+
+            {/* List */}
+            <div className="flex-1 overflow-y-auto divide-y divide-[#1a3825]/50">
+              {myNotifications.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-24 space-y-3">
+                  <Bell className="w-10 h-10 text-[#1a3825]" />
+                  <p className="text-sm text-[#5a8a6a] text-center px-8">
+                    No notifications yet. Activity and interactions will appear here.
+                  </p>
+                </div>
+              ) : (
+                myNotifications.map(notif => (
+                  <button
+                    key={notif.notificationId}
+                    onClick={() => markNotificationRead(notif.notificationId)}
+                    className={`w-full text-left px-4 py-4 hover:bg-[#0a1a0f] active:bg-[#0a1a0f] transition duration-150 ${
+                      notif.read ? "opacity-60" : "bg-[#0f2318]/20"
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      {!notif.read && (
+                        <span className="mt-1.5 w-2 h-2 rounded-full bg-[#00e56b] flex-shrink-0" />
+                      )}
+                      <div className={!notif.read ? "" : "ml-5"}>
+                        <p className="text-sm text-[#e8f5ee]/90 leading-relaxed">{notif.text}</p>
+                        <span className="block mt-1 text-[10px] text-[#5a8a6a]/80 font-mono">
+                          {formatTime(notif.createdAt)}
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </header>
 

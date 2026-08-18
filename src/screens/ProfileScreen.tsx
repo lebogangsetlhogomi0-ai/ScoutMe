@@ -2288,8 +2288,10 @@ export const ProfileScreen: React.FC<{ clubId?: string; onBack?: () => void }> =
 
       {followModal && (
         <FollowListModal
-          title={followModal === "followers" ? "Followers" : "Following"}
-          userIds={followModal === "followers" ? (clubUser.followers || []) : (clubUser.following || [])}
+          ownerName={clubUser.name}
+          followers={clubUser.followers || []}
+          following={clubUser.following || []}
+          initialTab={followModal}
           allUsers={users}
           onClose={() => setFollowModal(null)}
         />

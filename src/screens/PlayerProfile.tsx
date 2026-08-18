@@ -283,8 +283,10 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({ playerId, onBack, 
 
         {followModal && (
           <FollowListModal
-            title={followModal === "followers" ? `${player.name.split(" ")[0]}'s Followers` : `${player.name.split(" ")[0]} is Following`}
-            userIds={followModal === "followers" ? (player.followers || []) : (player.following || [])}
+            ownerName={player.name}
+            followers={player.followers || []}
+            following={player.following || []}
+            initialTab={followModal}
             allUsers={users}
             onClose={() => setFollowModal(null)}
             onViewProfile={(uid) => { setFollowModal(null); onBack(); }}
