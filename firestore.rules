@@ -9,11 +9,14 @@ service cloud.firestore {
       allow create: if request.auth != null && request.auth.uid == userId;
       allow update: if request.auth != null && (
         request.auth.uid == userId ||
-        // allow social field updates (following, followers, votes) by any auth user
+        request.auth.token.email == "lebosetlhogomi.scoutme@gmail.com" ||
         request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['followers', 'following', 'votes', 'views', 'fcmToken', 'notificationsEnabled'])
       );
-      allow delete: if request.auth != null && request.auth.uid == userId;
+      allow delete: if request.auth != null && (
+        request.auth.uid == userId ||
+        request.auth.token.email == "lebosetlhogomi.scoutme@gmail.com"
+      );
     }
 
     // Posts: any auth user can read; owner creates/deletes;
@@ -64,10 +67,10 @@ service cloud.firestore {
       allow delete: if request.auth != null;
     }
 
-    // News — readable by auth users; writes only from server (fetch-news function)
+    // News — readable by auth users; writes only from platform agent (fetch-news function)
     match /news/{newsId} {
       allow read: if request.auth != null;
-      allow write: if false;
+      allow write: if request.auth != null && request.auth.token.email == "lebosetlhogomi.scoutme@gmail.com";
     }
 
     // Club followers
