@@ -4,6 +4,24 @@ import { collection, query, orderBy, limit, onSnapshot, where } from "firebase/f
 import { RefreshCw, ExternalLink } from "lucide-react";
 import { formatSATimeAgo } from "../utils/saTime";
 
+// ── Client-side football filter (mirrors server-side blocklist) ───────────
+const NON_FOOTBALL_TERMS = [
+  "boxing","tyson fury","anthony joshua","canelo","ufc","mma","wwe",
+  "nba","lebron james","stephen curry","nfl","super bowl","american football",
+  "tennis","wimbledon","us open","australian open","french open","rafael nadal","novak djokovic",
+  "golf","masters ","pga tour","ryder cup","tiger woods",
+  "cricket","test match","ashes","ipl","t20 world cup",
+  "rugby union","six nations","rugby world cup","rugby league",
+  "formula 1","f1 ","grand prix","motogp",
+  "cycling","tour de france",
+  "swimming","athletics","olympics",
+  "snooker","darts","horse racing","cheltenham",
+];
+function isFootballArticle(title: string, desc: string): boolean {
+  const t = (title + " " + desc).toLowerCase();
+  return !NON_FOOTBALL_TERMS.some(term => t.includes(term));
+}
+
 // ── Category config ────────────────────────────────────────────────────────
 const CATEGORIES = [
   { id: "all",              label: "ALL",              color: "#00e56b" },
@@ -74,29 +92,27 @@ export const NewsFeed: React.FC = () => {
     setLoading(true);
     setError(null);
 
-    let q;
-    if (activeCategory === "all") {
-      q = query(collection(db, "news"), orderBy("publishedAt", "desc"), limit(30));
-    } else {
-      q = query(
-        collection(db, "news"),
-        where("category", "==", activeCategory),
-        orderBy("publishedAt", "desc"),
-        limit(30)
-      );
-    }
+    // Category queries use only a where() clause (no orderBy) to avoid
+    // requiring a composite index while it builds. We sort client-side.
+    const q = activeCategory === "all"
+      ? query(collection(db, "news"), orderBy("publishedAt", "desc"), limit(60))
+      : query(collection(db, "news"), where("category", "==", activeCategory), limit(60));
 
     const unsub = onSnapshot(q, (snap) => {
-      const items: NewsArticle[] = snap.docs.map(d => ({
-        newsId: d.id,
-        title: d.data().title || "",
-        description: d.data().description || "",
-        url: d.data().url || "",
-        imageUrl: d.data().imageUrl || "",
-        source: d.data().source || "",
-        category: d.data().category || "global",
-        publishedAt: d.data().publishedAt || "",
-      }));
+      const items: NewsArticle[] = snap.docs
+        .map(d => ({
+          newsId: d.id,
+          title: d.data().title || "",
+          description: d.data().description || "",
+          url: d.data().url || "",
+          imageUrl: d.data().imageUrl || "",
+          source: d.data().source || "",
+          category: d.data().category || "premier-league",
+          publishedAt: d.data().publishedAt || "",
+        }))
+        .filter(a => isFootballArticle(a.title, a.description))
+        .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
+        .slice(0, 30);
       setArticles(items);
       setLoading(false);
     }, () => {
