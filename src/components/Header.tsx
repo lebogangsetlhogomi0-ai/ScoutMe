@@ -222,19 +222,24 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick
                 /voted|commented|reposted|following|spotlighted/i.test(notif.text)
               );
 
+              const isWelcome = notif.type === "welcome" || /welcome to scoutme/i.test(notif.text);
+
               const handleTap = () => {
                 markNotificationRead(notif.notificationId);
                 if (isChallenge && onNavigate) {
                   setShowNotifications(false);
                   onNavigate("upload");
+                } else if (isWelcome && onNavigate) {
+                  setShowNotifications(false);
+                  onNavigate("pitch");
                 } else if (isSocialWithSender && onOpenProfile) {
                   setShowNotifications(false);
                   onOpenProfile(notif.senderId!);
                 }
               };
 
-              const actionHint = isChallenge ? "Open camera →" : isSocialWithSender ? "View profile →" : null;
-              const isActionable = isChallenge || isSocialWithSender;
+              const actionHint = isChallenge ? "Open camera →" : isWelcome ? "Go to feed →" : isSocialWithSender ? "View profile →" : null;
+              const isActionable = isChallenge || isWelcome || isSocialWithSender;
 
               return (
                 <button
