@@ -43,6 +43,38 @@ const CAT_COLORS: Record<string, string> = {
   "rugby": "#f5c518", "cricket": "#4da6ff",
 };
 
+// ── Correct mislabeled categories using article content ───────────────────
+const FOOTBALL_KEYWORDS = [
+  "premier league","manchester","liverpool","chelsea","arsenal","man united","man city",
+  "tottenham","champions league","ucl","la liga","transfer","bafana","kaizer chiefs",
+  "orlando pirates","sundowns","psl","afcon","world cup","football","footballer","goal",
+  "striker","midfielder","defender","goalkeeper","manager","winger","signing",
+];
+const CRICKET_KEYWORDS = ["cricket","wicket","batting","bowling","test match"," odi ","t20","ipl","cricket sa"];
+const RUGBY_KEYWORDS   = ["rugby","springboks","scrum","lineout","tries","bok","super rugby"];
+
+function correctCategory(article: NewsArticle): string {
+  const text = (article.title + " " + article.description).toLowerCase();
+  const isFootball = FOOTBALL_KEYWORDS.some(k => text.includes(k));
+  const isCricket  = CRICKET_KEYWORDS.some(k => text.includes(k));
+  const isRugby    = RUGBY_KEYWORDS.some(k => text.includes(k));
+
+  if (article.category === "cricket" && isFootball && !isCricket) {
+    if (text.includes("premier league") || text.includes("manchester") || text.includes("liverpool") ||
+        text.includes("chelsea") || text.includes("arsenal") || text.includes("man united") || text.includes("man city") ||
+        text.includes("tottenham")) return "premier-league";
+    if (text.includes("champions league") || text.includes("ucl")) return "champions-league";
+    if (text.includes("transfer")) return "transfers";
+    if (text.includes("psl") || text.includes("kaizer") || text.includes("pirates") || text.includes("sundowns")) return "psl";
+    if (text.includes("bafana") || text.includes("afcon")) return "bafana";
+    return "sa";
+  }
+  if (article.category === "rugby" && isFootball && !isRugby) return "sa";
+  if ((article.category === "premier-league" || article.category === "sa") && isCricket && !isFootball) return "cricket";
+  if ((article.category === "premier-league" || article.category === "sa") && isRugby && !isFootball) return "rugby";
+  return article.category;
+}
+
 // ── Non-football filter (only applied on football/all tabs) ────────────────
 const NON_SPORT_TERMS = [
   "celebrity","entertainment","politics","murder","crime","accident",
@@ -113,6 +145,7 @@ export const NewsFeed: React.FC = () => {
           category: d.data().category || "",
           publishedAt: d.data().publishedAt || "",
         }))
+        .map(a => ({ ...a, category: correctCategory(a) }))
         .filter(a => isCleanArticle(a.title, a.description))
         .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
         .slice(0, 40);
