@@ -92,15 +92,11 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
 
   // Music
-  const [audioType, setAudioType] = useState<"jamendo" | "upload" | "original" | "none">("original");
+  const [audioType, setAudioType] = useState<"upload" | "original" | "none">("original");
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [audioTitle, setAudioTitle] = useState("");
   const [audioArtist, setAudioArtist] = useState("");
-  const [jamendoQuery, setJamendoQuery] = useState("");
-  const [jamendoResults, setJamendoResults] = useState<{ id: string; name: string; artist_name: string; duration: number; audio: string; image: string }[]>([]);
-  const [jamendoLoading, setJamendoLoading] = useState(false);
-  const [jamendoError, setJamendoError] = useState<string | null>(null);
-  const [playingPreviewId, setPlayingPreviewId] = useState<string | null>(null);
+  const audioInputRef = useRef<HTMLInputElement>(null);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // Platform template state
@@ -133,43 +129,6 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
   const handleContentTypeSelect = (type: "highlight" | "match" | "training" | "full" | "photo") => {
     setContentType(type);
     setStep(2);
-  };
-
-  const searchJamendo = async (query: string) => {
-    if (!query.trim()) return;
-    const clientId = import.meta.env.VITE_JAMENDO_CLIENT_ID;
-    if (!clientId) {
-      setJamendoError("Jamendo not configured — add VITE_JAMENDO_CLIENT_ID to Vercel environment variables.");
-      return;
-    }
-    setJamendoLoading(true);
-    setJamendoError(null);
-    try {
-      const res = await fetch(
-        `https://api.jamendo.com/v3.0/tracks/?client_id=${clientId}&format=json&limit=10&namesearch=${encodeURIComponent(query)}&audioformat=mp31`
-      );
-      const data = await res.json();
-      setJamendoResults(data.results || []);
-      if ((data.results || []).length === 0) setJamendoError("No tracks found. Try a different search.");
-    } catch {
-      setJamendoError("Search failed. Check your connection.");
-    } finally {
-      setJamendoLoading(false);
-    }
-  };
-
-  const togglePreview = (trackId: string, audioSrc: string) => {
-    if (playingPreviewId === trackId) {
-      previewAudioRef.current?.pause();
-      setPlayingPreviewId(null);
-    } else {
-      if (previewAudioRef.current) previewAudioRef.current.pause();
-      const audio = new Audio(audioSrc);
-      audio.play().catch(() => {});
-      previewAudioRef.current = audio;
-      setPlayingPreviewId(trackId);
-      audio.onended = () => setPlayingPreviewId(null);
-    }
   };
 
   const validateAndSetFile = useCallback((file: File) => {
@@ -314,7 +273,7 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
             province: postData.province,
             taggedUsers: taggedUserIds.length > 0 ? taggedUserIds : undefined,
             audioType: audioType !== "original" ? audioType : undefined,
-            audioUrl: audioType === "jamendo" || audioType === "upload" ? (audioUrl || undefined) : undefined,
+            audioUrl: audioType === "upload" ? (audioUrl || undefined) : undefined,
             audioTitle: audioTitle || undefined,
             audioArtist: audioArtist || undefined,
             carouselUrls: urls,
@@ -364,7 +323,7 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
               province: postData.province,
               taggedUsers: taggedUserIds.length > 0 ? taggedUserIds : undefined,
               audioType: audioType !== "original" ? audioType : undefined,
-              audioUrl: audioType === "jamendo" || audioType === "upload" ? (audioUrl || undefined) : undefined,
+              audioUrl: audioType === "upload" ? (audioUrl || undefined) : undefined,
               audioTitle: audioTitle || undefined,
               audioArtist: audioArtist || undefined,
             });
@@ -936,15 +895,19 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
               <p className="text-xs text-[#5a8a6a] mt-0.5">Choose a soundtrack for your clip.</p>
             </div>
 
-            {/* 4 option cards */}
-            <div className="grid grid-cols-2 gap-3">
+            {/* 3 option cards */}
+            <div className="grid grid-cols-3 gap-3">
               {([
                 { key: "original", label: "Original Sound", icon: "🎙️", desc: "Keep video audio" },
                 { key: "none",     label: "No Sound",       icon: "🔇", desc: "Mute everything" },
-                { key: "jamendo",  label: "Music Library",  icon: "🎵", desc: "Browse free tracks" },
-                { key: "upload",   label: "Upload Audio",   icon: "📁", desc: "Your own file" },
+                { key: "upload",   label: "Music Library",  icon: "🎵", desc: "From your phone" },
               ] as const).map(opt => (
-                <button key={opt.key} type="button" onClick={() => { setAudioType(opt.key); setAudioUrl(null); setAudioTitle(""); setAudioArtist(""); setJamendoResults([]); setJamendoError(null); }}
+                <button key={opt.key} type="button"
+                  onClick={() => {
+                    setAudioType(opt.key);
+                    setAudioUrl(null); setAudioTitle(""); setAudioArtist("");
+                    if (opt.key === "upload") audioInputRef.current?.click();
+                  }}
                   className={`p-4 rounded-xl border-2 flex flex-col items-center text-center space-y-1.5 transition ${audioType === opt.key ? "bg-[#0f2318] border-[#00e56b]" : "bg-[#0a1a0f] border-[#1a3825]"}`}>
                   <span className="text-2xl">{opt.icon}</span>
                   <span className="text-[10px] font-bold text-white uppercase tracking-wide">{opt.label}</span>
@@ -953,84 +916,43 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
               ))}
             </div>
 
-            {/* Jamendo search panel */}
-            {audioType === "jamendo" && (
-              <div className="space-y-3 bg-[#050e08] border border-[#1a3825] rounded-xl p-4">
-                <form onSubmit={e => { e.preventDefault(); searchJamendo(jamendoQuery); }} className="flex gap-2">
-                  <input
-                    value={jamendoQuery}
-                    onChange={e => setJamendoQuery(e.target.value)}
-                    placeholder="Search artist, mood, genre…"
-                    className="flex-1 bg-[#0a1a0f] border border-[#1a3825] text-white text-xs px-3 py-2 rounded-lg outline-none focus:border-[#00e56b] placeholder-[#5a8a6a]"
-                  />
-                  <button type="submit" disabled={jamendoLoading}
-                    className="px-4 py-2 bg-[#00e56b] text-[#050e08] rounded-lg text-xs font-bold disabled:opacity-50">
-                    {jamendoLoading ? "…" : "Search"}
-                  </button>
-                </form>
-                {jamendoError && <p className="text-[10px] text-red-400">{jamendoError}</p>}
-                {audioUrl && audioTitle && (
-                  <div className="flex items-center space-x-2 px-3 py-2 bg-[#0f2318] border border-[#00e56b]/40 rounded-lg">
-                    <span className="text-[#00e56b] text-lg">🎵</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-white font-bold truncate">{audioTitle}</p>
-                      <p className="text-[10px] text-[#5a8a6a] truncate">{audioArtist}</p>
-                    </div>
-                    <button onClick={() => { setAudioUrl(null); setAudioTitle(""); setAudioArtist(""); }} className="text-[#5a8a6a] text-xs hover:text-red-400">✕</button>
-                  </div>
-                )}
-                <div className="space-y-2 max-h-52 overflow-y-auto no-scrollbar">
-                  {jamendoResults.map(track => {
-                    const selected = audioUrl === track.audio;
-                    const playing = playingPreviewId === track.id;
-                    return (
-                      <div key={track.id}
-                        className={`flex items-center space-x-3 p-2.5 rounded-lg border cursor-pointer transition ${selected ? "bg-[#0f2318] border-[#00e56b]/60" : "bg-[#0a1a0f] border-[#1a3825] hover:border-[#1a3825]/80"}`}
-                        onClick={() => { setAudioUrl(track.audio); setAudioTitle(track.name); setAudioArtist(track.artist_name); }}>
-                        <img src={track.image} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" alt="" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs text-white font-bold truncate">{track.name}</p>
-                          <p className="text-[10px] text-[#5a8a6a] truncate">{track.artist_name} · {Math.floor(track.duration / 60)}:{String(track.duration % 60).padStart(2, "0")}</p>
-                        </div>
-                        <button type="button" onClick={e => { e.stopPropagation(); togglePreview(track.id, track.audio); }}
-                          className="w-8 h-8 rounded-full bg-[#1a3825] flex items-center justify-center text-[#00e56b] text-xs flex-shrink-0 hover:bg-[#0f2318]">
-                          {playing ? "⏸" : "▶"}
-                        </button>
-                      </div>
-                    );
-                  })}
+            {/* Hidden audio input — slides up phone's native music picker */}
+            <input
+              ref={audioInputRef}
+              type="file"
+              accept="audio/*"
+              className="hidden"
+              onChange={e => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setAudioType("upload");
+                setAudioTitle(file.name.replace(/\.[^.]+$/, ""));
+                setAudioArtist("Your Music");
+                setAudioUrl(URL.createObjectURL(file));
+                e.target.value = "";
+              }}
+            />
+
+            {/* Selected track display */}
+            {audioType === "upload" && audioUrl && (
+              <div className="flex items-center space-x-2 px-3 py-2 bg-[#0f2318] border border-[#00e56b]/40 rounded-lg">
+                <span className="text-[#00e56b] text-lg">🎵</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-white font-bold truncate">{audioTitle}</p>
+                  <p className="text-[10px] text-[#5a8a6a]">From your music library</p>
                 </div>
+                <button onClick={() => audioInputRef.current?.click()} className="text-[10px] text-[#00e56b] font-bold mr-2">Change</button>
+                <button onClick={() => { setAudioUrl(null); setAudioTitle(""); setAudioType("original"); }} className="text-[#5a8a6a] text-xs hover:text-red-400">✕</button>
               </div>
             )}
 
-            {/* Upload own audio */}
-            {audioType === "upload" && (
-              <div className="space-y-3">
-                <label className="flex flex-col items-center justify-center gap-3 w-full h-32 rounded-xl border-2 border-dashed border-[#1a3825] bg-[#0a1a0f] cursor-pointer hover:border-[#00e56b]/50 transition-colors">
-                  <span className="text-3xl">📁</span>
-                  <span className="text-xs text-[#5a8a6a]">Tap to select audio file</span>
-                  <input type="file" accept="audio/mp3,audio/mpeg,audio/wav,audio/ogg,audio/aac,.mp3,.wav,.ogg,.aac"
-                    className="hidden"
-                    onChange={e => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      setAudioTitle(file.name.replace(/\.[^.]+$/, ""));
-                      setAudioArtist("Your Upload");
-                      const url = URL.createObjectURL(file);
-                      setAudioUrl(url);
-                    }} />
-                </label>
-                {audioUrl && (
-                  <div className="flex items-center space-x-2 px-3 py-2 bg-[#0f2318] border border-[#00e56b]/40 rounded-lg">
-                    <span className="text-[#00e56b] text-lg">🎵</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-white font-bold truncate">{audioTitle}</p>
-                      <p className="text-[10px] text-[#5a8a6a]">Your upload</p>
-                    </div>
-                    <button onClick={() => { setAudioUrl(null); setAudioTitle(""); }} className="text-[#5a8a6a] text-xs hover:text-red-400">✕</button>
-                  </div>
-                )}
-              </div>
+            {audioType === "upload" && !audioUrl && (
+              <button
+                onClick={() => audioInputRef.current?.click()}
+                className="w-full py-3 border-2 border-dashed border-[#1a3825] rounded-xl text-xs text-[#5a8a6a] hover:border-[#00e56b]/50 transition"
+              >
+                🎵 Tap to pick a song from your phone
+              </button>
             )}
 
             <button onClick={() => setStep(5)}
