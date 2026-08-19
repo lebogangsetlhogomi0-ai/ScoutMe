@@ -66,10 +66,11 @@ export const StoryCreator: React.FC<StoryCreatorProps> = ({ onClose }) => {
   const handlePhotoInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const isVideo = file.type.startsWith("video/");
     const reader = new FileReader();
     reader.onload = (ev) => {
       const url = ev.target?.result as string;
-      handleMediaPick("image", url);
+      handleMediaPick(isVideo ? "video" : "image", url);
     };
     reader.readAsDataURL(file);
     e.target.value = "";
@@ -246,14 +247,14 @@ export const StoryCreator: React.FC<StoryCreatorProps> = ({ onClose }) => {
                   className="p-4 bg-[#0a140d]/80 border border-[#1a3825] rounded-2xl text-[#00e56b] hover:bg-[#122b19]/40 hover:border-[#00e56b]/40 text-center transition"
                 >
                   <Plus className="w-5 h-5 mx-auto mb-1.5 text-white" />
-                  <span className="block text-xs font-bold">Add Photo</span>
+                  <span className="block text-xs font-bold">Add Photo / Video</span>
                   <span className="block text-[9px] text-[#5a8a6a] uppercase mt-0.5">From gallery</span>
                 </button>
               </div>
               <input
                 ref={photoInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/*,video/*"
                 className="hidden"
                 onChange={handlePhotoInputChange}
               />
