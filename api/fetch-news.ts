@@ -253,34 +253,46 @@ export default async function handler(req: any, res: any) {
     let articlesAdded = 0;
     const errors: string[] = [];
 
-    for (const feed of RSS_FEEDS) {
-      try {
+    // Fetch ALL feeds in parallel (3s timeout each) so we finish well inside
+    // Vercel Hobby's 10s function limit instead of timing out on later feeds.
+    const feedResults = await Promise.allSettled(
+      RSS_FEEDS.map(async (feed) => {
         const feedRes = await fetch(feed.url, {
           headers: {
-            "User-Agent": "ScoutMe/1.0 (football news aggregator; +https://scoutme-mu.vercel.app)",
-            "Accept": "application/rss+xml, application/xml, text/xml",
+            "User-Agent": "Mozilla/5.0 (compatible; ScoutMe/1.0; +https://scoutme-mu.vercel.app)",
+            "Accept": "application/rss+xml, application/xml, text/xml, */*",
           },
-          signal: AbortSignal.timeout(8000),
+          signal: AbortSignal.timeout(5000),
         });
-
-        if (!feedRes.ok) {
-          errors.push(`${feed.source}: HTTP ${feedRes.status}`);
-          continue;
-        }
-
+        if (!feedRes.ok) throw new Error(`HTTP ${feedRes.status}`);
         const xml = await feedRes.text();
-        const items = parseItems(xml);
+        return { feed, xml };
+      })
+    );
 
-        const perFeed = feed.category === "psl" || feed.category === "sa" ? 20 : 15;
-        for (const item of items.slice(0, perFeed)) {
-          if (!item.title || !item.link) continue;
-          if (!isFootball(item.title, item.description)) continue;
+    // Write articles for all feeds that responded
+    const perFeedNow = new Date().toISOString();
+    const writeOps: Promise<void>[] = [];
 
-          const docId = createHash("md5").update(item.link).digest("hex");
-          const category = categorize(item.title, item.description, feed.category);
-          const publishedAt = item.pubDate ? parseDate(item.pubDate) : new Date().toISOString();
+    for (const result of feedResults) {
+      if (result.status === "rejected") {
+        errors.push(`${result.reason}`);
+        continue;
+      }
+      const { feed, xml } = result.value;
+      const items = parseItems(xml);
+      const perFeed = feed.category === "psl" || feed.category === "sa" || feed.category === "bafana" || feed.category === "afcon" || feed.category === "ddc" ? 20 : 15;
 
-          await fsUpsert(docId, {
+      for (const item of items.slice(0, perFeed)) {
+        if (!item.title || !item.link) continue;
+        if (!isFootball(item.title, item.description)) continue;
+
+        const docId = createHash("md5").update(item.link).digest("hex");
+        const category = categorize(item.title, item.description, feed.category);
+        const publishedAt = item.pubDate ? parseDate(item.pubDate) : perFeedNow;
+
+        writeOps.push(
+          fsUpsert(docId, {
             newsId: docId,
             title: item.title,
             description: item.description || "",
@@ -289,15 +301,13 @@ export default async function handler(req: any, res: any) {
             source: feed.source,
             category,
             publishedAt,
-            fetchedAt: new Date().toISOString(),
-          }, token);
-
-          articlesAdded++;
-        }
-      } catch (feedErr: any) {
-        errors.push(`${feed.source}: ${feedErr.message}`);
+            fetchedAt: perFeedNow,
+          }, token).then(() => { articlesAdded++; })
+        );
       }
     }
+
+    await Promise.allSettled(writeOps);
 
     return res.status(200).json({
       success: true,

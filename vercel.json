@@ -2,6 +2,10 @@
   "buildCommand": "vite build",
   "outputDirectory": "dist",
   "framework": "vite",
+  "functions": {
+    "api/fetch-news.ts":         { "maxDuration": 60 },
+    "api/cleanup-test-accounts.ts": { "maxDuration": 60 }
+  },
   "crons": [
     { "path": "/api/agent-potw",        "schedule": "0 7 * * 1" },
     { "path": "/api/agent-challenge",   "schedule": "0 10 * * 5" },
