@@ -137,6 +137,7 @@ interface AppContextType {
   submitRating: (playerId: string, starRating: number) => Promise<void>;
   awardTalentBadge: (playerId: string, badgeName: string, emoji: string, borderColour: string) => Promise<void>;
   toggleFollow: (targetUserId: string) => void;
+  incrementProfileViews: (targetUserId: string) => void;
   // Club FC Specific Actions
   addClubPost: (postData: Partial<ClubPost>) => Promise<void>;
   toggleLikeClubPost: (postId: string) => Promise<void>;
@@ -1998,6 +1999,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const incrementProfileViews = (targetUserId: string) => {
+    if (!currentUser || currentUser.userId === targetUserId) return;
+    const rateLimitKey = `view_counted_${currentUser.userId}_${targetUserId}`;
+    const lastCounted = parseInt(localStorage.getItem(rateLimitKey) || "0");
+    if (Date.now() - lastCounted < 3600000) return; // once per hour per viewer
+    localStorage.setItem(rateLimitKey, String(Date.now()));
+    setUsers(prev => prev.map(u => {
+      if (u.userId !== targetUserId) return u;
+      return { ...u, views: (u.views || 0) + 1 };
+    }));
+    if (db) {
+      import("firebase/firestore").then(({ doc, updateDoc, increment }) => {
+        updateDoc(doc(db, "users", targetUserId), { views: increment(1) }).catch(() => {});
+      });
+    }
+  };
+
   // ── FCM Token Registration ─────────────────────────────────────────────────
   const requestNotificationPermission = async (userId: string) => {
     if (!db || typeof Notification === "undefined") return;
@@ -3211,6 +3229,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         submitRating,
         awardTalentBadge,
         toggleFollow,
+        incrementProfileViews,
         clubPosts,
         notifications,
         addSystemNotification,

@@ -19,7 +19,7 @@ interface PlayerProfileProps {
 }
 
 export const PlayerProfile: React.FC<PlayerProfileProps> = ({ playerId, onBack, onTriggerScoutAI, onOpenClubProfile }) => {
-  const { users, currentUser, posts, toggleShortlist, shortlist, toggleFollow, updateBio, addSystemNotification } = useApp();
+  const { users, currentUser, posts, toggleShortlist, shortlist, toggleFollow, updateBio, addSystemNotification, incrementProfileViews } = useApp();
   const { showToast } = useToast();
   const [showTrialConfirmModal, setShowTrialConfirmModal] = useState(false);
   const [selectedGridTab, setSelectedGridTab] = useState<string>("HIGHLIGHTS");
@@ -35,9 +35,10 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({ playerId, onBack, 
     return () => clearTimeout(timer);
   }, [playerId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Notify player when a scout or club views their profile
+  // Count profile view and notify player when a scout or club views
   useEffect(() => {
     if (!currentUser || !playerId || currentUser.userId === playerId) return;
+    incrementProfileViews(playerId);
     if (currentUser.role !== "scout" && currentUser.role !== "club") return;
     const rateLimitKey = `scout_view_${currentUser.userId}_${playerId}`;
     const lastSent = parseInt(localStorage.getItem(rateLimitKey) || "0");
