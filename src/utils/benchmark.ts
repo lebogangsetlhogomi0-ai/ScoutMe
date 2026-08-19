@@ -27,11 +27,11 @@ export interface RankingResult {
 
 export const calculateRanking = (playerScore: number, benchmarkScore: number): RankingResult => {
   const ratio = playerScore / benchmarkScore;
-  if (ratio >= 1.20) return { label: "ELITE", badge: "TOP 5% ◆", color: "#f5c518", percentile: "top 5%" };
-  if (ratio >= 1.10) return { label: "ELITE", badge: "TOP 10% ◆", color: "#f5c518", percentile: "top 10%" };
-  if (ratio >= 1.00) return { label: "ABOVE AVERAGE", badge: "TOP 25% ▲", color: "#00e56b", percentile: "top 25%" };
-  if (ratio >= 0.90) return { label: "AVERAGE", badge: "AVERAGE ●", color: "#4da6ff", percentile: "top 50%" };
-  return { label: "DEVELOPING", badge: "DEVELOPING ↗", color: "#5a8a6a", percentile: "bottom 50%" };
+  if (ratio >= 1.20) return { label: "ELITE", badge: "ELITE ◆", color: "#f5c518", percentile: "elite" };
+  if (ratio >= 1.10) return { label: "ELITE", badge: "ELITE ◆", color: "#f5c518", percentile: "elite" };
+  if (ratio >= 1.00) return { label: "ABOVE AVERAGE", badge: "ABOVE STANDARD ▲", color: "#00e56b", percentile: "above standard" };
+  if (ratio >= 0.90) return { label: "AVERAGE", badge: "AT STANDARD ●", color: "#4da6ff", percentile: "at standard" };
+  return { label: "DEVELOPING", badge: "DEVELOPING ↗", color: "#5a8a6a", percentile: "developing" };
 };
 
 export const getOverallRanking = (player: any, position: string): RankingResult | null => {

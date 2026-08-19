@@ -707,10 +707,9 @@ export const NeuralScoutAI: React.FC<NeuralScoutAIProps> = ({ initialPlayerId, o
                           OVERALL: You are in the {overallRank.percentile} of {benchmark.label}s on ScoutMe
                         </div>
                         <p className="text-[10.5px] text-[#5a8a6a] italic leading-tight text-center">
-                          "{overallRank.percentile === "top 5%" ? "Elite level. Professional clubs are actively searching for players at your level." :
-                            overallRank.percentile === "top 10%" ? "Outstanding prospect. You belong in a higher league." :
-                            overallRank.percentile === "top 25%" ? "Strong performer. Keep pushing — you are close to elite level." :
-                            overallRank.percentile === "top 50%" ? "On the right track. Consistent training will move you up the rankings." :
+                          "{overallRank.percentile === "elite" ? "Elite level. Professional clubs are actively searching for players at your level." :
+                            overallRank.percentile === "above standard" ? "Strong performer. Keep pushing — you are close to elite level." :
+                            overallRank.percentile === "at standard" ? "On the right track. Consistent training will move you up." :
                             "Every elite player started here. Your journey is just beginning."}"
                         </p>
                       </div>
