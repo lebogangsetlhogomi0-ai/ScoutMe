@@ -51,6 +51,14 @@ const RSS_FEEDS = [
   { url: "https://talksport.com/football/feed/",                    category: "premier-league", source: "talkSPORT Football" },
   { url: "https://www.90min.com/feed",                              category: "premier-league", source: "90min" },
   { url: "https://fabrizioromano.substack.com/feed",                category: "transfers",      source: "Fabrizio Romano" },
+  // Rugby
+  { url: "https://feeds.bbci.co.uk/sport/rugby-union/rss.xml",        category: "rugby",  source: "BBC Sport Rugby" },
+  { url: "https://www.skysports.com/rss/12433",                        category: "rugby",  source: "Sky Sports Rugby" },
+  { url: "https://www.espn.com/espn/rss/rugby/news",                   category: "rugby",  source: "ESPN Rugby" },
+  // Cricket
+  { url: "https://feeds.bbci.co.uk/sport/cricket/rss.xml",            category: "cricket", source: "BBC Sport Cricket" },
+  { url: "https://www.skysports.com/rss/12040",                        category: "cricket", source: "Sky Sports Cricket" },
+  { url: "https://www.espn.com/espn/rss/cricket/news",                 category: "cricket", source: "ESPN Cricket" },
   // South Africa (parallel fetch; failures skipped silently)
   { url: "https://feeds.bbci.co.uk/sport/africa/rss.xml",                        category: "sa",     source: "BBC Sport Africa" },
   { url: "https://www.cafonline.com/rss/news",                                    category: "bafana", source: "CAF Online" },
@@ -330,7 +338,10 @@ export default async function handler(req: any, res: any) {
 
       for (const item of items.slice(0, perFeed)) {
         if (!item.title || !item.link) continue;
-        if (!isFootball(item.title, item.description)) continue;
+        // Only run the football-only filter on football feeds
+        if (feed.category !== "rugby" && feed.category !== "cricket") {
+          if (!isFootball(item.title, item.description)) continue;
+        }
 
         const docId = createHash("md5").update(item.link).digest("hex");
         const category = categorize(item.title, item.description, feed.category);
