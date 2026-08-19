@@ -1076,12 +1076,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setNotifications([]);
       return;
     }
-    const perUser = localStorage.getItem(`scoutme_notifications_${currentUser.userId}`);
-    // Only reset if we're not already showing this user's notifications
-    // (check by seeing if any current notification belongs to this user)
-    const alreadyLoaded = notifications.some(n => n.recipientId === currentUser.userId);
-    if (!alreadyLoaded) {
-      setNotifications(perUser ? JSON.parse(perUser) : []);
+    const uid = currentUser.userId;
+    // Check per-user key first
+    const perUserRaw = localStorage.getItem(`scoutme_notifications_${uid}`);
+    if (perUserRaw) {
+      try {
+        const perUser: AppNotification[] = JSON.parse(perUserRaw);
+        // Merge with any in-memory ones already belonging to this user so we don't lose new ones
+        setNotifications(prev => {
+          const ids = new Set(perUser.map(n => n.notificationId));
+          const inMemoryNew = prev.filter(n => n.recipientId === uid && !ids.has(n.notificationId));
+          return [...perUser, ...inMemoryNew].sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+        });
+      } catch (_) {}
+      return;
+    }
+    // Migrate from old shared key — filter to only this user's notifications
+    const legacyRaw = localStorage.getItem("scoutme_notifications");
+    if (legacyRaw) {
+      try {
+        const legacy: AppNotification[] = JSON.parse(legacyRaw);
+        const mine = legacy.filter(n => n.recipientId === uid);
+        setNotifications(mine);
+        // Promote to per-user key
+        localStorage.setItem(`scoutme_notifications_${uid}`, JSON.stringify(mine));
+      } catch (_) {}
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser?.userId]);

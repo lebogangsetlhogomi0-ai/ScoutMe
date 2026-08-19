@@ -172,10 +172,7 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick
             <div className="flex items-center justify-between px-4 pt-safe-top pt-4 pb-3 border-b border-[#1a3825] bg-[#050e08]">
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => {
-                    markAllNotificationsRead();
-                    setShowNotifications(false);
-                  }}
+                  onClick={() => setShowNotifications(false)}
                   className="p-2 -ml-2 text-[#5a8a6a] hover:text-white transition"
                   aria-label="Back"
                 >
@@ -230,13 +227,6 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick
               )}
             </div>
 
-            {myNotifications.length > 0 && (
-              <div className="px-4 py-3 border-t border-[#1a3825] bg-[#050e08]">
-                <p className="text-[10px] text-[#5a8a6a]/60 text-center font-mono">
-                  Notifications are marked as read when you close this panel
-                </p>
-              </div>
-            )}
           </div>
         )}
       </div>
