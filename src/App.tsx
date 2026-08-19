@@ -52,7 +52,8 @@ const AppContent: React.FC = () => {
   const [focusedPlayerId, setFocusedPlayerId] = useState<string | null>(null);
   const [lastFeedTab, setLastFeedTab] = useState<string>("pitch");
 
-  // Keep refs so popstate handler always sees current values
+  // Tab history stack — tracks where the user came from so back goes to the right place
+  const tabHistoryRef = React.useRef<string[]>([]);
   const focusedPlayerIdRef = React.useRef(focusedPlayerId);
   const activeTabRef = React.useRef(activeTab);
   const lastFeedTabRef = React.useRef(lastFeedTab);
@@ -60,21 +61,34 @@ const AppContent: React.FC = () => {
   React.useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
   React.useEffect(() => { lastFeedTabRef.current = lastFeedTab; }, [lastFeedTab]);
 
-  // Push a history entry on every navigation so the back button has somewhere to go
+  // Wrap setActiveTab to track history
+  const navigateTab = React.useCallback((tab: string) => {
+    tabHistoryRef.current = [...tabHistoryRef.current, activeTabRef.current];
+    setActiveTab(tab);
+  }, []);
+
+  // Push a history entry on every navigation so back button has somewhere to go
   React.useEffect(() => {
     window.history.pushState({ scoutme: true }, "");
   }, [activeTab, focusedPlayerId]);
 
-  // Intercept hardware/browser back button — navigate within app instead of exiting
+  // Intercept hardware/browser back button — go to previous location, not always home
   React.useEffect(() => {
     const handlePopState = () => {
-      // Re-push state immediately so there's always an entry (prevents exit)
       window.history.pushState({ scoutme: true }, "");
       if (focusedPlayerIdRef.current) {
+        // Close player profile → return to where we opened it from
         setFocusedPlayerId(null);
         setActiveTab(lastFeedTabRef.current);
-      } else if (activeTabRef.current !== "pitch") {
-        setActiveTab("pitch");
+      } else {
+        // Return to previous tab, or stay on pitch if nothing in history
+        const history = tabHistoryRef.current;
+        if (history.length > 0) {
+          const prev = history[history.length - 1];
+          tabHistoryRef.current = history.slice(0, -1);
+          setActiveTab(prev);
+        }
+        // If already at root with no history, do nothing (stay in app)
       }
     };
     window.addEventListener("popstate", handlePopState);
@@ -263,7 +277,7 @@ const AppContent: React.FC = () => {
   // Trigger Scout AI — only for scout/club roles
   const handleTriggerScoutAI = (playerId: string) => {
     if (currentUser?.role !== "scout" && currentUser?.role !== "club") return;
-    setActiveTab("scout-ai");
+    navigateTab("scout-ai");
     setFocusedPlayerId(null);
   };
 
@@ -350,7 +364,7 @@ const AppContent: React.FC = () => {
       case "pitch":
         return (
           <DigitalPitchFeed
-            onSuggestUpload={() => setActiveTab("upload")}
+            onSuggestUpload={() => navigateTab("upload")}
             onOpenPlayerProfile={handleOpenProfile}
             onTriggerScoutAI={handleTriggerScoutAI}
           />
@@ -358,12 +372,12 @@ const AppContent: React.FC = () => {
       case "discover":
         return <Discover onOpenPlayerProfile={handleOpenProfile} />;
       case "scout-ai":
-        if (currentUser?.role !== "scout" && currentUser?.role !== "club") return <DigitalPitchFeed onSuggestUpload={() => setActiveTab("upload")} onOpenPlayerProfile={handleOpenProfile} onTriggerScoutAI={handleTriggerScoutAI} />;
+        if (currentUser?.role !== "scout" && currentUser?.role !== "club") return <DigitalPitchFeed onSuggestUpload={() => navigateTab("upload")} onOpenPlayerProfile={handleOpenProfile} onTriggerScoutAI={handleTriggerScoutAI} />;
         return <NeuralScoutAI initialPlayerId="" onOpenPlayerProfile={handleOpenProfile} />;
       case "club-intel":
         return <ClubStrategicIntel onOpenPlayerProfile={handleOpenProfile} />;
       case "upload":
-        return <UploadFlow onUploadSuccess={() => setActiveTab("pitch")} />;
+        return <UploadFlow onUploadSuccess={() => navigateTab("pitch")} />;
       case "news":
         return <NewsFeed />;
       case "profile":
@@ -383,7 +397,7 @@ const AppContent: React.FC = () => {
     <div className="flex flex-col min-h-screen bg-[#050e08] text-[#e8f5ee] relative select-none">
       
       {/* Navigation Top Header */}
-      <Header onProfileClick={() => setActiveTab("profile")} onClubIntelClick={() => setActiveTab("club-intel")} onNavigate={(tab) => setActiveTab(tab)} onOpenProfile={(userId) => { setFocusedPlayerId(null); setLastFeedTab(activeTab); setFocusedPlayerId(userId); }} />
+      <Header onProfileClick={() => navigateTab("profile")} onClubIntelClick={() => navigateTab("club-intel")} onNavigate={(tab) => navigateTab(tab)} onOpenProfile={(userId) => { setFocusedPlayerId(null); setLastFeedTab(activeTab); setFocusedPlayerId(userId); }} />
 
       {/* Primary Scroll View Body Container */}
       <main className="flex-1 flex flex-col pt-3 w-full max-w-xl mx-auto overflow-hidden">
@@ -393,7 +407,7 @@ const AppContent: React.FC = () => {
       {/* Navigation Bottom Tab Bar Bar */}
       <BottomNav activeTab={activeTab} setActiveTab={(tab) => {
         setFocusedPlayerId(null);
-        setActiveTab(tab);
+        navigateTab(tab);
       }} />
 
       {/* New version available banner */}
