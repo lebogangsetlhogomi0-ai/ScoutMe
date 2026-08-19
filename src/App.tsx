@@ -351,11 +351,12 @@ const AppContent: React.FC = () => {
         );
       }
       return (
-        <PlayerProfile 
-          playerId={focusedPlayerId} 
+        <PlayerProfile
+          playerId={focusedPlayerId}
           onBack={handleBackToFeed}
           onTriggerScoutAI={handleTriggerScoutAI}
           onOpenClubProfile={(clubId) => setFocusedPlayerId(clubId)}
+          onOpenPlayerProfile={(uid) => setFocusedPlayerId(uid)}
         />
       );
     }

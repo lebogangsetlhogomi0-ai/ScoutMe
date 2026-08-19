@@ -16,9 +16,10 @@ interface PlayerProfileProps {
   onBack: () => void;
   onTriggerScoutAI: (playerId: string) => void;
   onOpenClubProfile?: (clubId: string) => void;
+  onOpenPlayerProfile?: (playerId: string) => void;
 }
 
-export const PlayerProfile: React.FC<PlayerProfileProps> = ({ playerId, onBack, onTriggerScoutAI, onOpenClubProfile }) => {
+export const PlayerProfile: React.FC<PlayerProfileProps> = ({ playerId, onBack, onTriggerScoutAI, onOpenClubProfile, onOpenPlayerProfile }) => {
   const { users, currentUser, posts, toggleShortlist, shortlist, toggleFollow, updateBio, addSystemNotification, incrementProfileViews } = useApp();
   const { showToast } = useToast();
   const [showTrialConfirmModal, setShowTrialConfirmModal] = useState(false);
@@ -293,7 +294,14 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({ playerId, onBack, 
             initialTab={followModal}
             allUsers={users}
             onClose={() => setFollowModal(null)}
-            onViewProfile={(uid) => { setFollowModal(null); onBack(); }}
+            onViewProfile={(uid) => {
+              setFollowModal(null);
+              if (onOpenPlayerProfile) {
+                onOpenPlayerProfile(uid);
+              } else {
+                onBack();
+              }
+            }}
           />
         )}
 
