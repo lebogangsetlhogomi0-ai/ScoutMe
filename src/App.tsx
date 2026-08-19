@@ -88,6 +88,29 @@ const AppContent: React.FC = () => {
   const [selectedMail, setSelectedMail] = useState<any | null>(null);
   const [showMailModal, setShowMailModal] = useState<boolean>(false);
 
+  // Auto-update detection: poll for new deployments every 2 minutes
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  useEffect(() => {
+    // Grab the hash of the currently running JS bundle from the DOM
+    const currentScript = document.querySelector<HTMLScriptElement>('script[src*="/assets/index-"]');
+    const currentHash = currentScript?.src?.match(/index-([^.]+)\.js/)?.[1];
+    if (!currentHash) return;
+
+    const check = async () => {
+      try {
+        const res = await fetch("/", { cache: "no-store" });
+        const html = await res.text();
+        const match = html.match(/src="\/assets\/index-([^"]+)\.js"/);
+        if (match && match[1] !== currentHash) {
+          setUpdateAvailable(true);
+        }
+      } catch {}
+    };
+
+    const id = setInterval(check, 2 * 60 * 1000);
+    return () => clearInterval(id);
+  }, []);
+
   // PWA Install states
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallBanner, setShowInstallBanner] = useState<boolean>(() => {
@@ -343,6 +366,19 @@ const AppContent: React.FC = () => {
         setFocusedPlayerId(null);
         setActiveTab(tab);
       }} />
+
+      {/* New version available banner */}
+      {updateAvailable && (
+        <div className="fixed top-0 left-0 right-0 z-[300] bg-[#00e56b] text-[#050e08] px-4 py-3 flex items-center justify-between shadow-lg">
+          <span className="text-xs font-bold">⚡ New update available</span>
+          <button
+            onClick={() => window.location.reload()}
+            className="text-xs font-black uppercase tracking-wider bg-[#050e08] text-[#00e56b] px-3 py-1 rounded-full"
+          >
+            Refresh now
+          </button>
+        </div>
+      )}
 
       {/* PWA "Add to Home Screen" Install Banner */}
       {showInstallBanner && (
