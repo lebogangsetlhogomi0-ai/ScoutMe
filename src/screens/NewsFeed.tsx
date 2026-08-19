@@ -39,6 +39,9 @@ const NON_FOOTBALL_TERMS = [
   "cycling","tour de france",
   "swimming","athletics","olympics",
   "snooker","darts","horse racing","cheltenham",
+  "celebrity","entertainment","politics","murder","crime","accident",
+  "load shedding","eskom","anc ","da ","lottery","lotto",
+  "netball","hockey","basketball","volleyball",
 ];
 function isFootballArticle(title: string, desc: string): boolean {
   const t = (title + " " + desc).toLowerCase();
@@ -57,7 +60,6 @@ const CATEGORIES = [
   { id: "transfers",        label: "TRANSFERS",         color: "#f5c518" },
   { id: "afcon",            label: "AFCON",             color: "#f5c518" },
   { id: "world-cup",        label: "WORLD CUP",         color: "#f5c518" },
-  { id: "ddc",              label: "DDC",               color: "#00e56b" },
   { id: "scoutme",          label: "SCOUTME",           color: "#00e56b" },
 ] as const;
 

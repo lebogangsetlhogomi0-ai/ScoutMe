@@ -62,7 +62,6 @@ const RSS_FEEDS = [
   { url: "https://www.iol.co.za/sport/soccer/rss",                                category: "sa",     source: "IOL Soccer" },
   { url: "https://www.goal.com/en-za/feeds/news",                                 category: "psl",    source: "Goal ZA" },
   { url: "https://www.thesouthafrican.com/sport/football/feed/",                  category: "psl",    source: "The South African" },
-  { url: "https://www.thesouthafrican.com/feed/",                                 category: "sa",     source: "The South African" },
   { url: "https://www.dailysun.co.za/sport/feed/",                                category: "psl",    source: "Daily Sun Sport" },
   { url: "https://afri-foot.com/feed/",                                            category: "psl",    source: "Afri-Foot" },
   { url: "https://www.hollywoodbets.net/blog/feed/",                              category: "psl",    source: "HollywoodBets Blog" },
@@ -81,6 +80,10 @@ const NON_FOOTBALL_TERMS = [
   "swimming", "athletics", "olympics",
   "snooker", "darts",
   "horse racing", "cheltenham",
+  // SA tabloid non-football content
+  "celebrity", "entertainment", "politics", "murder", "crime", "accident",
+  "load shedding", "eskom", "anc ", "da ", "auction", "lottery", "lotto",
+  "netball", "hockey", "basketball", "volleyball",
 ];
 
 function isFootball(title: string, desc: string): boolean {
