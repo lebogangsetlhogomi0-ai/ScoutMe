@@ -88,7 +88,7 @@ export const OnboardingFlow: React.FC = () => {
   const sendOtp = async (targetEmail: string, targetName: string, targetRole: string) => {
     setOtpSending(true);
     try {
-      const res = await fetch("/api/send-otp", {
+      const res = await fetch("/api/otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: targetEmail, name: targetName, role: targetRole }),
@@ -142,10 +142,10 @@ export const OnboardingFlow: React.FC = () => {
     if (code.length < 6) return;
     setOtpLoading(true);
     try {
-      const res = await fetch("/api/verify-otp", {
+      const res = await fetch("/api/otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, otp: code }),
+        body: JSON.stringify({ action: "verify", email, otp: code }),
       });
       if (res.ok) {
         setOnboardingStep(5);

@@ -4,7 +4,8 @@
  * Secured by CRON_SECRET.
  */
 
-import * as adminPkg from "firebase-admin";
+import { initializeApp, getApps, cert, App } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
 
 const FIREBASE_API_KEY    = process.env.FIREBASE_API_KEY    || "";
 const FIREBASE_PROJECT_ID = "scoutme-10";
@@ -13,14 +14,12 @@ const PLATFORM_PASSWORD   = process.env.PLATFORM_AGENT_PASSWORD || "";
 const FIRESTORE_BASE      = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents`;
 
 // ── Firebase Admin init (for Auth deletion) ────────────────────────────────
-function getAdminApp(): adminPkg.app.App {
-  if (adminPkg.apps.length > 0) return adminPkg.apps[0]!;
+function getAdminApp(): App {
+  if (getApps().length > 0) return getApps()[0]!;
   const serviceAccountRaw = process.env.FIREBASE_SERVICE_ACCOUNT_KEY || "";
   if (!serviceAccountRaw) throw new Error("FIREBASE_SERVICE_ACCOUNT_KEY not set");
   const serviceAccount = JSON.parse(serviceAccountRaw);
-  return adminPkg.initializeApp({
-    credential: adminPkg.credential.cert(serviceAccount),
-  });
+  return initializeApp({ credential: cert(serviceAccount) });
 }
 
 // ── REST helpers (for Firestore reads/deletes using platform agent token) ──
@@ -100,7 +99,7 @@ export default async function handler(req: any, res: any) {
   try {
     // ── 1. Delete from Firebase Auth via Admin SDK ─────────────────────────
     const app = getAdminApp();
-    const auth = app.auth();
+    const auth = getAuth(app);
 
     // List all Auth users in batches of 1000
     const testUids: string[] = [];
