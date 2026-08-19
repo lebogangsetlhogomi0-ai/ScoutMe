@@ -994,13 +994,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const notifQuery = query(
       collection(db, "notifications"),
       where("recipientId", "==", currentUser.userId),
-      orderBy("createdAt", "desc"),
       limit(30)
     );
     const unsub = onSnapshot(notifQuery, (snapshot) => {
-      const live: AppNotification[] = snapshot.docs.map(d => ({
-        notificationId: d.id, ...d.data()
-      } as AppNotification));
+      const live: AppNotification[] = snapshot.docs
+        .map(d => ({ notificationId: d.id, ...d.data() } as AppNotification))
+        .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
       setNotifications(live);
     }, (err) => {
       console.warn("Notifications listener failed:", err);
