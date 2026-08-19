@@ -196,6 +196,11 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick
               )}
             </div>
 
+            {/* Debug strip — remove after fix */}
+            <div className="px-4 py-2 bg-[#1a0f0f] text-[9px] font-mono text-[#ff6666] border-b border-[#1a3825]">
+              total={notifications.length} | mine={myNotifications.length} | uid={currentUser?.userId?.slice(0,8)}
+            </div>
+
             {/* List */}
             <div className="flex-1 overflow-y-auto divide-y divide-[#1a3825]/50">
               {myNotifications.length === 0 ? (
