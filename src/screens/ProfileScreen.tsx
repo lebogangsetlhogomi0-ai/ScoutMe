@@ -15,7 +15,7 @@ import { ClubPost, UserProfile, CareerMoment, PostHighlight } from "../types";
 import { StoryViewer } from "../components/StoryViewer";
 import { useToast } from "../components/Toast";
 
-export const ProfileScreen: React.FC<{ clubId?: string; onBack?: () => void }> = ({ clubId, onBack }) => {
+export const ProfileScreen: React.FC<{ clubId?: string; onBack?: () => void; onOpenProfile?: (userId: string) => void }> = ({ clubId, onBack, onOpenProfile }) => {
   const {
     currentUser,
     signOutUser,
@@ -2307,6 +2307,7 @@ export const ProfileScreen: React.FC<{ clubId?: string; onBack?: () => void }> =
           initialTab={followModal}
           allUsers={users}
           onClose={() => setFollowModal(null)}
+          onViewProfile={onOpenProfile ? (userId) => { setFollowModal(null); onOpenProfile(userId); } : undefined}
         />
       )}
 

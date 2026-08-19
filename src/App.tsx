@@ -338,7 +338,7 @@ const AppContent: React.FC = () => {
       case "news":
         return <NewsFeed />;
       case "profile":
-        return <ProfileScreen />;
+        return <ProfileScreen onOpenProfile={handleOpenProfile} />;
       default:
         return (
           <DigitalPitchFeed
