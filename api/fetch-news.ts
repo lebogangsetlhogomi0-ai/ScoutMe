@@ -51,14 +51,16 @@ const RSS_FEEDS = [
   { url: "https://talksport.com/football/feed/",                    category: "premier-league", source: "talkSPORT Football" },
   { url: "https://www.90min.com/feed",                              category: "premier-league", source: "90min" },
   { url: "https://fabrizioromano.substack.com/feed",                category: "transfers",      source: "Fabrizio Romano" },
-  // South Africa — diverse sources (parallel fetch; failures are silently skipped)
-  { url: "https://feeds.bbci.co.uk/sport/africa/rss.xml",             category: "sa",     source: "BBC Sport Africa" },
-  { url: "https://www.timeslive.co.za/sport/soccer/feed/",            category: "psl",    source: "Times Live Soccer" },
-  { url: "https://www.kickoff.com/rss/news.xml",                      category: "psl",    source: "KickOff" },
-  { url: "https://www.soccer-laduma.co.za/feed/",                     category: "psl",    source: "Soccer Laduma" },
-  { url: "https://supersport.com/rss/news",                           category: "sa",     source: "SuperSport" },
-  { url: "https://www.iol.co.za/sport/soccer/rss",                    category: "sa",     source: "IOL Soccer" },
-  { url: "https://www.goal.com/feeds/en/news",                        category: "sa",     source: "Goal.com" },
+  // South Africa (parallel fetch; failures skipped silently)
+  { url: "https://feeds.bbci.co.uk/sport/africa/rss.xml",                                          category: "sa",     source: "BBC Sport Africa" },
+  { url: "https://www.cafonline.com/rss/news",                                                      category: "bafana", source: "CAF Online" },
+  { url: "https://www.sport24.co.za/Soccer/rss",                                                    category: "psl",    source: "Sport24 Soccer" },
+  { url: "https://supersport.com/rss/soccer",                                                       category: "psl",    source: "SuperSport Soccer" },
+  { url: "https://www.timeslive.co.za/sport/soccer/feed/",                                          category: "psl",    source: "Times Live Soccer" },
+  { url: "https://www.kickoff.com/rss/news.xml",                                                    category: "psl",    source: "KickOff" },
+  { url: "https://www.soccer-laduma.co.za/feed/",                                                   category: "psl",    source: "Soccer Laduma" },
+  { url: "https://www.iol.co.za/sport/soccer/rss",                                                  category: "sa",     source: "IOL Soccer" },
+  { url: "https://www.goal.com/en-za/feeds/news",                                                   category: "psl",    source: "Goal ZA" },
 ];
 
 // ── Non-football sport keywords to reject ─────────────────────────────────
@@ -130,11 +132,21 @@ function categorize(title: string, desc: string, defaultCat: string): string {
   const t = (title + " " + desc).toLowerCase();
 
   // SA / Bafana (check before PSL so national team takes priority)
-  if (t.includes("bafana") || t.includes("banyana") || t.includes("south africa national") || t.includes("safa ") || t.includes("south african football association")) return "bafana";
+  if (
+    t.includes("bafana") || t.includes("banyana") ||
+    t.includes("south africa national") || t.includes("safa ") ||
+    t.includes("south african football association") ||
+    t.includes("hugo broos") || t.includes("ronwen williams") ||
+    t.includes("evidence makgopa") || t.includes("percy tau") ||
+    t.includes("cosafa") || t.includes("afcon qualifier") ||
+    t.includes("world cup qualifier") && t.includes("south africa")
+  ) return "bafana";
 
   // PSL / SA club football
   if (
     t.includes("psl") || t.includes("premier soccer league") ||
+    t.includes("betway premiership") || t.includes("dstv premiership") ||
+    t.includes("soweto derby") || t.includes("nedbank cup") || t.includes("mtn8") ||
     t.includes("kaizer chiefs") || t.includes("orlando pirates") ||
     t.includes("mamelodi sundowns") || t.includes("supersport united") ||
     t.includes("cape town city") || t.includes("stellenbosch fc") ||
