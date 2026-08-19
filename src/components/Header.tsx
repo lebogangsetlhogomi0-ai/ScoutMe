@@ -54,6 +54,7 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick
 
 
   return (
+    <>
     <div className="sticky top-0 z-40">
     <header className="flex items-center justify-between px-4 py-3 bg-[#050e08]/90 backdrop-blur-md border-b border-[#1a3825]">
       {/* Brand logo */}
@@ -164,82 +165,73 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick
             )}
           </button>
         </div>
-
-        {/* Full-screen notifications overlay */}
-        {showNotifications && (
-          <div className="fixed inset-0 z-50 bg-[#050e08] flex flex-col">
-            {/* Header */}
-            <div className="flex items-center justify-between px-4 pt-safe-top pt-4 pb-3 border-b border-[#1a3825] bg-[#050e08]">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setShowNotifications(false)}
-                  className="p-2 -ml-2 text-[#5a8a6a] hover:text-white transition"
-                  aria-label="Back"
-                >
-                  <ArrowLeft className="w-5 h-5" />
-                </button>
-                <span className="text-sm font-bold text-[#e8f5ee]">Notifications</span>
-                {unreadNotificationsCount > 0 && (
-                  <span className="text-[9px] text-[#ff4444] bg-[#1a0f0f] px-1.5 py-0.5 rounded font-black">
-                    {unreadNotificationsCount} UNREAD
-                  </span>
-                )}
-              </div>
-              {myNotifications.some(n => !n.read) && (
-                <button
-                  onClick={() => markAllNotificationsRead()}
-                  className="flex items-center gap-1 text-[10px] text-[#5a8a6a] hover:text-[#00e56b] transition"
-                >
-                  <CheckCheck className="w-3.5 h-3.5" />
-                  <span>Mark all read</span>
-                </button>
-              )}
-            </div>
-
-            {/* Debug strip — remove after fix */}
-            <div className="px-4 py-2 bg-[#1a0f0f] text-[9px] font-mono text-[#ff6666] border-b border-[#1a3825] space-y-1">
-              <div>total={notifications.length} | mine={myNotifications.length} | uid={currentUser?.userId?.slice(0,8)}</div>
-              {myNotifications[0] && (
-                <div>first: read={String(myNotifications[0].read)} | text="{String(myNotifications[0].text).slice(0,40)}"</div>
-              )}
-            </div>
-
-            {/* List */}
-            <div className="flex-1 overflow-y-auto divide-y divide-[#1a3825]/50">
-              {myNotifications.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-24 space-y-3">
-                  <Bell className="w-10 h-10 text-[#1a3825]" />
-                  <p className="text-sm text-[#5a8a6a] text-center px-8">
-                    No notifications yet. Activity and interactions will appear here.
-                  </p>
-                </div>
-              ) : (
-                myNotifications.map(notif => (
-                  <div
-                    key={notif.notificationId}
-                    className={`w-full px-4 py-4 ${notif.read ? "opacity-70" : "bg-[#0f2318]/20"}`}
-                  >
-                    <div className="flex items-start gap-3">
-                      {!notif.read && (
-                        <span className="mt-1.5 w-2 h-2 rounded-full bg-[#00e56b] flex-shrink-0" />
-                      )}
-                      <div className={!notif.read ? "flex-1" : "flex-1 ml-5"}>
-                        <p className="text-sm text-[#e8f5ee]/90 leading-relaxed">{notif.text}</p>
-                        <span className="block mt-1 text-[10px] text-[#5a8a6a]/80 font-mono">
-                          {formatTime(notif.createdAt)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-
-          </div>
-        )}
       </div>
     </header>
-
     </div>
+
+    {/* Full-screen notifications overlay — MUST be outside backdrop-blur header */}
+    {showNotifications && (
+      <div className="fixed inset-0 z-[200] bg-[#050e08] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-[#1a3825] bg-[#050e08]">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowNotifications(false)}
+              className="p-2 -ml-2 text-[#5a8a6a] hover:text-white transition"
+              aria-label="Back"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <span className="text-sm font-bold text-[#e8f5ee]">Notifications</span>
+            {unreadNotificationsCount > 0 && (
+              <span className="text-[9px] text-[#ff4444] bg-[#1a0f0f] px-1.5 py-0.5 rounded font-black">
+                {unreadNotificationsCount} UNREAD
+              </span>
+            )}
+          </div>
+          {myNotifications.some(n => !n.read) && (
+            <button
+              onClick={() => markAllNotificationsRead()}
+              className="flex items-center gap-1 text-[10px] text-[#5a8a6a] hover:text-[#00e56b] transition"
+            >
+              <CheckCheck className="w-3.5 h-3.5" />
+              <span>Mark all read</span>
+            </button>
+          )}
+        </div>
+
+        {/* List */}
+        <div className="flex-1 overflow-y-auto divide-y divide-[#1a3825]/50">
+          {myNotifications.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-24 space-y-3">
+              <Bell className="w-10 h-10 text-[#1a3825]" />
+              <p className="text-sm text-[#5a8a6a] text-center px-8">
+                No notifications yet. Activity and interactions will appear here.
+              </p>
+            </div>
+          ) : (
+            myNotifications.map(notif => (
+              <div
+                key={notif.notificationId}
+                className={`w-full px-4 py-4 ${notif.read ? "opacity-70" : "bg-[#0f2318]/30"}`}
+              >
+                <div className="flex items-start gap-3">
+                  {!notif.read && (
+                    <span className="mt-1.5 w-2 h-2 rounded-full bg-[#00e56b] flex-shrink-0" />
+                  )}
+                  <div className="flex-1">
+                    <p className="text-sm text-[#e8f5ee] leading-relaxed">{notif.text}</p>
+                    <span className="block mt-1 text-[10px] text-[#5a8a6a]/80 font-mono">
+                      {formatTime(notif.createdAt)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    )}
+    </>
   );
 };
