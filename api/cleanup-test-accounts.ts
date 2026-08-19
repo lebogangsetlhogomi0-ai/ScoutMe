@@ -78,7 +78,10 @@ async function listFirestorePosts(token: string): Promise<Array<{ id: string; us
   return posts;
 }
 
+export const config = { maxDuration: 60 };
+
 export default async function handler(req: any, res: any) {
+  try {
   // Auth check
   const cronSecret = process.env.CRON_SECRET;
   if (cronSecret) {
@@ -87,6 +90,12 @@ export default async function handler(req: any, res: any) {
     if (provided !== cronSecret) {
       return res.status(401).json({ error: "Unauthorized" });
     }
+  }
+
+  // Guard: FIREBASE_SERVICE_ACCOUNT_KEY must be set
+  if (!process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+    console.error("cleanup-test-accounts: FIREBASE_SERVICE_ACCOUNT_KEY is not set in Vercel environment variables.");
+    return res.status(500).json({ error: "FIREBASE_SERVICE_ACCOUNT_KEY not configured. Add it in Vercel → Settings → Environment Variables." });
   }
 
   const results = {
@@ -156,4 +165,9 @@ export default async function handler(req: any, res: any) {
     ...results,
     message: `Auth: ${results.authDeleted} accounts deleted. Firestore: ${results.firestoreUsersDeleted} user docs, ${results.firestorePostsDeleted} posts deleted.`,
   });
+
+  } catch (err: any) {
+    console.error("cleanup-test-accounts top-level error:", err.message, err.stack);
+    return res.status(500).json({ error: err.message, stack: err.stack });
+  }
 }
