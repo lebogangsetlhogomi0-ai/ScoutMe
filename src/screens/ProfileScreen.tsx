@@ -1662,7 +1662,7 @@ export const ProfileScreen: React.FC<{ clubId?: string; onBack?: () => void }> =
                 <div className="divide-y divide-[#1a3825]/45 select-none font-sans text-xs">
                   <div className="py-2.5 flex justify-between items-center bg-[#050e08]/20 px-2 rounded">
                     <span className="text-[#5a8a6a]">Profile views peak</span>
-                    <span className="font-mono font-bold text-[#00e56b]">{(currentUser.views || 12400).toLocaleString()}</span>
+                    <span className="font-mono font-bold text-[#00e56b]">{(currentUser.views || 0).toLocaleString()}</span>
                   </div>
                   <div className="py-2.5 flex justify-between items-center bg-[#050e08]/20 px-2 rounded mt-1.5">
                     <span className="text-[#5a8a6a]">Scout Endorsements count</span>
@@ -1670,7 +1670,7 @@ export const ProfileScreen: React.FC<{ clubId?: string; onBack?: () => void }> =
                   </div>
                   <div className="py-2.5 flex justify-between items-center bg-[#050e08]/20 px-2 rounded mt-1.5">
                     <span className="text-[#5a8a6a]">Democratic Community Votes</span>
-                    <span className="font-mono font-bold text-[#4da6ff]">{(currentUser.votes || 847).toLocaleString()}</span>
+                    <span className="font-mono font-bold text-[#4da6ff]">{(currentUser.votes || 0).toLocaleString()}</span>
                   </div>
                   <div className="py-2.5 flex justify-between items-center bg-[#050e08]/20 px-2 rounded mt-1.5">
                     <span className="text-[#5a8a6a]">Analytical Intelligence Reports</span>
