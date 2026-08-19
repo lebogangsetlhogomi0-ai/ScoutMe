@@ -208,8 +208,9 @@ const AppContent: React.FC = () => {
     setFocusedPlayerId(playerId);
   };
 
-  // Trigger Scout AI for a client directly
+  // Trigger Scout AI — only for scout/club roles
   const handleTriggerScoutAI = (playerId: string) => {
+    if (currentUser?.role !== "scout" && currentUser?.role !== "club") return;
     setActiveTab("scout-ai");
     setFocusedPlayerId(null);
   };
@@ -305,6 +306,7 @@ const AppContent: React.FC = () => {
       case "discover":
         return <Discover onOpenPlayerProfile={handleOpenProfile} />;
       case "scout-ai":
+        if (currentUser?.role !== "scout" && currentUser?.role !== "club") return <DigitalPitchFeed onSuggestUpload={() => setActiveTab("upload")} onOpenPlayerProfile={handleOpenProfile} onTriggerScoutAI={handleTriggerScoutAI} />;
         return <NeuralScoutAI initialPlayerId="" onOpenPlayerProfile={handleOpenProfile} />;
       case "club-intel":
         return <ClubStrategicIntel onOpenPlayerProfile={handleOpenProfile} />;

@@ -750,8 +750,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [notifications, setNotifications] = useState<AppNotification[]>(() => {
-    const saved = localStorage.getItem("scoutme_notifications");
-    return saved ? JSON.parse(saved) : [];
+    // Try per-user key first (new format), fall back to shared key (old format) then clear it
+    const savedUser = localStorage.getItem("scoutme_current_user");
+    const userId = savedUser ? JSON.parse(savedUser).userId : null;
+    if (userId) {
+      const perUser = localStorage.getItem(`scoutme_notifications_${userId}`);
+      if (perUser) return JSON.parse(perUser);
+    }
+    // Migrate old shared key if present
+    const legacy = localStorage.getItem("scoutme_notifications");
+    return legacy ? JSON.parse(legacy) : [];
   });
 
   const [scoutReports, setScoutReports] = useState<ScoutReport[]>(() => {
@@ -1001,16 +1009,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         .map(d => ({ notificationId: d.id, ...d.data() } as AppNotification));
 
       setNotifications(prev => {
-        if (fromFirestore.length === 0) {
-          // Firestore returned nothing — merge: keep any local-only notifications
-          // (notifications that may have been created while offline or in demo mode)
-          return prev.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
-        }
-        // Firestore has data — merge with any local-only notifications not yet in Firestore
+        // Merge Firestore results with any local-only notifications (created offline or before Firestore write succeeded)
         const firestoreIds = new Set(fromFirestore.map(n => n.notificationId));
         const localOnly = prev.filter(n => !firestoreIds.has(n.notificationId));
-        return [...fromFirestore, ...localOnly]
+        const merged = [...fromFirestore, ...localOnly]
           .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+        return merged.length > 0 ? merged : prev;
       });
     }, (err) => {
       console.warn("Notifications listener failed:", err);
@@ -1059,9 +1063,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem("scoutme_club_posts", JSON.stringify(clubPosts));
   }, [clubPosts]);
 
+  // Save notifications to per-user key whenever they change
   useEffect(() => {
-    localStorage.setItem("scoutme_notifications", JSON.stringify(notifications));
-  }, [notifications]);
+    if (currentUser?.userId) {
+      localStorage.setItem(`scoutme_notifications_${currentUser.userId}`, JSON.stringify(notifications));
+    }
+  }, [notifications, currentUser?.userId]);
+
+  // When user changes (login/logout/switch), load the correct user's notifications
+  useEffect(() => {
+    if (!currentUser?.userId) {
+      setNotifications([]);
+      return;
+    }
+    const perUser = localStorage.getItem(`scoutme_notifications_${currentUser.userId}`);
+    // Only reset if we're not already showing this user's notifications
+    // (check by seeing if any current notification belongs to this user)
+    const alreadyLoaded = notifications.some(n => n.recipientId === currentUser.userId);
+    if (!alreadyLoaded) {
+      setNotifications(perUser ? JSON.parse(perUser) : []);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser?.userId]);
 
   useEffect(() => {
     localStorage.setItem("scoutme_pitch_reports", JSON.stringify(pitchReports));
@@ -2026,6 +2049,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     setNotifications(prev => [newNotif, ...prev]);
+
+    // Always persist to recipient's localStorage key immediately (survives Firestore failures)
+    try {
+      const key = `scoutme_notifications_${recipientId}`;
+      const existing: AppNotification[] = JSON.parse(localStorage.getItem(key) || "[]");
+      const merged = [newNotif, ...existing.filter(n => n.notificationId !== newNotif.notificationId)];
+      localStorage.setItem(key, JSON.stringify(merged));
+    } catch (_) {}
 
     if (db) {
       setDoc(doc(db, "notifications", newNotif.notificationId), newNotif).catch(err =>
