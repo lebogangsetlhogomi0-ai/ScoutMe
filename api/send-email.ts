@@ -93,7 +93,64 @@ function getWelcomeContent(role: string, name: string): { subject: string; html:
   };
 }
 
+// ── PayFast ITN handler ────────────────────────────────────────────────────
+// PayFast posts application/x-www-form-urlencoded to notify_url after payment
+async function handlePayFastITN(req: any, res: any) {
+  try {
+    const body: Record<string, string> = req.body || {};
+    const paymentStatus = body.payment_status;
+    const mPaymentId: string = body.m_payment_id || "";
+    const itemName: string = body.item_name || "";
+
+    console.log("[payfast-itn] status:", paymentStatus, "payment:", mPaymentId);
+
+    if (paymentStatus !== "COMPLETE") {
+      return res.status(200).send("OK"); // acknowledge but don't activate
+    }
+
+    // Derive plan from m_payment_id (format: scoutme_{userId}_{timestamp})
+    // and item_name (e.g. "ScoutMe Player Pro")
+    const userId = mPaymentId.split("_")[1] || "";
+    const tier = itemName.toLowerCase().includes("scout pro") ? "scout_pro" : "player_pro";
+
+    if (userId) {
+      const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || "";
+      const PLATFORM_EMAIL = process.env.PLATFORM_AGENT_EMAIL || "";
+      const PLATFORM_PASSWORD = process.env.PLATFORM_AGENT_PASSWORD || "";
+      // Get platform token
+      const authRes = await fetch(
+        `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY}`,
+        { method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: PLATFORM_EMAIL, password: PLATFORM_PASSWORD, returnSecureToken: true }) }
+      );
+      const authData = await authRes.json();
+      if (authData.idToken) {
+        // Update user subscription in Firestore
+        await fetch(
+          `https://firestore.googleapis.com/v1/projects/scoutme-10/databases/(default)/documents/users/${userId}?updateMask.fieldPaths=tier&updateMask.fieldPaths=tierActivatedAt`,
+          { method: "PATCH", headers: { Authorization: `Bearer ${authData.idToken}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ fields: {
+              tier: { stringValue: tier },
+              tierActivatedAt: { stringValue: new Date().toISOString() },
+            }}) }
+        );
+        console.log("[payfast-itn] activated", tier, "for user", userId);
+      }
+    }
+    return res.status(200).send("OK");
+  } catch (err: any) {
+    console.error("[payfast-itn] error:", err.message);
+    return res.status(200).send("OK"); // always 200 to PayFast
+  }
+}
+
 export default async function handler(req: any, res: any) {
+  // PayFast ITN arrives as form-encoded POST with payment_status field
+  const contentType = (req.headers["content-type"] || "").toLowerCase();
+  if (req.method === "POST" && contentType.includes("application/x-www-form-urlencoded") && req.body?.payment_status) {
+    return handlePayFastITN(req, res);
+  }
+
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   const gmailUser = process.env.GMAIL_USER;

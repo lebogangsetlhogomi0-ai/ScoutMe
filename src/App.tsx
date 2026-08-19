@@ -44,7 +44,7 @@ const localStorageShadow = {
 const localStorage = localStorageShadow;
 
 const AppContent: React.FC = () => {
-  const { currentUser, onboardingStep, users } = useApp();
+  const { currentUser, onboardingStep, users, upgradeUserTier } = useApp();
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<string>("pitch");
   
@@ -55,6 +55,23 @@ const AppContent: React.FC = () => {
   // Payments Modal states
   const [paymentsModalOpen, setPaymentsModalOpen] = useState(false);
   const [paymentsModalTier, setPaymentsModalTier] = useState<"player_pro" | "scout_pro" | undefined>(undefined);
+
+  // PayFast return URL handling
+  const paymentReturnPath = window.location.pathname;
+  const isPaymentSuccess = paymentReturnPath === "/payment-success";
+  const isPaymentCancel = paymentReturnPath === "/payment-cancel";
+
+  useEffect(() => {
+    if (isPaymentSuccess) {
+      // Activate the plan that was stored before redirect
+      const pendingPlan = sessionStorage.getItem("payfast_pending_plan") as "player_pro" | "scout_pro" | null;
+      if (pendingPlan && currentUser) {
+        upgradeUserTier(pendingPlan).catch(console.error);
+        sessionStorage.removeItem("payfast_pending_plan");
+        sessionStorage.removeItem("payfast_payment_id");
+      }
+    }
+  }, [isPaymentSuccess]);
 
   useEffect(() => {
     (window as any).triggerPaymentFlow = (tier?: "player_pro" | "scout_pro") => {
@@ -205,6 +222,52 @@ const AppContent: React.FC = () => {
   // Direct state fallback if onboarding not completed
   if (!currentUser || onboardingStep < 6) {
     return <OnboardingFlow />;
+  }
+
+  // PayFast return pages
+  if (isPaymentSuccess) {
+    return (
+      <div className="min-h-screen bg-[#050e08] flex items-center justify-center p-6">
+        <div className="bg-[#0a1a0f] border border-[#1a3825] rounded-2xl p-8 max-w-sm w-full text-center space-y-5">
+          <div className="w-16 h-16 bg-[#00e56b]/20 border border-[#00e56b] rounded-full flex items-center justify-center mx-auto">
+            <span className="text-3xl">✦</span>
+          </div>
+          <div className="space-y-2">
+            <span className="text-[10px] font-black tracking-widest text-[#f5c518] font-mono block">TRANSACTION COMPLETE 🎉</span>
+            <h2 className="text-2xl font-black font-bebas text-white tracking-wider uppercase">Payment Successful!</h2>
+            <p className="text-xs text-[#5a8a6a] leading-relaxed">
+              Your subscription is now active. Welcome to ScoutMe Pro — your premium features are unlocked.
+            </p>
+          </div>
+          <button
+            onClick={() => window.location.href = "/"}
+            className="w-full py-3.5 bg-[#00e56b] text-[#050e08] rounded-xl font-bold text-xs uppercase tracking-wider"
+          >
+            Start Using Pro Features ⚡
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isPaymentCancel) {
+    return (
+      <div className="min-h-screen bg-[#050e08] flex items-center justify-center p-6">
+        <div className="bg-[#0a1a0f] border border-[#1a3825] rounded-2xl p-8 max-w-sm w-full text-center space-y-5">
+          <div className="w-16 h-16 bg-[#1a0a0a] border border-[#ff4444]/40 rounded-full flex items-center justify-center mx-auto text-3xl">🔒</div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-black font-bebas text-white tracking-wider uppercase">Payment Cancelled</h2>
+            <p className="text-xs text-[#5a8a6a] leading-relaxed">No charge was made. Return to plans whenever you're ready.</p>
+          </div>
+          <button
+            onClick={() => window.location.href = "/"}
+            className="w-full py-3.5 bg-[#0a1a0f] border border-[#1a3825] text-[#5a8a6a] rounded-xl font-bold text-xs uppercase tracking-wider"
+          >
+            Return to App
+          </button>
+        </div>
+      </div>
+    );
   }
 
   // Active Screen Selector Grid logic
