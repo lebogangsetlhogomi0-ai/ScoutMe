@@ -355,6 +355,17 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({ playerId, onBack, 
                   </button>
                 );
               }
+              if (isOwnProfile && !player.club) {
+                return (
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="bg-[#0f2318] border border-[#1a3825] border-dashed px-2 py-0.5 rounded uppercase text-[#5a8a6a] hover:border-[#00e56b]/50 hover:text-[#00e56b] transition flex items-center gap-1"
+                  >
+                    <span>Unattached</span>
+                    <span className="text-[9px]">✏️</span>
+                  </button>
+                );
+              }
               return (
                 <span className="bg-[#0f2318] border border-[#1a3825] px-2 py-0.5 rounded uppercase">{player.club || "Unattached"}</span>
               );
