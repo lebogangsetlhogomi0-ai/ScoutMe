@@ -44,8 +44,19 @@ const localStorageShadow = {
 const localStorage = localStorageShadow;
 
 const AppContent: React.FC = () => {
-  const { currentUser, onboardingStep, users, upgradeUserTier } = useApp();
+  const { currentUser, onboardingStep, users, upgradeUserTier, unreadNotificationsCount } = useApp();
   const { showToast } = useToast();
+
+  // Update PWA app icon badge with unread notification count
+  React.useEffect(() => {
+    if ("setAppBadge" in navigator) {
+      if (unreadNotificationsCount > 0) {
+        (navigator as any).setAppBadge(unreadNotificationsCount).catch(() => {});
+      } else {
+        (navigator as any).clearAppBadge().catch(() => {});
+      }
+    }
+  }, [unreadNotificationsCount]);
   const [activeTab, setActiveTab] = useState<string>("pitch");
 
   // Custom deep navigation states
