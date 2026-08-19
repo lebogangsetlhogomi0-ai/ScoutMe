@@ -9,9 +9,10 @@ interface HeaderProps {
   onProfileClick?: () => void;
   onClubIntelClick?: () => void;
   onNavigate?: (tab: string) => void;
+  onOpenProfile?: (userId: string) => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick, onNavigate }) => {
+export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick, onNavigate, onOpenProfile }) => {
   const { currentUser, signOutUser, notifications, markNotificationRead, markAllNotificationsRead, unreadNotificationsCount } = useApp();
   const { showToast } = useToast();
   const [showNotifications, setShowNotifications] = useState(false);
@@ -212,22 +213,34 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick
             </div>
           ) : (
             myNotifications.map(notif => {
-              const isChallenge = /challenge|drill|🔥/i.test(notif.text);
-              const isFollow = /follow/i.test(notif.text);
-              const isVote = /vote|voted/i.test(notif.text);
-              const navigateTo = isChallenge ? "upload" : isFollow || isVote ? "discover" : null;
+              // Determine action based on notification type and text
+              const isChallenge = notif.type === "challenge" || /challenge|drill|🔥|⚡.*challenge/i.test(notif.text);
+              const hasSender = !!notif.senderId && notif.senderId !== "scoutme_official";
+              const isSocialWithSender = hasSender && (
+                notif.type === "vote" || notif.type === "comment" || notif.type === "repost" ||
+                notif.type === "follow" || notif.type === "spotlight" ||
+                /voted|commented|reposted|following|spotlighted/i.test(notif.text)
+              );
+
+              const handleTap = () => {
+                markNotificationRead(notif.notificationId);
+                if (isChallenge && onNavigate) {
+                  setShowNotifications(false);
+                  onNavigate("upload");
+                } else if (isSocialWithSender && onOpenProfile) {
+                  setShowNotifications(false);
+                  onOpenProfile(notif.senderId!);
+                }
+              };
+
+              const actionHint = isChallenge ? "Open camera →" : isSocialWithSender ? "View profile →" : null;
+              const isActionable = isChallenge || isSocialWithSender;
 
               return (
                 <button
                   key={notif.notificationId}
-                  onClick={() => {
-                    markNotificationRead(notif.notificationId);
-                    if (navigateTo && onNavigate) {
-                      setShowNotifications(false);
-                      onNavigate(navigateTo);
-                    }
-                  }}
-                  className={`w-full text-left px-4 py-4 transition-colors active:bg-[#0f2318]/60 ${notif.read ? "opacity-70" : "bg-[#0f2318]/30"} ${navigateTo ? "cursor-pointer" : "cursor-default"}`}
+                  onClick={handleTap}
+                  className={`w-full text-left px-4 py-4 transition-colors active:bg-[#0f2318]/60 ${notif.read ? "opacity-70" : "bg-[#0f2318]/30"} ${isActionable ? "cursor-pointer" : "cursor-default"}`}
                 >
                   <div className="flex items-start gap-3">
                     {!notif.read && (
@@ -237,8 +250,8 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick
                       <p className="text-sm text-[#e8f5ee] leading-relaxed">{notif.text}</p>
                       <div className="flex items-center justify-between mt-1">
                         <span className="text-[10px] text-[#5a8a6a]/80 font-mono">{formatTime(notif.createdAt)}</span>
-                        {navigateTo && (
-                          <span className="text-[9px] text-[#00e56b]/70 font-mono uppercase tracking-wider">Tap to view →</span>
+                        {actionHint && (
+                          <span className="text-[9px] text-[#00e56b]/70 font-mono uppercase tracking-wider">{actionHint}</span>
                         )}
                       </div>
                     </div>
