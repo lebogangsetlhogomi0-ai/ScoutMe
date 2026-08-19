@@ -434,8 +434,8 @@ export const UploadFlow: React.FC<UploadFlowProps> = ({ onUploadSuccess }) => {
     return Math.round(remaining / rate);
   })();
 
-  // Agreement gate — must sign before posting
-  if (!currentUser?.agreementSigned) {
+  // Agreement gate — must sign before posting (platform account is exempt)
+  if (!currentUser?.agreementSigned && currentUser?.role !== "platform") {
     return (
       <div className="flex-1 flex flex-col items-center justify-center px-6 text-center space-y-6 pb-24">
         <div className="w-16 h-16 rounded-full bg-[#1a0a0a] border border-[#ff4444]/40 flex items-center justify-center text-3xl">🔒</div>

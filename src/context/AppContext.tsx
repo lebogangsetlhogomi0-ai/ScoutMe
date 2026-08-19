@@ -1287,8 +1287,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (!existingDoc.name) defaults.name = officialProfile.name;
           if (!existingDoc.province) defaults.province = officialProfile.province;
           if (!existingDoc.bio) defaults.bio = officialProfile.bio;
-          if (!existingDoc.role) defaults.role = "platform";
-          if (!existingDoc.isOfficialAccount) defaults.isOfficialAccount = true;
+          defaults.role = "platform";
+          defaults.isOfficialAccount = true;
           if (Object.keys(defaults).length > 0) {
             setDoc(doc(db, "users", targetUserId), defaults, { merge: true }).catch(() => {});
           }
