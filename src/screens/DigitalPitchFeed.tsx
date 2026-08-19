@@ -34,6 +34,7 @@ export const DigitalPitchFeed: React.FC<DigitalPitchFeedProps> = ({
     shortlist,
     pitchReports,
     archivePost,
+    deletePostPermanently,
     challengePosts,
     challengeResponses,
     spotlightPosts,
@@ -459,6 +460,19 @@ export const DigitalPitchFeed: React.FC<DigitalPitchFeedProps> = ({
                             >
                               <Gem className="w-3 h-3 text-[#f5c518] fill-current" />
                               <span>Award Scout Stamp</span>
+                            </button>
+                          )}
+                          {post.userId === currentUser?.userId && (
+                            <button
+                              onClick={() => {
+                                if (window.confirm("Delete this post? This cannot be undone.")) {
+                                  deletePostPermanently(post.postId);
+                                }
+                                setActiveMenuPostId(null);
+                              }}
+                              className="w-full text-left px-4 py-2 text-xs text-[#ff4444] hover:bg-[#1a0f0f] flex items-center space-x-2"
+                            >
+                              <span>Delete Post</span>
                             </button>
                           )}
                         </div>
