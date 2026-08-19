@@ -8,9 +8,10 @@ interface HeaderProps {
   onNotificationClick?: () => void;
   onProfileClick?: () => void;
   onClubIntelClick?: () => void;
+  onNavigate?: (tab: string) => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick }) => {
+export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick, onNavigate }) => {
   const { currentUser, signOutUser, notifications, markNotificationRead, markAllNotificationsRead, unreadNotificationsCount } = useApp();
   const { showToast } = useToast();
   const [showNotifications, setShowNotifications] = useState(false);
@@ -210,24 +211,41 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick
               </p>
             </div>
           ) : (
-            myNotifications.map(notif => (
-              <div
-                key={notif.notificationId}
-                className={`w-full px-4 py-4 ${notif.read ? "opacity-70" : "bg-[#0f2318]/30"}`}
-              >
-                <div className="flex items-start gap-3">
-                  {!notif.read && (
-                    <span className="mt-1.5 w-2 h-2 rounded-full bg-[#00e56b] flex-shrink-0" />
-                  )}
-                  <div className="flex-1">
-                    <p className="text-sm text-[#e8f5ee] leading-relaxed">{notif.text}</p>
-                    <span className="block mt-1 text-[10px] text-[#5a8a6a]/80 font-mono">
-                      {formatTime(notif.createdAt)}
-                    </span>
+            myNotifications.map(notif => {
+              const isChallenge = /challenge|drill|🔥/i.test(notif.text);
+              const isFollow = /follow/i.test(notif.text);
+              const isVote = /vote|voted/i.test(notif.text);
+              const navigateTo = isChallenge ? "pitch" : isFollow || isVote ? "discover" : null;
+
+              return (
+                <button
+                  key={notif.notificationId}
+                  onClick={() => {
+                    markNotificationRead(notif.notificationId);
+                    if (navigateTo && onNavigate) {
+                      setShowNotifications(false);
+                      onNavigate(navigateTo);
+                    }
+                  }}
+                  className={`w-full text-left px-4 py-4 transition-colors active:bg-[#0f2318]/60 ${notif.read ? "opacity-70" : "bg-[#0f2318]/30"} ${navigateTo ? "cursor-pointer" : "cursor-default"}`}
+                >
+                  <div className="flex items-start gap-3">
+                    {!notif.read && (
+                      <span className="mt-1.5 w-2 h-2 rounded-full bg-[#00e56b] flex-shrink-0" />
+                    )}
+                    <div className="flex-1">
+                      <p className="text-sm text-[#e8f5ee] leading-relaxed">{notif.text}</p>
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="text-[10px] text-[#5a8a6a]/80 font-mono">{formatTime(notif.createdAt)}</span>
+                        {navigateTo && (
+                          <span className="text-[9px] text-[#00e56b]/70 font-mono uppercase tracking-wider">Tap to view →</span>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))
+                </button>
+              );
+            })
           )}
         </div>
       </div>
