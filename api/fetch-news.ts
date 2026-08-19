@@ -239,6 +239,29 @@ function categorize(title: string, desc: string, defaultCat: string): string {
   return defaultCat;
 }
 
+// ── Guardian API search (free "test" key — no registration needed) ─────────
+const GUARDIAN_SEARCHES = [
+  { q: "PSL \"Premier Soccer League\" OR \"Kaizer Chiefs\" OR \"Orlando Pirates\" OR \"Mamelodi Sundowns\" OR \"Betway Premiership\"", category: "psl",    source: "The Guardian" },
+  { q: "\"Bafana Bafana\" OR \"Banyana Banyana\" OR \"Hugo Broos\" OR \"Percy Tau\" OR \"South Africa football national\"",           category: "bafana", source: "The Guardian" },
+  { q: "\"Diski Challenge\" OR \"National First Division\" football \"South Africa\"",                                                  category: "ddc",    source: "The Guardian" },
+  { q: "AFCON OR \"Africa Cup of Nations\" OR CAF football 2024 2025",                                                                 category: "afcon",  source: "The Guardian" },
+];
+
+async function fetchGuardian(search: typeof GUARDIAN_SEARCHES[0]): Promise<Array<{ title: string; url: string; publishedAt: string; imageUrl: string; category: string }>> {
+  const url = `https://content.guardianapis.com/search?q=${encodeURIComponent(search.q)}&section=football&show-fields=thumbnail&page-size=20&order-by=newest&api-key=test`;
+  const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+  if (!res.ok) throw new Error(`Guardian HTTP ${res.status}`);
+  const data = await res.json();
+  return (data?.response?.results || []).map((r: any) => ({
+    title: r.webTitle || "",
+    url: r.webUrl || "",
+    publishedAt: r.webPublicationDate || new Date().toISOString(),
+    imageUrl: r.fields?.thumbnail || "",
+    category: search.category,
+    source: search.source,
+  }));
+}
+
 // ── Safe date parser ───────────────────────────────────────────────────────
 function parseDate(dateStr: string): string {
   try {
@@ -315,6 +338,30 @@ export default async function handler(req: any, res: any) {
             source: feed.source,
             category,
             publishedAt,
+            fetchedAt: perFeedNow,
+          }, token).then(() => { articlesAdded++; })
+        );
+      }
+    }
+
+    // Also fetch Guardian API results for SA-specific categories
+    const guardianResults = await Promise.allSettled(GUARDIAN_SEARCHES.map(fetchGuardian));
+    for (const result of guardianResults) {
+      if (result.status === "rejected") { errors.push(`Guardian: ${result.reason}`); continue; }
+      for (const item of result.value) {
+        if (!item.title || !item.url) continue;
+        const docId = createHash("md5").update(item.url).digest("hex");
+        const category = categorize(item.title, "", item.category);
+        writeOps.push(
+          fsUpsert(docId, {
+            newsId: docId,
+            title: item.title,
+            description: "",
+            url: item.url,
+            imageUrl: item.imageUrl,
+            source: item.source,
+            category,
+            publishedAt: item.publishedAt,
             fetchedAt: perFeedNow,
           }, token).then(() => { articlesAdded++; })
         );
