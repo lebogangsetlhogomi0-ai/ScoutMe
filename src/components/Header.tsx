@@ -172,7 +172,10 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick
             <div className="flex items-center justify-between px-4 pt-safe-top pt-4 pb-3 border-b border-[#1a3825] bg-[#050e08]">
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => setShowNotifications(false)}
+                  onClick={() => {
+                    markAllNotificationsRead();
+                    setShowNotifications(false);
+                  }}
                   className="p-2 -ml-2 text-[#5a8a6a] hover:text-white transition"
                   aria-label="Back"
                 >
@@ -207,28 +210,33 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick
                 </div>
               ) : (
                 myNotifications.map(notif => (
-                  <button
+                  <div
                     key={notif.notificationId}
-                    onClick={() => markNotificationRead(notif.notificationId)}
-                    className={`w-full text-left px-4 py-4 hover:bg-[#0a1a0f] active:bg-[#0a1a0f] transition duration-150 ${
-                      notif.read ? "opacity-60" : "bg-[#0f2318]/20"
-                    }`}
+                    className={`w-full px-4 py-4 ${notif.read ? "opacity-70" : "bg-[#0f2318]/20"}`}
                   >
                     <div className="flex items-start gap-3">
                       {!notif.read && (
                         <span className="mt-1.5 w-2 h-2 rounded-full bg-[#00e56b] flex-shrink-0" />
                       )}
-                      <div className={!notif.read ? "" : "ml-5"}>
+                      <div className={!notif.read ? "flex-1" : "flex-1 ml-5"}>
                         <p className="text-sm text-[#e8f5ee]/90 leading-relaxed">{notif.text}</p>
                         <span className="block mt-1 text-[10px] text-[#5a8a6a]/80 font-mono">
                           {formatTime(notif.createdAt)}
                         </span>
                       </div>
                     </div>
-                  </button>
+                  </div>
                 ))
               )}
             </div>
+
+            {myNotifications.length > 0 && (
+              <div className="px-4 py-3 border-t border-[#1a3825] bg-[#050e08]">
+                <p className="text-[10px] text-[#5a8a6a]/60 text-center font-mono">
+                  Notifications are marked as read when you close this panel
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>
