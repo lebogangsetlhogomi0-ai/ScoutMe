@@ -59,19 +59,23 @@ function correctCategory(article: NewsArticle): string {
   const isCricket  = CRICKET_KEYWORDS.some(k => text.includes(k));
   const isRugby    = RUGBY_KEYWORDS.some(k => text.includes(k));
 
-  if (article.category === "cricket" && isFootball && !isCricket) {
-    if (text.includes("premier league") || text.includes("manchester") || text.includes("liverpool") ||
-        text.includes("chelsea") || text.includes("arsenal") || text.includes("man united") || text.includes("man city") ||
-        text.includes("tottenham")) return "premier-league";
+  // Article is tagged cricket/rugby but content is clearly football
+  if ((article.category === "cricket" || article.category === "rugby") && isFootball && !isCricket && !isRugby) {
     if (text.includes("champions league") || text.includes("ucl")) return "champions-league";
+    if (text.includes("la liga") || text.includes("laliga") || text.includes("real madrid") || text.includes("barcelona") || text.includes("atletico")) return "laliga";
+    if (text.includes("psl") || text.includes("kaizer") || text.includes("pirates") || text.includes("sundowns") || text.includes("mamelodi")) return "psl";
+    if (text.includes("bafana") || text.includes("afcon") || text.includes("safa")) return "bafana";
+    if (text.includes("world cup")) return "world-cup";
     if (text.includes("transfer")) return "transfers";
-    if (text.includes("psl") || text.includes("kaizer") || text.includes("pirates") || text.includes("sundowns")) return "psl";
-    if (text.includes("bafana") || text.includes("afcon")) return "bafana";
-    return "sa";
+    // European/English football — default to premier-league not "sa"
+    return "premier-league";
   }
-  if (article.category === "rugby" && isFootball && !isRugby) return "sa";
-  if ((article.category === "premier-league" || article.category === "sa") && isCricket && !isFootball) return "cricket";
-  if ((article.category === "premier-league" || article.category === "sa") && isRugby && !isFootball) return "rugby";
+
+  // Article is tagged football but content is clearly a different sport
+  if (!isCricket && !isRugby) return article.category; // already correct
+  if (isCricket && !isFootball && (article.category === "premier-league" || article.category === "sa")) return "cricket";
+  if (isRugby && !isFootball && (article.category === "premier-league" || article.category === "sa")) return "rugby";
+
   return article.category;
 }
 
@@ -109,7 +113,7 @@ const SkeletonCard: React.FC = () => (
 );
 
 export const NewsFeed: React.FC = () => {
-  const [activeSport, setActiveSport] = useState<SportFilter>("football");
+  const [activeSport, setActiveSport] = useState<SportFilter>("all");
   const [search, setSearch] = useState("");
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [scoutmePosts, setScoutmePosts] = useState<ScoutMePost[]>([]);
