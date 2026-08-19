@@ -1984,6 +1984,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           console.error("Error updating followers list in Firestore: ", err);
         });
 
+        // Notify target user when someone follows them
+        if (!isNowFollowing) {
+          addSystemNotification(
+            targetUserId,
+            `👤 ${currentUser.name} started following you.`,
+            { senderId: currentUser.userId, type: "follow" }
+          );
+        }
+
         // Add ClubFollowers collection record
         if (targetUser.role === "club" || targetUser.accountType === "club") {
           const followDocId = `${currentUser.userId}_${targetUserId}`;
