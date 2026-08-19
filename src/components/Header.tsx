@@ -197,8 +197,11 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick
             </div>
 
             {/* Debug strip — remove after fix */}
-            <div className="px-4 py-2 bg-[#1a0f0f] text-[9px] font-mono text-[#ff6666] border-b border-[#1a3825]">
-              total={notifications.length} | mine={myNotifications.length} | uid={currentUser?.userId?.slice(0,8)}
+            <div className="px-4 py-2 bg-[#1a0f0f] text-[9px] font-mono text-[#ff6666] border-b border-[#1a3825] space-y-1">
+              <div>total={notifications.length} | mine={myNotifications.length} | uid={currentUser?.userId?.slice(0,8)}</div>
+              {myNotifications[0] && (
+                <div>first: read={String(myNotifications[0].read)} | text="{String(myNotifications[0].text).slice(0,40)}"</div>
+              )}
             </div>
 
             {/* List */}
