@@ -48,7 +48,7 @@ function isFootballArticle(title: string, desc: string): boolean {
 // ── Category config ────────────────────────────────────────────────────────
 const CATEGORIES = [
   { id: "all",              label: "ALL",              color: "#00e56b" },
-  { id: "sa",               label: "SA FOOTBALL",      color: "#00e56b" },
+  { id: "sa",               label: "AFRICA FOOTBALL",   color: "#00e56b" },
   { id: "psl",              label: "PSL",               color: "#00e56b" },
   { id: "bafana",           label: "SAFA",               color: "#00e56b" },
   { id: "premier-league",   label: "PREMIER LEAGUE",   color: "#4da6ff" },
