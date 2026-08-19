@@ -215,7 +215,7 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick
               const isChallenge = /challenge|drill|🔥/i.test(notif.text);
               const isFollow = /follow/i.test(notif.text);
               const isVote = /vote|voted/i.test(notif.text);
-              const navigateTo = isChallenge ? "pitch" : isFollow || isVote ? "discover" : null;
+              const navigateTo = isChallenge ? "upload" : isFollow || isVote ? "discover" : null;
 
               return (
                 <button
