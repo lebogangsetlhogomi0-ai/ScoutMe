@@ -18,7 +18,8 @@ function getAdminApp(): App {
   if (getApps().length > 0) return getApps()[0]!;
   const serviceAccountRaw = process.env.FIREBASE_SERVICE_ACCOUNT_KEY || "";
   if (!serviceAccountRaw) throw new Error("FIREBASE_SERVICE_ACCOUNT_KEY not set");
-  const serviceAccount = JSON.parse(serviceAccountRaw);
+  // Vercel sometimes escapes newlines in env vars — unescape before parsing
+  const serviceAccount = JSON.parse(serviceAccountRaw.replace(/\\n/g, "\n"));
   return initializeApp({ credential: cert(serviceAccount) });
 }
 
@@ -77,8 +78,6 @@ async function listFirestorePosts(token: string): Promise<Array<{ id: string; us
   } while (pageToken);
   return posts;
 }
-
-export const config = { maxDuration: 60 };
 
 export default async function handler(req: any, res: any) {
   try {
