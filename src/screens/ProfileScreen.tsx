@@ -161,7 +161,7 @@ export const ProfileScreen: React.FC<{ clubId?: string; onBack?: () => void }> =
 
   // Profile post tabs
   const [profilePostTab, setProfilePostTab] = useState<"posts" | "reposts" | "saved" | "tagged">("posts");
-  const [profilePostSubTab, setProfilePostSubTab] = useState<"all" | "highlight" | "match" | "training" | "full" | "photo">("all");
+  const [profilePostSubTab, setProfilePostSubTab] = useState<"all" | "highlight" | "match" | "training" | "full" | "photo" | "player_of_week" | "signing" | "most_improved" | "platform_update" | "trial_challenge">("all");
   const [carouselIndex, setCarouselIndex] = useState<Record<string, number>>({});
 
   if (!currentUser) return null;
@@ -964,16 +964,29 @@ export const ProfileScreen: React.FC<{ clubId?: string; onBack?: () => void }> =
                 {/* Sub-tabs only for Posts */}
                 {profilePostTab === "posts" && (
                   <div className="flex space-x-1.5 overflow-x-auto no-scrollbar pb-0.5">
-                    {(["all", "highlight", "match", "training", "full", "photo"] as const).map(sub => (
-                      <button key={sub} onClick={() => setProfilePostSubTab(sub)}
-                        className={`flex-shrink-0 px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider transition ${
-                          profilePostSubTab === sub
-                            ? "bg-[#00e56b]/15 text-[#00e56b] border border-[#00e56b]/40"
-                            : "bg-[#0a1a0f] text-[#5a8a6a] border border-[#1a3825]"
-                        }`}>
-                        {sub === "all" ? "All" : sub === "highlight" ? "Highlights" : sub === "match" ? "Match Clips" : sub === "training" ? "Training" : sub === "full" ? "Full Match" : "Photos"}
-                      </button>
-                    ))}
+                    {(clubUser.role === "platform"
+                      ? (["all", "player_of_week", "signing", "most_improved", "platform_update", "trial_challenge"] as const)
+                      : (["all", "highlight", "match", "training", "full", "photo"] as const)
+                    ).map(sub => {
+                      const label: Record<string, string> = {
+                        all: "All",
+                        player_of_week: "🏆 POTW", signing: "✍️ Signing",
+                        most_improved: "📈 Improved", platform_update: "📢 Update",
+                        trial_challenge: "⚡ Challenge",
+                        highlight: "Highlights", match: "Match Clips",
+                        training: "Training", full: "Full Match", photo: "Photos",
+                      };
+                      return (
+                        <button key={sub} onClick={() => setProfilePostSubTab(sub)}
+                          className={`flex-shrink-0 px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider transition ${
+                            profilePostSubTab === sub
+                              ? "bg-[#00e56b]/15 text-[#00e56b] border border-[#00e56b]/40"
+                              : "bg-[#0a1a0f] text-[#5a8a6a] border border-[#1a3825]"
+                          }`}>
+                          {label[sub] ?? sub}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
 
