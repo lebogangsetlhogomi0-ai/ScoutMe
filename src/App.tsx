@@ -47,10 +47,39 @@ const AppContent: React.FC = () => {
   const { currentUser, onboardingStep, users, upgradeUserTier } = useApp();
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<string>("pitch");
-  
+
   // Custom deep navigation states
   const [focusedPlayerId, setFocusedPlayerId] = useState<string | null>(null);
   const [lastFeedTab, setLastFeedTab] = useState<string>("pitch");
+
+  // Keep refs so popstate handler always sees current values
+  const focusedPlayerIdRef = React.useRef(focusedPlayerId);
+  const activeTabRef = React.useRef(activeTab);
+  const lastFeedTabRef = React.useRef(lastFeedTab);
+  React.useEffect(() => { focusedPlayerIdRef.current = focusedPlayerId; }, [focusedPlayerId]);
+  React.useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
+  React.useEffect(() => { lastFeedTabRef.current = lastFeedTab; }, [lastFeedTab]);
+
+  // Push a history entry on every navigation so the back button has somewhere to go
+  React.useEffect(() => {
+    window.history.pushState({ scoutme: true }, "");
+  }, [activeTab, focusedPlayerId]);
+
+  // Intercept hardware/browser back button — navigate within app instead of exiting
+  React.useEffect(() => {
+    const handlePopState = () => {
+      // Re-push state immediately so there's always an entry (prevents exit)
+      window.history.pushState({ scoutme: true }, "");
+      if (focusedPlayerIdRef.current) {
+        setFocusedPlayerId(null);
+        setActiveTab(lastFeedTabRef.current);
+      } else if (activeTabRef.current !== "pitch") {
+        setActiveTab("pitch");
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   // Payments Modal states
   const [paymentsModalOpen, setPaymentsModalOpen] = useState(false);
