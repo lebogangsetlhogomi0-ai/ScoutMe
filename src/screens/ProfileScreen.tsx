@@ -118,6 +118,8 @@ export const ProfileScreen: React.FC<{ clubId?: string; onBack?: () => void; onO
   const [offlineCacheActive, setOfflineCacheActive] = useState(true);
   const [editingBio, setEditingBio] = useState(false);
   const [bioInput, setBioInput] = useState("");
+  const [editingClub, setEditingClub] = useState(false);
+  const [clubInput, setClubInput] = useState("");
 
   // Dual-mode layout state (public feed page vs private scouting hub)
   const [profileViewMode, setProfileViewMode] = useState<"public" | "private">("public");
@@ -477,6 +479,37 @@ export const ProfileScreen: React.FC<{ clubId?: string; onBack?: () => void; onO
                     <MapPin className="w-3.5 h-3.5 text-[#00e56b]" />
                     <span>{clubUser.province} Province</span>
                   </span>
+                )}
+                {/* Player club field */}
+                {isPlayer && (
+                  editingClub ? (
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        updateBio(clubUser.bio || "", { club: clubInput.trim() || undefined });
+                        setEditingClub(false);
+                      }}
+                      className="flex items-center gap-1"
+                    >
+                      <input
+                        autoFocus
+                        value={clubInput}
+                        onChange={(e) => setClubInput(e.target.value)}
+                        placeholder="Your club name..."
+                        className="bg-[#050e08] border border-[#00e56b]/50 text-white text-[10px] px-2 py-0.5 rounded outline-none w-36"
+                      />
+                      <button type="submit" className="text-[10px] text-[#00e56b] font-bold px-2 py-0.5 bg-[#0f2318] rounded">Save</button>
+                      <button type="button" onClick={() => setEditingClub(false)} className="text-[10px] text-[#5a8a6a] px-1">✕</button>
+                    </form>
+                  ) : (
+                    <button
+                      onClick={() => { if (isOwner) { setClubInput(clubUser.club || ""); setEditingClub(true); } }}
+                      className={`flex items-center gap-1 bg-[#0f2318] border ${!clubUser.club && isOwner ? "border-dashed border-[#1a3825] text-[#5a8a6a] hover:border-[#00e56b]/50 hover:text-[#00e56b]" : "border-[#1a3825] text-[#e8f5ee]/70"} px-2 py-0.5 rounded text-[10px] uppercase font-mono transition`}
+                    >
+                      🏟️ {clubUser.club || (isOwner ? "Unattached — tap to add club" : "Unattached")}
+                      {isOwner && <span className="text-[8px] ml-1">✏️</span>}
+                    </button>
+                  )
                 )}
               </div>
 
