@@ -152,13 +152,18 @@ export const DigitalPitchFeed: React.FC<DigitalPitchFeedProps> = ({
     setNewCommentTexts(prev => ({ ...prev, [postId]: "" }));
   };
 
-  const getStoryEmoji = (name: string) => {
-    if (name.includes("Sipho")) return "⚽";
-    if (name.includes("Thabo")) return "⚡";
-    if (name.includes("Kagiso")) return "🥅";
-    if (name.includes("Bongani")) return "🧤";
-    if (name.includes("Ayanda")) return "💎";
-    return "🏃🏾‍♂️";
+  const getInitials = (name: string) => name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+
+  const renderAvatar = (user: UserProfile | undefined, size: "sm" | "md" = "md") => {
+    const dim = size === "sm" ? "w-full h-full" : "w-full h-full";
+    if (user?.avatarBase64) {
+      return <img src={user.avatarBase64} alt={user.name} className={`${dim} rounded-full object-cover`} />;
+    }
+    return (
+      <span className={`${size === "sm" ? "text-sm" : "text-base"} font-bold text-[#00e56b]`}>
+        {user ? getInitials(user.name) : "?"}
+      </span>
+    );
   };
 
   const handleChallengeResponseSubmit = async (e: React.FormEvent) => {
@@ -191,8 +196,11 @@ export const DigitalPitchFeed: React.FC<DigitalPitchFeedProps> = ({
           onClick={() => setCreateStoryOpen(true)}
           className="flex flex-col items-center space-y-1.5 focus:outline-none min-w-[70px] group"
         >
-          <div className="w-[58px] h-[58px] rounded-full bg-[#0a1a0f] border border-dashed border-[#00e56b] flex items-center justify-center relative transition group-hover:scale-105">
-            <Plus className="w-5 h-5 text-[#00e56b]" />
+          <div className="w-[58px] h-[58px] rounded-full bg-[#0a1a0f] border-2 border-dashed border-[#00e56b] flex items-center justify-center relative transition group-hover:scale-105 overflow-hidden">
+            {currentUser?.avatarBase64
+              ? <img src={currentUser.avatarBase64} alt="You" className="w-full h-full object-cover rounded-full" />
+              : <span className="text-base font-bold text-[#00e56b]">{currentUser ? getInitials(currentUser.name) : "+"}</span>
+            }
             <span className="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-[#00e56b] flex items-center justify-center border border-[#050e08]">
               <Plus className="w-3 h-3 text-[#050e08] stroke-[3]" />
             </span>
@@ -224,8 +232,8 @@ export const DigitalPitchFeed: React.FC<DigitalPitchFeedProps> = ({
                     : "bg-[#1a3825]/50 border border-[#1a3825]"
                 }`}
               >
-                <div className="w-full h-full rounded-full bg-[#020503] flex items-center justify-center">
-                  <span className="text-2xl">{getStoryEmoji(pl.name)}</span>
+                <div className="w-full h-full rounded-full bg-[#020503] flex items-center justify-center overflow-hidden">
+                  {renderAvatar(pl)}
                 </div>
                 {hasUnexpiredReports && (
                   <span className="absolute -bottom-1 -right-1 bg-[#00e56b] text-[8px] text-[#050e08] uppercase font-mono font-black scale-90 px-1 rounded border border-[#020503]">
@@ -358,9 +366,12 @@ export const DigitalPitchFeed: React.FC<DigitalPitchFeedProps> = ({
                     <div className="flex items-center space-x-3">
                       <button
                         onClick={() => playerObj && onOpenPlayerProfile(playerObj.userId)}
-                        className="w-10 h-10 rounded-full bg-[#050e08] border border-[#1a3825] flex items-center justify-center relative text-lg"
+                        className="w-10 h-10 rounded-full bg-[#050e08] border border-[#1a3825] flex items-center justify-center relative overflow-hidden"
                       >
-                        {post.isOfficialPost ? "◆" : getStoryEmoji(post.playerName)}
+                        {post.isOfficialPost
+                          ? <span className="text-[#00e56b] font-black text-sm">◆</span>
+                          : renderAvatar(playerObj, "sm")
+                        }
                       </button>
                       <div>
                         <div className="flex items-center space-x-2">
