@@ -16,8 +16,11 @@ export const Discover: React.FC<DiscoverProps> = ({ onOpenPlayerProfile }) => {
   // Filter positions
   const filterPills = ["ALL", "GK", "LB", "CB", "RB", "CDM", "CM", "CAM", "LW", "RW", "ST"];
 
-  // Players for the browse grid; all non-scout/club accounts for name search
-  const players = users.filter(u => u.role === "player");
+  const isPlatform = currentUser?.role === "platform";
+  // Platform sees all accounts in the grid; others see players only
+  const players = isPlatform
+    ? users.filter(u => u.userId !== currentUser?.userId)
+    : users.filter(u => u.role === "player");
   const allSearchable = users.filter(u => u.userId !== currentUser?.userId);
 
   const renderMiniStars = (rating: number) => {
@@ -169,7 +172,10 @@ export const Discover: React.FC<DiscoverProps> = ({ onOpenPlayerProfile }) => {
                 className="bg-[#231e0f] border border-[#f5c518]/60 p-4 rounded-xl min-w-[200px] flex flex-col justify-between cursor-pointer hover:border-[#f5c518] transition"
               >
                 <div className="flex items-start justify-between">
-                  <span className="text-3xl bg-[#050e08]/60 p-2 rounded-lg">{getStoryEmoji(tp.name)}</span>
+                  {tp.avatarBase64
+                    ? <img src={tp.avatarBase64} alt={tp.name} className="w-12 h-12 rounded-lg object-cover" />
+                    : <span className="text-3xl bg-[#050e08]/60 p-2 rounded-lg">{getStoryEmoji(tp.name)}</span>
+                  }
                   <div className="bg-[#f5c518] text-[#050e08] text-[9.5px] font-extrabold uppercase px-2 py-0.5 rounded font-mono">
                     SCORE: {computeAiScore(tp)}
                   </div>
@@ -242,10 +248,18 @@ export const Discover: React.FC<DiscoverProps> = ({ onOpenPlayerProfile }) => {
                 <div className="relative h-28 bg-[#050e08] flex items-center justify-center border-b border-[#1a3825]/40 overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0a1a0f]/90 to-transparent" />
                   
-                  {/* Big emoji mockup */}
-                  <span className="text-6xl group-hover:scale-110 transition duration-300 relative z-10">
-                    {getStoryEmoji(pl.name)}
-                  </span>
+                  {/* Avatar or emoji */}
+                  {pl.avatarBase64 ? (
+                    <img
+                      src={pl.avatarBase64}
+                      alt={pl.name}
+                      className="w-full h-full object-cover absolute inset-0"
+                    />
+                  ) : (
+                    <span className="text-6xl group-hover:scale-110 transition duration-300 relative z-10">
+                      {getStoryEmoji(pl.name)}
+                    </span>
+                  )}
 
                   {/* Top Right: AI Score badge */}
                   <div className={`absolute top-2 right-2 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wide z-10 select-none ${getRoleColorBg()} text-[#050e08]`}>

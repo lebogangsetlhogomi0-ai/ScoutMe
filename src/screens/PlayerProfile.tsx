@@ -213,8 +213,11 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({ playerId, onBack, 
         
         {/* Row 1: Avatar circle and stats */}
         <div className="flex items-center justify-between">
-          <div className={`w-[80px] h-[80px] rounded-full bg-[#0a1a0f] border-3 flex items-center justify-center text-5xl relative ${getRoleBorderColorClass(currentUser?.role)}`}>
-            {getStoryEmoji(player.name)}
+          <div className={`w-[80px] h-[80px] rounded-full bg-[#0a1a0f] border-3 flex items-center justify-center text-5xl relative overflow-hidden ${getRoleBorderColorClass(currentUser?.role)}`}>
+            {player.avatarBase64
+              ? <img src={player.avatarBase64} alt={player.name} className="w-full h-full object-cover" />
+              : getStoryEmoji(player.name)
+            }
           </div>
 
           <div className="flex-1 flex justify-around ml-4 bg-[#0a1a0f] border border-[#1a3825] py-2 px-3 rounded-2xl">
