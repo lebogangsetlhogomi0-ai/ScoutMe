@@ -51,12 +51,14 @@ const RSS_FEEDS = [
   { url: "https://talksport.com/football/feed/",                    category: "premier-league", source: "talkSPORT Football" },
   { url: "https://www.90min.com/feed",                              category: "premier-league", source: "90min" },
   { url: "https://fabrizioromano.substack.com/feed",                category: "transfers",      source: "Fabrizio Romano" },
-  // South Africa — Google News RSS (targeted per category, reliable)
-  { url: "https://news.google.com/rss/search?q=PSL+%22premier+soccer+league%22+OR+%22Kaizer+Chiefs%22+OR+%22Orlando+Pirates%22+OR+%22Mamelodi+Sundowns%22+OR+%22SuperSport+United%22+OR+%22Cape+Town+City%22&hl=en-ZA&gl=ZA&ceid=ZA:en", category: "psl", source: "Google News PSL" },
-  { url: "https://news.google.com/rss/search?q=Bafana+Bafana+OR+Banyana+Banyana+OR+SAFA+%22south+africa+national+team%22+football&hl=en-ZA&gl=ZA&ceid=ZA:en", category: "bafana", source: "Google News Bafana & Banyana" },
-  { url: "https://news.google.com/rss/search?q=%22south+africa%22+soccer+football+%22PSL%22+OR+%22NFD%22+OR+%22SAFA%22+OR+%22Nedbank+Cup%22+OR+%22MTN8%22&hl=en-ZA&gl=ZA&ceid=ZA:en", category: "sa", source: "Google News SA Football" },
-  { url: "https://news.google.com/rss/search?q=AFCON+OR+%22Africa+Cup+of+Nations%22+OR+%22CHAN+2024%22+OR+%22COSAFA%22+football&hl=en&gl=ZA&ceid=ZA:en", category: "afcon", source: "Google News AFCON" },
-  { url: "https://news.google.com/rss/search?q=%22Diski+Challenge%22+OR+%22DDC%22+%22south+africa%22+football&hl=en-ZA&gl=ZA&ceid=ZA:en", category: "ddc", source: "Google News DDC" },
+  // South Africa — diverse sources (parallel fetch; failures are silently skipped)
+  { url: "https://feeds.bbci.co.uk/sport/africa/rss.xml",             category: "sa",     source: "BBC Sport Africa" },
+  { url: "https://www.timeslive.co.za/sport/soccer/feed/",            category: "psl",    source: "Times Live Soccer" },
+  { url: "https://www.kickoff.com/rss/news.xml",                      category: "psl",    source: "KickOff" },
+  { url: "https://www.soccer-laduma.co.za/feed/",                     category: "psl",    source: "Soccer Laduma" },
+  { url: "https://supersport.com/rss/news",                           category: "sa",     source: "SuperSport" },
+  { url: "https://www.iol.co.za/sport/soccer/rss",                    category: "sa",     source: "IOL Soccer" },
+  { url: "https://www.goal.com/feeds/en/news",                        category: "sa",     source: "Goal.com" },
 ];
 
 // ── Non-football sport keywords to reject ─────────────────────────────────
