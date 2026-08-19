@@ -4,6 +4,29 @@ import { collection, query, orderBy, limit, onSnapshot, where } from "firebase/f
 import { RefreshCw, ExternalLink } from "lucide-react";
 import { formatSATimeAgo } from "../utils/saTime";
 
+// ── Client-side keyword filters for SA sub-categories ────────────────────
+const PSL_KEYWORDS = [
+  "psl","premier soccer league","betway premiership","dstv premiership",
+  "kaizer chiefs","orlando pirates","mamelodi sundowns","supersport united",
+  "cape town city","stellenbosch","amazulu","chippa","sekhukhune",
+  "golden arrows","ts galaxy","moroka swallows","nedbank cup","mtn8","soweto derby",
+  "polokwane city","royal am","richards bay","young buffaloes",
+];
+const SAFA_KEYWORDS = [
+  "bafana","banyana","safa","south africa national","hugo broos",
+  "ronwen williams","evidence makgopa","percy tau","cosafa","afcon qualifier",
+  "caf qualifier","world cup qualifier",
+];
+const DDC_KEYWORDS = [
+  "diski challenge","ddc","abc motsepe","national first division","glad africa",
+  "sab league","nfd",
+];
+
+function matchesKeywords(title: string, desc: string, keywords: string[]): boolean {
+  const t = (title + " " + desc).toLowerCase();
+  return keywords.some(k => t.includes(k));
+}
+
 // ── Client-side football filter (mirrors server-side blocklist) ───────────
 const NON_FOOTBALL_TERMS = [
   "boxing","tyson fury","anthony joshua","canelo","ufc","mma","wwe",
@@ -92,14 +115,21 @@ export const NewsFeed: React.FC = () => {
     setLoading(true);
     setError(null);
 
-    // Category queries use only a where() clause (no orderBy) to avoid
-    // requiring a composite index while it builds. We sort client-side.
+    // PSL, SAFA, DDC also pull from "sa" category and filter client-side,
+    // because BBC Africa (our reliable SA feed) stores everything as "sa".
+    const SA_SUB = ["psl", "bafana", "ddc"] as const;
+    const fetchCats = SA_SUB.includes(activeCategory as any)
+      ? ["sa", activeCategory]
+      : [activeCategory];
+
     const q = activeCategory === "all"
-      ? query(collection(db, "news"), orderBy("publishedAt", "desc"), limit(60))
-      : query(collection(db, "news"), where("category", "==", activeCategory), limit(60));
+      ? query(collection(db, "news"), orderBy("publishedAt", "desc"), limit(80))
+      : fetchCats.length > 1
+      ? query(collection(db, "news"), where("category", "in", fetchCats), limit(80))
+      : query(collection(db, "news"), where("category", "==", activeCategory), limit(80));
 
     const unsub = onSnapshot(q, (snap) => {
-      const items: NewsArticle[] = snap.docs
+      let items: NewsArticle[] = snap.docs
         .map(d => ({
           newsId: d.id,
           title: d.data().title || "",
@@ -110,10 +140,21 @@ export const NewsFeed: React.FC = () => {
           category: d.data().category || "premier-league",
           publishedAt: d.data().publishedAt || "",
         }))
-        .filter(a => isFootballArticle(a.title, a.description))
+        .filter(a => isFootballArticle(a.title, a.description));
+
+      // For SA sub-tabs: further filter by keywords so only relevant articles show
+      if (activeCategory === "psl") {
+        items = items.filter(a => matchesKeywords(a.title, a.description, PSL_KEYWORDS));
+      } else if (activeCategory === "bafana") {
+        items = items.filter(a => matchesKeywords(a.title, a.description, SAFA_KEYWORDS));
+      } else if (activeCategory === "ddc") {
+        items = items.filter(a => matchesKeywords(a.title, a.description, DDC_KEYWORDS));
+      }
+
+      const sorted = items
         .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
         .slice(0, 30);
-      setArticles(items);
+      setArticles(sorted);
       setLoading(false);
     }, () => {
       setError("Could not load news.");
