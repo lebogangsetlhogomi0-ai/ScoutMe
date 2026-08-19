@@ -263,7 +263,7 @@ const GUARDIAN_SEARCHES = [
   { q: "AFCON OR \"Africa Cup of Nations\" OR CAF football 2024 2025",                                                                 category: "afcon",  source: "The Guardian" },
 ];
 
-async function fetchGuardian(search: typeof GUARDIAN_SEARCHES[0]): Promise<Array<{ title: string; url: string; publishedAt: string; imageUrl: string; category: string }>> {
+async function fetchGuardian(search: typeof GUARDIAN_SEARCHES[0]): Promise<Array<{ title: string; url: string; publishedAt: string; imageUrl: string; category: string; source: string }>> {
   const url = `https://content.guardianapis.com/search?q=${encodeURIComponent(search.q)}&section=football&show-fields=thumbnail&page-size=20&order-by=newest&api-key=test`;
   const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
   if (!res.ok) throw new Error(`Guardian HTTP ${res.status}`);

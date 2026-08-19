@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../firebase";
-import { collection, query, orderBy, limit, onSnapshot, where } from "firebase/firestore";
+import { collection, query, orderBy, limit, onSnapshot, where, Query, DocumentData } from "firebase/firestore";
 import { Search, ExternalLink, RefreshCw, X } from "lucide-react";
 import { formatSATimeAgo } from "../utils/saTime";
 
@@ -90,7 +90,7 @@ export const NewsFeed: React.FC = () => {
     setLoading(true);
     setError(null);
 
-    let q;
+    let q: Query<DocumentData>;
     if (activeSport === "football") {
       q = query(collection(db, "news"), where("category", "in", FOOTBALL_CATS), limit(80));
     } else if (activeSport === "rugby") {
