@@ -997,10 +997,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       limit(30)
     );
     const unsub = onSnapshot(notifQuery, (snapshot) => {
-      const live: AppNotification[] = snapshot.docs
-        .map(d => ({ notificationId: d.id, ...d.data() } as AppNotification))
-        .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
-      setNotifications(live);
+      const fromFirestore: AppNotification[] = snapshot.docs
+        .map(d => ({ notificationId: d.id, ...d.data() } as AppNotification));
+
+      setNotifications(prev => {
+        if (fromFirestore.length === 0) {
+          // Firestore returned nothing — merge: keep any local-only notifications
+          // (notifications that may have been created while offline or in demo mode)
+          return prev.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+        }
+        // Firestore has data — merge with any local-only notifications not yet in Firestore
+        const firestoreIds = new Set(fromFirestore.map(n => n.notificationId));
+        const localOnly = prev.filter(n => !firestoreIds.has(n.notificationId));
+        return [...fromFirestore, ...localOnly]
+          .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+      });
     }, (err) => {
       console.warn("Notifications listener failed:", err);
     });

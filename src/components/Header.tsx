@@ -48,10 +48,7 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick, onClubIntelClick
     }
   };
 
-  // My notifications only (already filtered by listener, but guard here too)
-  const myNotifications = notifications
-    .filter(n => n.recipientId === currentUser?.userId)
-    .slice(0, 20);
+  const myNotifications = notifications.slice(0, 20);
 
   const formatTime = formatSATimeAgo;
 
