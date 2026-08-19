@@ -1257,20 +1257,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // Official account: skip onboarding, assign platform role
       if (email.toLowerCase() === OFFICIAL_ACCOUNT_EMAIL.toLowerCase()) {
+        // Load existing Firestore doc so we preserve avatar, following, etc.
+        let existingDoc: Record<string, any> = {};
+        if (db) {
+          try {
+            const snap = await getDoc(doc(db, "users", targetUserId));
+            if (snap.exists()) existingDoc = snap.data();
+          } catch {}
+        }
         const officialProfile: UserProfile = {
-          userId: targetUserId,
+          // Defaults — only used when the field isn't already stored
           name: "ScoutMe Official",
-          email: OFFICIAL_ACCOUNT_EMAIL,
-          role: "platform",
           province: "South Africa",
           createdAt: new Date().toISOString(),
-          isOfficialAccount: true,
           bio: "Discovering Africa's football talent. Player of the Week every Monday. Signing announcements. Platform updates. 🇿🇦⚽",
           followers: [],
           following: [],
+          // Merge in whatever was already saved (avatar, following, etc.)
+          ...existingDoc,
+          // These must always be authoritative
+          userId: targetUserId,
+          email: OFFICIAL_ACCOUNT_EMAIL,
+          role: "platform",
+          isOfficialAccount: true,
         };
         if (db) {
-          setDoc(doc(db, "users", targetUserId), officialProfile, { merge: true }).catch(() => {});
+          // Only write fields that weren't already there
+          const defaults: Record<string, any> = {};
+          if (!existingDoc.name) defaults.name = officialProfile.name;
+          if (!existingDoc.province) defaults.province = officialProfile.province;
+          if (!existingDoc.bio) defaults.bio = officialProfile.bio;
+          if (!existingDoc.role) defaults.role = "platform";
+          if (!existingDoc.isOfficialAccount) defaults.isOfficialAccount = true;
+          if (Object.keys(defaults).length > 0) {
+            setDoc(doc(db, "users", targetUserId), defaults, { merge: true }).catch(() => {});
+          }
         }
         setCurrentUser(officialProfile);
         setUsers(prev => prev.some(u => u.userId === targetUserId) ? prev.map(u => u.userId === targetUserId ? officialProfile : u) : [...prev, officialProfile]);
